@@ -27,6 +27,11 @@ jobs:
           node-version-file: .node-version
           cache: pnpm
 
+      - name: Set up Deno
+        uses: denoland/setup-deno@v2
+        with:
+          deno-version: v2.x
+
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
@@ -35,6 +40,9 @@ jobs:
 
       - name: Build packages
         run: pnpm build
+
+      - name: Type-check Edge Functions
+        run: deno check --config supabase/functions/platform-runtime/deno.json supabase/functions/platform-runtime/index.ts
 
   database:
     runs-on: ubuntu-latest

@@ -42,3 +42,22 @@ Review the SQL and reset the local database from scratch. Generated database typ
 - `supabase/config.toml` may reference secrets with `env(...)`; never hard-code them.
 - The local SMTP capture service does not deliver real email.
 - No hosted project is linked by this foundation.
+
+## Phase 0B-6 runtime proof
+
+The runtime proof is disabled unless local configuration and its feature flag explicitly enable it. Use synthetic identities only. The database behavior is exercised with:
+
+```powershell
+pnpm supabase:reset
+pnpm supabase:test:db
+```
+
+With Docker running, serve the thin Edge entry point using:
+
+```powershell
+pnpm exec supabase functions serve platform-runtime
+```
+
+The endpoint is `/functions/v1/platform-runtime/api/v1/platform-proof`. It requires a valid local user JWT, `Idempotency-Key`, `X-Correlation-Id`, synthetic execute permission/global scope, configuration, and the synthetic flag. Do not use a service-role key as the caller identity.
+
+Deterministic transport/application demonstrations run in `pnpm test`; they use no live provider or operational data.

@@ -34,6 +34,11 @@ Material changes to the architecture require an ADR. An ADR may clarify the blue
 | [Offline synchronization contract](offline-sync-contract.md) | Future device actions, duplicate outcomes, and generic conflicts |
 | [Technical retention rules](technical-retention-rules.md) | Retention and deletion boundaries for diagnostic records |
 | [System health and background jobs](system-health-and-background-jobs.md) | Health checks, job identity, concurrency, retries, and cancellation |
+| [Backend runtime architecture](backend-runtime-architecture.md) | Executable modular-monolith shell and synthetic proof boundary |
+| [Transaction conventions](transaction-conventions.md) | Atomic state, idempotency, audit, and outbox behavior |
+| [Outbox dispatcher operations](outbox-dispatcher-operations.md) | Claim, publish, retry, dead-letter, and replay lifecycle |
+| [Background-job runtime](background-job-runtime.md) | Bounded job execution and durable-state adapter contract |
+| [Health endpoints](health-endpoints.md) | Liveness, readiness, and safe platform health response |
 | [Environment strategy](environment-strategy.md) | Isolation of development, staging, and production |
 | [Integration architecture](integration-architecture.md) | Adapter boundaries, reliability, and external-system rules |
 | [ADR index](../adr/README.md) | Accepted architecture decisions and their status |

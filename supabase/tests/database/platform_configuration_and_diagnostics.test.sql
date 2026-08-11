@@ -98,7 +98,12 @@ select lives_ok(
 );
 
 select is(
-  (select count(*) from app_private.platform_setting_changes where setting_kind = 'feature_flag'),
+  (
+    select count(*)
+    from app_private.platform_setting_changes
+    where setting_kind = 'feature_flag'
+      and setting_key = 'platform.proof'
+  ),
   2::bigint,
   'flag definition and targeting changes are recorded automatically'
 );

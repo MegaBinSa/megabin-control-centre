@@ -6,7 +6,7 @@ export default tseslint.config(
   {
     ignores: [
       "coverage/**",
-      "dist/**",
+      "**/dist/**",
       "node_modules/**",
       "supabase/.branches/**",
       "supabase/.temp/**"

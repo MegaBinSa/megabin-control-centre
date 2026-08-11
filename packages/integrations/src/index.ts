@@ -58,10 +58,13 @@ export class FakeIntegrationAdapter<TRequest, TResult>
     readonly request: TRequest;
     readonly context: AdapterExecutionContext;
   }[] = [];
+  private readonly results = new Map<string, AdapterResult<TResult>>();
+  private readonly failurePlan: IntegrationErrorClassification[];
 
   constructor(
     readonly identity: IntegrationIdentity,
-    private readonly response: TResult
+    private readonly response: TResult,
+    failurePlan: readonly IntegrationErrorClassification[] = []
   ) {
     if (identity.provider !== "fake") {
       throw new TypeError("The fake adapter must use the fake provider identity.");
@@ -69,6 +72,7 @@ export class FakeIntegrationAdapter<TRequest, TResult>
     if (identity.mode === "live") {
       throw new TypeError("The fake adapter cannot operate in live mode.");
     }
+    this.failurePlan = [...failurePlan];
   }
 
   async healthCheck(): Promise<HealthCheckResult> {
@@ -83,8 +87,16 @@ export class FakeIntegrationAdapter<TRequest, TResult>
     request: TRequest,
     context: AdapterExecutionContext
   ): Promise<AdapterResult<TResult>> {
+    const existing = this.results.get(context.idempotencyKey);
+    if (existing) return existing;
+
     this.interactions.push({ request, context });
-    return { ok: true, value: this.response };
+    const plannedFailure = this.failurePlan.shift();
+    const result: AdapterResult<TResult> = plannedFailure
+      ? { ok: false, classification: plannedFailure, safeMessage: "Synthetic adapter failure." }
+      : { ok: true, value: this.response };
+    if (result.ok) this.results.set(context.idempotencyKey, result);
+    return result;
   }
 }
 
