@@ -42,11 +42,13 @@ importers:
 
   packages/config: {}
 
-  packages/database-types: {}
-
   packages/domain-types: {}
 
-  packages/events: {}
+  packages/events:
+    dependencies:
+      '@megabin/domain-types':
+        specifier: workspace:*
+        version: link:../domain-types
 
   packages/observability: {}
 
