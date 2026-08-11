@@ -2,7 +2,7 @@
 
 MegaBin Control Centre is the greenfield operational platform for MegaBin. It is intentionally separate from the public WordPress website.
 
-The current repository contains the approved architecture foundation only. Application shells, Supabase resources, database tables, APIs, authentication, and operational features have not yet been created.
+The repository contains the approved architecture and Phase 0 tooling foundation. Application shells, hosted Supabase resources, business database tables, APIs, authentication flows, and operational features have not yet been created.
 
 ## Source of truth
 
@@ -28,3 +28,6 @@ git push -u origin main
 
 Confirm the destination organisation and repository before pushing.
 
+## Local development
+
+See the [local development runbook](docs/runbooks/local-development.md) for pinned toolchain, verification, and local Supabase commands.

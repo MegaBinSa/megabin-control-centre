@@ -1,0 +1,8 @@
+.git/
+coverage/
+dist/
+docs/
+node_modules/
+pnpm-lock.yaml
+supabase/.branches/
+supabase/.temp/
