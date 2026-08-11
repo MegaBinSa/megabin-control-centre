@@ -48,3 +48,5 @@ The blueprint's likely events remain candidates until their producing workflows 
 | `Vehicles.VehicleAvailabilityChanged` | Vehicles | Availability changes | `vehicleId`, previous/new availability |
 
 Events contain IDs and operational state only; sensitive client identity/contact values are excluded.
+
+Phase 1B exposes these workflows through the authenticated API without changing event payload versions. Reads and contact-only edits do not emit domain events. Client creation, service-address creation/change, effective-dated service configuration, drum-count change, and vehicle availability changes continue to use the accepted events above in the same transaction as their authoritative write and audit fact.

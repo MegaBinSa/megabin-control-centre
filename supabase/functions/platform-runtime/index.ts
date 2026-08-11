@@ -4,6 +4,7 @@ import { FakeIntegrationAdapter } from "@megabin/integrations";
 import type { ActorReference } from "@megabin/domain-types";
 import {
   createRuntimeHandler,
+  createMasterDataHandler,
   MemoryJobStateStore,
   SupabaseRuntimeDatabase,
   type RuntimeRpcClient
@@ -51,6 +52,9 @@ export default {
       { accepted: true }
     );
     const actorId = jwtSubject(request);
+    const masterData = createMasterDataHandler({ rpc, actorId, id: () => crypto.randomUUID() });
+    const masterDataResponse = await masterData(request);
+    if (masterDataResponse) return masterDataResponse;
     const handler = createRuntimeHandler({
       environment: runtimeEnvironment,
       runtime: {

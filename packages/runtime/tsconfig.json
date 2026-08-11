@@ -9,7 +9,8 @@
     { "path": "../config" },
     { "path": "../domain-types" },
     { "path": "../integrations" },
-    { "path": "../observability" }
+    { "path": "../observability" },
+    { "path": "../validation" }
   ],
   "include": ["src/**/*.ts"]
 }
