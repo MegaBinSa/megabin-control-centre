@@ -34,7 +34,11 @@ function jwtSubject(request: Request): string | null {
 export default {
   fetch: withSupabase({ auth: "user" }, async (request, context) => {
     const runtimeEnvironment = environment();
-    const rpc = context.supabaseAdmin.schema("api") as unknown as RuntimeRpcClient;
+    const rpc = (
+      context.supabaseAdmin as unknown as {
+        schema(name: string): RuntimeRpcClient;
+      }
+    ).schema("api");
     const database = new SupabaseRuntimeDatabase(rpc);
     const adapter = new FakeIntegrationAdapter(
       {
