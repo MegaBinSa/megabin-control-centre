@@ -67,4 +67,13 @@ The diagram is conceptual: it does not prescribe table names, cardinality implem
 ## Historical integrity
 
 Operational history must retain the route version, team, staff/driver, vehicle, configured and actual drum counts, timestamps, and outcome facts required to interpret past service. History references immutable IDs and may snapshot selected labels needed for durable interpretation; it must not depend on mutable address or assignment text.
+# Phase 1A implemented master-data model
+
+Phase 1A implements immutable UUID identities for `Client`, `ClientContact`, `ServiceAddress`, `ClientService`, `ServiceConfiguration`, `ServiceRegion`, `Depot`, `Territory`, `Team`, `Staff`, and `Vehicle`. Client, service, and physical address remain separate. A service joins one client to one address; neither relationship is unique, so a client can have several services and an address can serve several clients.
+
+`ServiceConfiguration` is effective-dated and owned by the client service. It carries permanent region, depot, team, collection-day, territory/override, and configured drum-unit values. Daily exceptions remain outside this model. Address text and provider references are mutable attributes, never identity. Scoped `ExternalReference` rows map provider identifiers to internal IDs without becoming foreign master keys.
+
+Geography uses PostGIS SRID 4326 geography points for service addresses and depots, and multipolygon geometry for territories. Territory overlap is resolved by explicit priority. Geometry edits do not mutate service assignments; later review workflows will identify affected services.
+
+Client and service lifecycle states are independent. Archival is a timestamped lifecycle transition and does not cascade-delete services or historical configuration. No billing Account entity exists.
 

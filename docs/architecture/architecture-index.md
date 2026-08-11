@@ -39,6 +39,9 @@ Material changes to the architecture require an ADR. An ADR may clarify the blue
 | [Outbox dispatcher operations](outbox-dispatcher-operations.md) | Claim, publish, retry, dead-letter, and replay lifecycle |
 | [Background-job runtime](background-job-runtime.md) | Bounded job execution and durable-state adapter contract |
 | [Health endpoints](health-endpoints.md) | Liveness, readiness, and safe platform health response |
+| [Master-data API](master-data-api.md) | Phase 1A administration contracts and write boundary |
+| [Master-data migration considerations](master-data-migration-considerations.md) | Import, identity, and transition constraints |
+| [State-machine catalogue](state-machine-catalogue.md) | Implemented lifecycle states and transitions |
 | [Environment strategy](environment-strategy.md) | Isolation of development, staging, and production |
 | [Integration architecture](integration-architecture.md) | Adapter boundaries, reliability, and external-system rules |
 | [ADR index](../adr/README.md) | Accepted architecture decisions and their status |
@@ -49,6 +52,5 @@ Files under [`docs/megabin-shared/`](../megabin-shared/README.md) describe the s
 
 ## Documents planned for later Phase 0 work
 
-- State-machine catalogue
 - Data-retention matrix
 - Development roadmap and operational runbooks

@@ -34,4 +34,15 @@
 ## Transitional website rule
 
 WordPress remains local-save-first and does not depend on synchronous Control Centre availability. It forwards submissions reliably with a stable source reference and idempotency key. Activation is the authority boundary: after activation, operational edits occur in the Control Centre, not in WordPress or spreadsheets.
+# Phase 1A ownership additions
+
+| Data | Authoritative owner | Permitted inbound source | Notes |
+|---|---|---|---|
+| Client and contacts | Clients module | Future website/accounting adapters through commands | Control Centre authoritative after activation |
+| Service address and validation state | Service Addresses module | Future geocoder adapter through commands | Provider metadata is not address identity |
+| Client service and permanent configuration | Clients / Service Configuration | Future onboarding and accounting consequences | Operational truth; payment truth remains external |
+| Regions, depots, territories | Geography module | Office administration | Polygon changes never silently reassign services |
+| Teams and staff directory | Workforce module | Office administration | Not an HR or payroll record |
+| Vehicles | Vehicles module | Office administration; future tracking/maintenance adapters | Raw GPS and maintenance workflows remain deferred |
+| External references | Integrations module | Approved adapters | Unique only within source-system/entity scope |
 

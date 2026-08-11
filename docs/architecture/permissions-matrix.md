@@ -35,3 +35,15 @@ Operational permissions and default role bundles are deferred until their owning
 
 Authorization tables and assignments are stored in the non-exposed `app_private` schema. Frontends cannot edit them directly. Future changes must pass through Identity & Access application services, enforce grant-within-own-authority rules, and create audit records.
 
+## Phase 1A master-data permissions
+
+| Role | Master data read/write | Sensitive client/contact read | External reference management |
+|---|---|---|---|
+| Director/Admin | Yes, assigned scope | Yes | Deferred to explicit integration authority |
+| Operations Manager | Yes, assigned scope | Yes | No |
+| Office/Admin | Yes, assigned scope | Yes | No |
+| Driver/Team | No | No | No |
+| System Admin/Developer | Yes, assigned scope | No by default | Yes |
+
+Region-scoped access requires a matching service-region scope; global scope is explicit. Clients and addresses derive region visibility through current service configuration. Direct authenticated table writes are denied; important writes use the service-role application boundary and re-authorize the actor from application tables.
+

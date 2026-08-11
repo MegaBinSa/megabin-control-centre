@@ -65,4 +65,15 @@ The diagram shows primary direction, not every permitted read.
 - Vehicle current state is derived by Tracking; raw provider telemetry is not the route state.
 - Configuration values do not replace domain-owned business entities.
 - Integration sync state and provider delivery state are metadata, not client/service lifecycle state.
+# Phase 1A implemented dependencies
+
+- Clients owns clients, contacts, and client-service lifecycle; it references immutable Service Address IDs.
+- Service Addresses owns structured address, access, validation, and geospatial point data; geocoding adapters call its application service.
+- Service Configuration owns effective-dated permanent service assignment and drum configuration; it reads Geography and Workforce/Vehicle master IDs.
+- Geography owns regions, depots, territories, polygon priority, and territory/team eligibility.
+- Workforce owns teams and the lightweight staff directory; it reads Geography and optional Vehicle defaults.
+- Vehicles owns vehicle identity, availability, capacity/configuration, and tracking-device association foundation; it reads Geography and Workforce defaults.
+- Integrations owns external references and may not mutate the referenced aggregate directly.
+
+These dependencies permit reads across immutable IDs. Writes always call the owning application service; no Phase 1A event consumer performs a cross-module write.
 
