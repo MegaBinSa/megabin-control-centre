@@ -50,6 +50,12 @@ importers:
         specifier: workspace:*
         version: link:../domain-types
 
+  packages/integrations:
+    dependencies:
+      '@megabin/observability':
+        specifier: workspace:*
+        version: link:../observability
+
   packages/observability: {}
 
   packages/permissions: {}

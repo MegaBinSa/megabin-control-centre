@@ -6,6 +6,7 @@
     { "path": "./packages/config" },
     { "path": "./packages/domain-types" },
     { "path": "./packages/events" },
+    { "path": "./packages/integrations" },
     { "path": "./packages/observability" },
     { "path": "./packages/permissions" },
     { "path": "./packages/testing" },
