@@ -45,3 +45,4 @@ The PostgreSQL outbox is the initial durable event mechanism. No message broker 
 
 Core transactions must define behavior when a provider is unavailable. External dispatch normally occurs after the authoritative transaction through the outbox. Provider identifiers and payload metadata remain scoped to adapters so a provider can be replaced without changing master entity identities or business rules.
 
+The standard install-to-decommission process, environment modes, and health states are defined in the [integration lifecycle](integration-lifecycle.md).
