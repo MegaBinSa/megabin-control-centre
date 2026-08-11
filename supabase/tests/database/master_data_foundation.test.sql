@@ -33,9 +33,9 @@ insert into public.user_profiles(user_id,display_name) values
  ('61000000-0000-0000-0000-000000000002','Phase 1A Region User'),
  ('61000000-0000-0000-0000-000000000003','Phase 1A Driver');
 insert into app_private.user_roles(user_id,role_id)
-select '61000000-0000-0000-0000-000000000001',role_id from app_private.roles where role_key='director_admin'
-union all select '61000000-0000-0000-0000-000000000002',role_id from app_private.roles where role_key='office_admin'
-union all select '61000000-0000-0000-0000-000000000003',role_id from app_private.roles where role_key='driver_team';
+select '61000000-0000-0000-0000-000000000001'::uuid,role_id from app_private.roles where role_key='director_admin'
+union all select '61000000-0000-0000-0000-000000000002'::uuid,role_id from app_private.roles where role_key='office_admin'
+union all select '61000000-0000-0000-0000-000000000003'::uuid,role_id from app_private.roles where role_key='driver_team';
 insert into app_private.user_access_scopes(user_id,scope_kind,scope_id) values
  ('61000000-0000-0000-0000-000000000001','global',null),
  ('61000000-0000-0000-0000-000000000002','service_region','62000000-0000-0000-0000-000000000001'),
