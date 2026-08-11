@@ -1,6 +1,6 @@
 {
   "imports": {
-    "@supabase/functions-js": "jsr:@supabase/functions-js@2.112.3",
+    "@supabase/functions-js": "jsr:@supabase/functions-js@2.112.2",
     "@supabase/server": "npm:@supabase/server@1.4.1",
     "@megabin/api-client": "../../../packages/api-client/src/index.ts",
     "@megabin/config": "../../../packages/config/src/index.ts",
