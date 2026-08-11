@@ -1,0 +1,70 @@
+# High-Level Domain Model
+
+**Status:** Approved conceptual model; not a database schema
+
+## Modelling principles
+
+- Every authoritative entity uses an immutable internal identifier.
+- Mutable address text, email addresses, mobile numbers, public references, vehicle registrations, and provider identifiers are never primary keys.
+- Client, service, and physical address are separate concepts.
+- Several clients or services may exist at the same physical address.
+- A client may have several contacts, services, and service addresses.
+- A dedicated billing `Account` entity is deferred until its semantics are approved.
+- External and legacy identifiers map to internal IDs and do not replace them.
+
+## Conceptual relationships
+
+```mermaid
+erDiagram
+  CLIENT ||--o{ CLIENT_CONTACT : has
+  CLIENT ||--o{ CLIENT_SERVICE : receives
+  SERVICE_ADDRESS ||--o{ CLIENT_SERVICE : hosts
+  CLIENT_SERVICE ||--|| SERVICE_CONFIGURATION : configured_by
+  SERVICE_REGION ||--o{ TERRITORY : contains
+  SERVICE_REGION ||--o{ DEPOT : contains
+  TERRITORY ||--o{ CLIENT_SERVICE : assigns
+  DEPOT ||--o{ TEAM : supports
+  TEAM }o--o{ STAFF_DRIVER : includes
+  TEAM }o--o{ VEHICLE : eligible_for
+  DAILY_ROSTER ||--o{ TEAM : schedules
+  DAILY_ROSTER }o--o{ STAFF_DRIVER : assigns
+  DAILY_ROSTER }o--o{ VEHICLE : assigns
+  DAILY_ROSTER ||--o{ ROUTE : supplies
+  ROUTE ||--o{ ROUTE_STOP_COLLECTION : contains
+  CLIENT_SERVICE ||--o{ ROUTE_STOP_COLLECTION : scheduled_as
+  ROUTE_STOP_COLLECTION ||--o{ OPERATIONAL_ISSUE : may_create
+  CLIENT ||--o{ COMMUNICATION : receives
+  INTEGRATION }o--o{ CLIENT : exchanges_scoped_data
+  USER }o--o{ ROLE : assigned
+  ROLE }o--o{ PERMISSION : grants
+```
+
+The diagram is conceptual: it does not prescribe table names, cardinality implementation, or join-table design.
+
+## Core concepts
+
+| Concept | Meaning and boundary |
+|---|---|
+| Client | Person or organisation receiving or contracting for an operational service |
+| Client Contact | A person or communication endpoint associated with a client |
+| Client Service | The service relationship linking a client to a physical service address |
+| Service Address | A reusable physical location with structured address and geographic coordinates |
+| Service Configuration | Operational settings for a client service, including cadence, drum configuration, access information, and assignment rules |
+| Service Region | Top-level operating geography |
+| Territory | Operational subdivision/polygon within a region, including priority and eligibility rules |
+| Depot | Operational start/end location associated with a region |
+| Team | Operational collection unit eligible for work and vehicle assignments |
+| Staff/Driver | Operational person; linked to a system user only when login access is required |
+| Vehicle | Vehicle master record, capacity configuration, availability, and tracking-device relationship |
+| Daily Roster | Date-specific, historically preserved assignment of teams, staff/drivers, and vehicles |
+| Route | Versioned daily plan assigned using roster and master-data facts |
+| Route Stop / Collection | Scheduled service instance and eventual immutable collection outcome facts |
+| Operational Issue | Actionable operational exception linked to relevant entities without taking ownership of them |
+| Communication | Message intent, policy/template reference, and delivery attempts; provider metadata remains external evidence |
+| Integration | Registered adapter, permitted scope, health, sync state, and conflicts |
+| User / Role / Permission | Authenticated identity mapping and application-controlled authorization model |
+
+## Historical integrity
+
+Operational history must retain the route version, team, staff/driver, vehicle, configured and actual drum counts, timestamps, and outcome facts required to interpret past service. History references immutable IDs and may snapshot selected labels needed for durable interpretation; it must not depend on mutable address or assignment text.
+
