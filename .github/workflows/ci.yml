@@ -61,3 +61,6 @@ jobs:
 
       - name: Replay migrations from scratch
         run: pnpm supabase:reset
+
+      - name: Test database and RLS policies
+        run: pnpm supabase:test:db

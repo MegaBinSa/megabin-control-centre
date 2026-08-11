@@ -23,6 +23,7 @@ Material changes to the architecture require an ADR. An ADR may clarify the blue
 | [Module dependency map](module-dependency-map.md) | Module ownership, reads, writes, and dependency direction |
 | [Data ownership matrix](data-ownership-matrix.md) | Authority across the Control Centre and external systems |
 | [Security and RLS model](security-and-rls-model.md) | Identity, authorization, RLS, and privileged-access principles |
+| [Permissions matrix](permissions-matrix.md) | Granular permission and access-scope foundation |
 | [Environment strategy](environment-strategy.md) | Isolation of development, staging, and production |
 | [Integration architecture](integration-architecture.md) | Adapter boundaries, reliability, and external-system rules |
 | [ADR index](../adr/README.md) | Accepted architecture decisions and their status |
@@ -33,7 +34,6 @@ Files under [`docs/megabin-shared/`](../megabin-shared/README.md) describe the s
 
 ## Documents planned for later Phase 0 work
 
-- Permissions matrix
 - State-machine catalogue
 - Event catalogue
 - API conventions
@@ -41,4 +41,3 @@ Files under [`docs/megabin-shared/`](../megabin-shared/README.md) describe the s
 - Offline synchronization contract
 - Observability and error conventions
 - Development roadmap and operational runbooks
-
