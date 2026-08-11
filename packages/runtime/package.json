@@ -17,7 +17,9 @@
     "@megabin/config": "workspace:*",
     "@megabin/domain-types": "workspace:*",
     "@megabin/integrations": "workspace:*",
-    "@megabin/observability": "workspace:*"
+    "@megabin/observability": "workspace:*",
+    "@megabin/validation": "workspace:*",
+    "zod": "4.1.11"
   },
   "scripts": {
     "build": "tsc --build",

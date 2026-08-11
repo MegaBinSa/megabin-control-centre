@@ -46,3 +46,76 @@ export function buildIdempotentRequestHeaders(
     [CORRELATION_ID_HEADER]: identity.correlationId
   };
 }
+
+export interface Page<T> {
+  readonly items: readonly T[];
+  readonly page: number;
+  readonly pageSize: number;
+  readonly total: number;
+}
+export interface MasterDataApiOptions {
+  readonly baseUrl: string;
+  readonly accessToken: () => Promise<string | null>;
+  readonly fetch?: typeof globalThis.fetch;
+}
+
+export class MasterDataApiClient {
+  private readonly fetcher: typeof globalThis.fetch;
+  constructor(private readonly options: MasterDataApiOptions) {
+    this.fetcher = options.fetch ?? globalThis.fetch.bind(globalThis);
+  }
+  list<T>(resource: string, query = ""): Promise<Page<T>> {
+    return this.request(`/master-data/${resource}${query ? `?${query}` : ""}`);
+  }
+  get<T>(resource: string, id: string): Promise<T> {
+    return this.request(`/master-data/${resource}/${id}`);
+  }
+  create<T>(resource: string, body: unknown): Promise<T> {
+    return this.request(
+      `/master-data/${resource}`,
+      { method: "POST", body: JSON.stringify(body) },
+      true
+    );
+  }
+  update<T>(resource: string, id: string, body: unknown): Promise<T> {
+    return this.request(
+      `/master-data/${resource}/${id}`,
+      { method: "PATCH", body: JSON.stringify(body) },
+      true
+    );
+  }
+  archive<T>(resource: string, id: string, expectedUpdatedAt: string): Promise<T> {
+    return this.request(
+      `/master-data/${resource}/${id}/archive`,
+      { method: "POST", body: JSON.stringify({ expectedUpdatedAt }) },
+      true
+    );
+  }
+  profile<T>(): Promise<T> {
+    return this.request("/office/profile");
+  }
+  private async request<T>(path: string, init: RequestInit = {}, write = false): Promise<T> {
+    const token = await this.options.accessToken();
+    const correlationId = crypto.randomUUID();
+    const response = await this.fetcher(
+      `${this.options.baseUrl.replace(/\/$/, "")}${API_BASE_PATH}${path}`,
+      {
+        ...init,
+        headers: {
+          "Content-Type": "application/json",
+          "X-Correlation-Id": correlationId,
+          ...(token ? { Authorization: `Bearer ${token}` } : {}),
+          ...(write ? { "Idempotency-Key": crypto.randomUUID() } : {}),
+          ...init.headers
+        }
+      }
+    );
+    const result = (await response.json()) as ApiResult<T>;
+    if (!result.ok)
+      throw Object.assign(new Error(result.error.message), {
+        apiError: result.error,
+        status: response.status
+      });
+    return result.data;
+  }
+}

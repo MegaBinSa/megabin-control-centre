@@ -10,6 +10,7 @@ import { createLogRecord } from "@megabin/observability";
 import { loadRuntimeConfiguration } from "./configuration.js";
 import type { RuntimeDependencies } from "./contracts.js";
 import { ForcedRollbackError, RuntimeError } from "./errors.js";
+import { masterDataOpenApiPaths } from "./master-data-http.js";
 
 interface ProofBody {
   readonly value: string;
@@ -222,8 +223,12 @@ function errorResponse(
 export function createOpenApiDocument(): Readonly<Record<string, unknown>> {
   return {
     openapi: "3.1.0",
-    info: { title: "MegaBin Control Centre Internal Runtime Proof", version: "1.0.0" },
+    info: { title: "MegaBin Control Centre API", version: "1.0.0" },
+    components: {
+      securitySchemes: { bearerAuth: { type: "http", scheme: "bearer", bearerFormat: "JWT" } }
+    },
     paths: {
+      ...masterDataOpenApiPaths(),
       "/api/v1/platform-proof": { post: { operationId: "executePlatformProof" } },
       "/api/v1/health/live": { get: { operationId: "getLiveness" } },
       "/api/v1/health/ready": { get: { operationId: "getReadiness" } },

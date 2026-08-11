@@ -144,6 +144,30 @@ label {
   justify-content: flex-end;
   gap: 10px;
 }
+.header-actions {
+  display: flex;
+  gap: 10px;
+}
+.login {
+  min-height: 100vh;
+  max-width: 440px;
+  margin: auto;
+  display: grid;
+  align-content: center;
+}
+.login form {
+  background: white;
+  border: 1px solid #dde5e0;
+  padding: 28px;
+  border-radius: 12px;
+}
+.error {
+  padding: 10px 12px;
+  border-radius: 8px;
+  background: #fee9e7;
+  color: #8b2018;
+  margin-bottom: 16px;
+}
 .notice {
   padding: 10px 12px;
   border-radius: 8px;

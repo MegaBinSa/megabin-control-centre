@@ -8,6 +8,8 @@
     "@megabin/domain-types": "../../../packages/domain-types/src/index.ts",
     "@megabin/integrations": "../../../packages/integrations/src/index.ts",
     "@megabin/observability": "../../../packages/observability/src/index.ts",
-    "@megabin/runtime": "../../../packages/runtime/src/index.ts"
+    "@megabin/runtime": "../../../packages/runtime/src/index.ts",
+    "@megabin/validation": "../../../packages/validation/src/index.ts",
+    "zod": "npm:zod@4.1.11"
   }
 }

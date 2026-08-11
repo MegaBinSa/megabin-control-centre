@@ -41,6 +41,12 @@ jobs:
       - name: Build packages
         run: pnpm build
 
+      - name: Install browser
+        run: pnpm exec playwright install --with-deps chromium
+
+      - name: Test Office browser workflows
+        run: pnpm e2e
+
       - name: Type-check Edge Functions
         run: deno check --config supabase/functions/platform-runtime/deno.json supabase/functions/platform-runtime/index.ts
 
