@@ -7,6 +7,7 @@
     { "path": "./packages/domain-types" },
     { "path": "./packages/events" },
     { "path": "./packages/integrations" },
+    { "path": "./packages/master-data" },
     { "path": "./packages/observability" },
     { "path": "./packages/permissions" },
     { "path": "./packages/runtime" },

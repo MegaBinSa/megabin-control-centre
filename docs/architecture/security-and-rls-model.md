@@ -62,3 +62,8 @@ The initial implementation proves the model with:
 - pgTAP tests covering global scope, matching-region scope, cross-scope denial, inactive users, user-metadata escalation attempts, profile isolation, and direct-write denial.
 
 The proof table and permission are not operational product concepts. They may be removed once the same policy pattern is proven against the first real Phase 1 module.
+# Phase 1A master-data enforcement
+
+Master tables remain in the non-exposed `app_private` schema. Authenticated read grants are explicit and filtered by RLS using authoritative permission, active-profile, and service-region scope tables. Driver/Team has no master-data permission and therefore no client/contact visibility. Client and address region scope is derived through current service configuration; sensitive fields are never put into broad operational read models.
+
+All direct authenticated writes are revoked. Service-role API functions re-authorize the supplied authenticated actor against application tables and commit state, audit, idempotency, and events transactionally. Service-role credentials remain server-only. User-editable Auth metadata is not consulted.

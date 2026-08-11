@@ -32,3 +32,19 @@ The outbox is delivery infrastructure, not event sourcing. Authoritative module 
 ## Catalogue status
 
 The blueprint's likely events remain candidates until their producing workflows are implemented. Each accepted event must later document producer, trigger, schema/version, consumers, sensitivity, retention, and replay behavior here. Phase 0B-4 adds only the envelope and lifecycle; it does not declare speculative production payloads.
+
+## Phase 1A accepted events
+
+| Event v1 | Producer | Trigger | Payload minimum |
+|---|---|---|---|
+| `Clients.ClientCreated` | Clients | Idempotent client creation commits | `clientId` |
+| `Clients.ClientActivated` | Clients | Lifecycle enters Active | `clientId`, previous/new status |
+| `Clients.ClientPlacedOnHold` | Clients | Lifecycle enters On Hold | `clientId`, previous/new status |
+| `Clients.ClientCancelled` | Clients | Lifecycle enters Cancelled | `clientId`, previous/new status |
+| `ServiceAddresses.ServiceAddressCreated` | Service Addresses | Address creation commits | `serviceAddressId` |
+| `ServiceAddresses.ServiceAddressChanged` | Service Addresses | Address attributes change | `serviceAddressId` |
+| `ServiceConfiguration.ServiceConfigured` | Service Configuration | First/current permanent configuration commits | `clientServiceId`, configured drum count |
+| `ServiceConfiguration.DrumCountChanged` | Service Configuration | Effective-dated permanent drum count changes | `clientServiceId`, previous/new count |
+| `Vehicles.VehicleAvailabilityChanged` | Vehicles | Availability changes | `vehicleId`, previous/new availability |
+
+Events contain IDs and operational state only; sensitive client identity/contact values are excluded.
