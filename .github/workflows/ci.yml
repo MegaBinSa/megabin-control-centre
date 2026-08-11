@@ -42,7 +42,7 @@ jobs:
         run: pnpm build
 
       - name: Type-check Edge Functions
-        run: deno check supabase/functions/platform-runtime/index.ts
+        run: deno check --config supabase/functions/platform-runtime/deno.json supabase/functions/platform-runtime/index.ts
 
   database:
     runs-on: ubuntu-latest
