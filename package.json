@@ -20,6 +20,7 @@
     "supabase:reset": "supabase db reset --local",
     "supabase:start": "supabase start",
     "supabase:status": "supabase status",
+    "supabase:test:db": "supabase test db --local supabase/tests/database",
     "test": "vitest run --passWithNoTests",
     "typecheck": "tsc --build --pretty false"
   },

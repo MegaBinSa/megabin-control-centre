@@ -50,3 +50,15 @@ Being authenticated alone does not authorize operational data access.
 - Private objects are accessed through policy-controlled operations or short-lived signed access.
 - Realtime is used selectively for current operational projections, never as the source of truth and not for indiscriminate raw GPS broadcast.
 
+## Phase 0B-3 proof boundary
+
+The initial implementation proves the model with:
+
+- A self-readable `public.user_profiles` identity link protected by RLS.
+- Private role, permission, assignment, and access-scope tables under `app_private`.
+- A non-exposed, tightly granted authorization helper with a locked search path.
+- An exposed, non-business `authorization_probes` table whose SELECT policy requires both permission and scope.
+- No direct frontend grants for authorization administration or proof-resource writes.
+- pgTAP tests covering global scope, matching-region scope, cross-scope denial, inactive users, user-metadata escalation attempts, profile isolation, and direct-write denial.
+
+The proof table and permission are not operational product concepts. They may be removed once the same policy pattern is proven against the first real Phase 1 module.
