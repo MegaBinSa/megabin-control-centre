@@ -60,6 +60,24 @@ importers:
 
   packages/permissions: {}
 
+  packages/runtime:
+    dependencies:
+      '@megabin/api-client':
+        specifier: workspace:*
+        version: link:../api-client
+      '@megabin/config':
+        specifier: workspace:*
+        version: link:../config
+      '@megabin/domain-types':
+        specifier: workspace:*
+        version: link:../domain-types
+      '@megabin/integrations':
+        specifier: workspace:*
+        version: link:../integrations
+      '@megabin/observability':
+        specifier: workspace:*
+        version: link:../observability
+
   packages/testing: {}
 
   packages/ui: {}

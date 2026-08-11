@@ -9,6 +9,7 @@
     { "path": "./packages/integrations" },
     { "path": "./packages/observability" },
     { "path": "./packages/permissions" },
+    { "path": "./packages/runtime" },
     { "path": "./packages/testing" },
     { "path": "./packages/ui" },
     { "path": "./packages/validation" }
