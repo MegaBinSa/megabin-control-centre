@@ -1,0 +1,2 @@
+-- Local-only deterministic seed entrypoint.
+-- Business fixtures and login-capable users are intentionally deferred.

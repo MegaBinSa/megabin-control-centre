@@ -1,0 +1,15 @@
+{
+  "files": [],
+  "references": [
+    { "path": "./packages/api-client" },
+    { "path": "./packages/auth" },
+    { "path": "./packages/config" },
+    { "path": "./packages/domain-types" },
+    { "path": "./packages/events" },
+    { "path": "./packages/observability" },
+    { "path": "./packages/permissions" },
+    { "path": "./packages/testing" },
+    { "path": "./packages/ui" },
+    { "path": "./packages/validation" }
+  ]
+}

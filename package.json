@@ -1,0 +1,37 @@
+{
+  "name": "megabin-control-centre",
+  "version": "0.0.0",
+  "private": true,
+  "description": "MegaBin Control Centre monorepo",
+  "packageManager": "pnpm@11.16.0",
+  "engines": {
+    "node": ">=24.0.0",
+    "pnpm": "11.16.0"
+  },
+  "scripts": {
+    "build": "pnpm -r --if-present build",
+    "check": "pnpm format:check && pnpm lint && pnpm typecheck && pnpm test && pnpm docs:check",
+    "docs:check": "node scripts/check-doc-links.mjs",
+    "format": "prettier --write .",
+    "format:check": "prettier --check .",
+    "lint": "eslint .",
+    "supabase": "supabase",
+    "supabase:db:start": "supabase db start",
+    "supabase:reset": "supabase db reset --local",
+    "supabase:start": "supabase start",
+    "supabase:status": "supabase status",
+    "test": "vitest run --passWithNoTests",
+    "typecheck": "tsc --build --pretty false"
+  },
+  "devDependencies": {
+    "@eslint/js": "9.39.1",
+    "@types/node": "24.10.1",
+    "eslint": "9.39.1",
+    "globals": "16.5.0",
+    "prettier": "3.6.2",
+    "supabase": "2.110.0",
+    "typescript": "5.9.3",
+    "typescript-eslint": "8.46.4",
+    "vitest": "3.2.4"
+  }
+}
