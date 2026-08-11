@@ -24,6 +24,10 @@ Material changes to the architecture require an ADR. An ADR may clarify the blue
 | [Data ownership matrix](data-ownership-matrix.md) | Authority across the Control Centre and external systems |
 | [Security and RLS model](security-and-rls-model.md) | Identity, authorization, RLS, and privileged-access principles |
 | [Permissions matrix](permissions-matrix.md) | Granular permission and access-scope foundation |
+| [API conventions](api-conventions.md) | Versioning, errors, write boundaries, and retry-safe request rules |
+| [Domain module conventions](domain-module-conventions.md) | Internal modular-monolith layers and dependency enforcement |
+| [Event catalogue](event-catalogue.md) | Domain-event envelope, evolution, and outbox lifecycle |
+| [Idempotency conventions](idempotency-conventions.md) | Duplicate handling for APIs, offline actions, webhooks, and consumers |
 | [Environment strategy](environment-strategy.md) | Isolation of development, staging, and production |
 | [Integration architecture](integration-architecture.md) | Adapter boundaries, reliability, and external-system rules |
 | [ADR index](../adr/README.md) | Accepted architecture decisions and their status |
@@ -35,9 +39,6 @@ Files under [`docs/megabin-shared/`](../megabin-shared/README.md) describe the s
 ## Documents planned for later Phase 0 work
 
 - State-machine catalogue
-- Event catalogue
-- API conventions
 - Data-retention matrix
-- Offline synchronization contract
 - Observability and error conventions
 - Development roadmap and operational runbooks

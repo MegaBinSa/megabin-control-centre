@@ -12,6 +12,9 @@
   "files": [
     "dist"
   ],
+  "dependencies": {
+    "@megabin/domain-types": "workspace:*"
+  },
   "scripts": {
     "build": "tsc --build",
     "clean": "tsc --build --clean",
