@@ -88,18 +88,40 @@ test("Driver works from the cached manifest and retains offline actions", async 
   await context.setOffline(true);
   await page.getByRole("button", { name: "Accept route" }).click();
   await expect(page.getByText(/Offline · 1 pending/)).toBeVisible();
+  await page.getByRole("button", { name: "Start route" }).click();
+  await expect(page.getByText(/Offline · 2 pending/)).toBeVisible();
   await page.getByText("1. 1 Offline Street").click();
   await expect(page.getByText("Dangerous animal warning")).toBeVisible();
   await page.getByLabel("Actual drums serviced").fill("2");
   await page.getByRole("button", { name: "Save outcome" }).click();
-  await expect(page.getByText(/Offline · 2 pending/)).toBeVisible();
+  await expect(page.getByText(/Offline · 3 pending/)).toBeVisible();
   await expect(page.getByText("1/1")).toBeVisible();
   await page.reload();
   await expect(page.getByText("Driver Team A")).toBeVisible();
-  await expect(page.getByText(/2 pending/)).toBeVisible();
+  await expect(page.getByText(/3 pending/)).toBeVisible();
   await context.setOffline(false);
   await page.getByRole("button", { name: "Sync now" }).click();
   await expect(page.getByText(/0 pending/)).toBeVisible();
+  await page.getByRole("button", { name: "Logout" }).click();
+  await expect(page.getByRole("heading", { name: "Driver sign in" })).toBeVisible();
+  const counts = await page.evaluate(async () => {
+    const database = await new Promise<IDBDatabase>((resolve, reject) => {
+      const request = indexedDB.open("megabin-driver-v1", 1);
+      request.onsuccess = () => resolve(request.result);
+      request.onerror = () => reject(request.error);
+    });
+    return Promise.all(
+      ["data", "queue"].map(
+        (store) =>
+          new Promise<number>((resolve, reject) => {
+            const request = database.transaction(store).objectStore(store).count();
+            request.onsuccess = () => resolve(request.result);
+            request.onerror = () => reject(request.error);
+          })
+      )
+    );
+  });
+  expect(counts).toEqual([0, 0]);
 });
 
 test("Driver keeps a conflicting action visible for attention", async ({ page, context }) => {
