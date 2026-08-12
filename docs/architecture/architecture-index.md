@@ -42,6 +42,7 @@ Material changes to the architecture require an ADR. An ADR may clarify the blue
 | [Master-data API](master-data-api.md) | Phase 1B authenticated administration contracts and write boundary |
 | [Geography administration](geography-administration.md) | Phase 1C PostGIS, map boundary, priority, impact, and review contracts |
 | [Daily Roster](daily-roster.md) | Phase 1D operational-day, availability, substitution, validation, and locking contracts |
+| [Route Planning](route-planning.md) | Phase 2A route aggregate, eligibility, deterministic baseline, versioning, and publication |
 | [Office master-data workflow](../workflows/office-master-data-administration.md) | Authenticated Office administration behavior |
 | [Office geography workflow](../workflows/office-geography-administration.md) | Territory map editing and assignment-review workflow |
 | [Office Daily Roster workflow](../workflows/office-daily-roster.md) | Daily planning, readiness, substitution, and lock workflow |

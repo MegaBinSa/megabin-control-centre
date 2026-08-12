@@ -7,6 +7,7 @@ import {
   createMasterDataHandler,
   createGeographyHandler,
   createRosterHandler,
+  createRouteHandler,
   MemoryJobStateStore,
   SupabaseRuntimeDatabase,
   type RuntimeRpcClient
@@ -54,6 +55,9 @@ export default {
       { accepted: true }
     );
     const actorId = jwtSubject(request);
+    const routes = createRouteHandler({ rpc, actorId, id: () => crypto.randomUUID() });
+    const routeResponse = await routes(request);
+    if (routeResponse) return routeResponse;
     const roster = createRosterHandler({ rpc, actorId, id: () => crypto.randomUUID() });
     const rosterResponse = await roster(request);
     if (rosterResponse) return rosterResponse;

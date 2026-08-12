@@ -15,6 +15,7 @@
     "@megabin/api-client": "workspace:*",
     "@megabin/auth": "workspace:*",
     "@megabin/geography": "workspace:*",
-    "@megabin/daily-roster": "workspace:*"
+    "@megabin/daily-roster": "workspace:*",
+    "@megabin/route-planning": "workspace:*"
   }
 }

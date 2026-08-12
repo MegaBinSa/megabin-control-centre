@@ -12,6 +12,7 @@
     { "path": "./packages/master-data" },
     { "path": "./packages/observability" },
     { "path": "./packages/permissions" },
+    { "path": "./packages/route-planning" },
     { "path": "./packages/runtime" },
     { "path": "./packages/testing" },
     { "path": "./packages/ui" },

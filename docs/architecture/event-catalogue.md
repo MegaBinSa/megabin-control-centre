@@ -70,6 +70,11 @@ Geometry and client/address details are excluded from events. Permanent override
 | `DailyRoster.RosterLocked` | Daily Roster | Ready roster locks | day ID, status |
 | `DailyRoster.RosterUnlocked` | Daily Roster | Authorised reasoned unlock | day ID, status |
 | `DailyRoster.ActiveAssignmentChanged` | Daily Roster | Emergency post-start assignment changes | day/entry IDs, version |
+| `Routes.RouteGenerated` | Routes | A deterministic version is generated from a locked roster | plan/version/day IDs, version number |
+| `Routes.RouteReady` | Routes | A version passes its readiness gate | plan/version IDs, version number |
+| `Routes.RoutePublished` | Routes | A version becomes the operationally published plan | plan/version IDs, version number |
+| `Routes.RouteReplanned` | Routes | A new version is created from changed planning inputs | plan/version/day IDs, version number |
+| `Routes.RouteAssignmentChanged` | Routes | An authorized Draft stop move changes assignment/sequence | plan/version/stop IDs |
 | `Workforce.StaffAvailabilityChanged` | Workforce | Operational availability window saved | window/region IDs |
 | `Vehicles.VehicleAvailabilityWindowChanged` | Vehicles | Operational vehicle window saved | window/region IDs |
 
