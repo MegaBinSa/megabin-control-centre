@@ -10,6 +10,7 @@ import {
   createRosterHandler,
   createRouteHandler,
   createRouteOperationsHandler,
+  createVehicleTrackingHandler,
   MemoryJobStateStore,
   SupabaseRuntimeDatabase,
   type RuntimeRpcClient
@@ -61,6 +62,13 @@ export default {
       { accepted: true }
     );
     const actorId = jwtSubject(request);
+    const vehicleTracking = createVehicleTrackingHandler({
+      rpc,
+      actorId,
+      id: () => crypto.randomUUID()
+    });
+    const trackingResponse = await vehicleTracking(request);
+    if (trackingResponse) return trackingResponse;
     const providerConfigurationResult = await rpc.rpc("route_provider_configuration", {
       p_environment_name: runtimeEnvironment
     });

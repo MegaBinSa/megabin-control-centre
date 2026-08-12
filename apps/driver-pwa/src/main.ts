@@ -7,7 +7,10 @@ import {
   getData,
   putData,
   queueAction,
+  queuePosition,
   queuedActions,
+  queuedPositions,
+  trimPositionQueue,
   type QueuedAction
 } from "./storage.js";
 interface Stop {
@@ -44,7 +47,10 @@ let manifest: Manifest | null = null,
   selected: Stop | null = null,
   online = navigator.onLine,
   syncing = false,
-  message = "";
+  message = "",
+  trackingStatus = "Tracking unavailable",
+  trackingDevice: { deviceId: string; status: string } | null = null,
+  trackingTimer: number | null = null;
 const outcomes = [
   ["cleaned", "Cleaned"],
   ["client_requested_skip", "Client requested skip"],
@@ -159,7 +165,103 @@ async function sync() {
     await queueAction(action);
   }
   syncing = false;
+  await syncPositions();
   await refresh();
+}
+async function syncPositions() {
+  if (!online || !api || !trackingDevice || trackingDevice.status !== "active") return;
+  const pending = (await queuedPositions())
+    .filter((position) => position.state === "queued")
+    .slice(0, 100);
+  if (!pending.length) return;
+  pending.forEach((position) => (position.state = "syncing"));
+  await Promise.all(pending.map(queuePosition));
+  try {
+    const result = await api.ingestTrackingBatch<{
+      receipts: { observationId: string; outcome: string; rejectionCode?: string }[];
+    }>(trackingDevice.deviceId, pending, {
+      idempotencyKey: crypto.randomUUID(),
+      correlationId: crypto.randomUUID()
+    });
+    for (const receipt of result.receipts) {
+      const position = pending.find((item) => item.observationId === receipt.observationId);
+      if (!position) continue;
+      position.state =
+        receipt.outcome === "conflict"
+          ? "conflict"
+          : receipt.outcome === "rejected"
+            ? "rejected"
+            : "synced";
+      if (receipt.rejectionCode) position.rejectionCode = receipt.rejectionCode;
+      await queuePosition(position);
+    }
+    trackingStatus = "Tracking active";
+  } catch {
+    pending.forEach((position) => (position.state = "queued"));
+    await Promise.all(pending.map(queuePosition));
+    trackingStatus = "Tracking delayed/offline";
+  }
+  await trimPositionQueue();
+}
+async function startTracking() {
+  if (!api || !navigator.geolocation) {
+    trackingStatus = "GPS unavailable";
+    return;
+  }
+  try {
+    trackingDevice = online
+      ? await api.ownTrackingDevice<{ deviceId: string; status: string } | null>()
+      : ((await getData<{ deviceId: string; status: string }>("tracking-device")) ?? null);
+    if (trackingDevice) await putData("tracking-device", trackingDevice);
+  } catch {
+    trackingDevice =
+      (await getData<{ deviceId: string; status: string }>("tracking-device")) ?? null;
+  }
+  if (!trackingDevice || trackingDevice.status !== "active") {
+    trackingStatus = trackingDevice
+      ? `Tracking ${trackingDevice.status}`
+      : "Tracking device not assigned";
+    return;
+  }
+  const capture = () =>
+    navigator.geolocation.getCurrentPosition(
+      async (position) => {
+        const id = crypto.randomUUID();
+        const sequence =
+          Math.max(0, ...(await queuedPositions()).map((item) => item.clientSequence)) + 1;
+        await queuePosition({
+          observationId: id,
+          recordedAt: new Date(position.timestamp).toISOString(),
+          latitude: position.coords.latitude,
+          longitude: position.coords.longitude,
+          accuracyMetres: position.coords.accuracy,
+          ...(position.coords.altitude === null
+            ? {}
+            : { altitudeMetres: position.coords.altitude }),
+          ...(position.coords.heading === null ? {} : { headingDegrees: position.coords.heading }),
+          ...(position.coords.speed === null
+            ? {}
+            : { speedMetresPerSecond: position.coords.speed }),
+          clientSequence: sequence,
+          idempotencyKey: id,
+          correlationId: crypto.randomUUID(),
+          sourceProvider: "driver-pwa",
+          state: "queued"
+        });
+        trackingStatus = online ? "Tracking active" : "Tracking delayed/offline";
+        await trimPositionQueue();
+        if (online) await syncPositions();
+        await render();
+      },
+      () => {
+        trackingStatus = "GPS permission unavailable";
+        void render();
+      },
+      { enableHighAccuracy: true, maximumAge: 15000, timeout: 20000 }
+    );
+  capture();
+  addEventListener("megabin:capture-location", capture);
+  if (trackingTimer === null) trackingTimer = window.setInterval(capture, 45000);
 }
 async function refresh() {
   const session = await auth?.session();
@@ -198,6 +300,7 @@ async function refresh() {
     }
   } else manifest = (await getData<Manifest>("manifest")) ?? null;
   await render();
+  if (trackingTimer === null) void startTracking();
 }
 function progress() {
   const stops = manifest?.stops ?? [],
@@ -213,7 +316,10 @@ function progress() {
 }
 async function render() {
   if (!manifest) {
-    root!.innerHTML = `<header><b>MegaBin Driver</b><button id="logout">Logout</button></header><main><section class="card"><h1>No route assigned</h1><p>${online ? "Check with Operations." : "Offline: no cached route is available."}</p></section></main>`;
+    const gpsPending = (await queuedPositions()).filter(
+      (position) => position.state !== "synced"
+    ).length;
+    root!.innerHTML = `<header><b>MegaBin Driver</b><button id="logout">Logout</button></header><main><div class="notice">${escape(trackingStatus)} · ${gpsPending} GPS pending</div><section class="card"><h1>No route assigned</h1><p>${online ? "Check with Operations." : "Offline: no cached route is available."}</p></section></main>`;
     wireLogout();
     return;
   }
@@ -221,7 +327,16 @@ async function render() {
     pending = queue.filter((a) => a.state !== "synced").length,
     p = progress(),
     issues = queue.filter((a) => ["failed", "conflict", "rejected"].includes(a.state));
+  const gpsPending = (await queuedPositions()).filter(
+    (position) => position.state !== "synced"
+  ).length;
   root!.innerHTML = `<header><b>MegaBin Driver</b><span class="status ${online ? "" : "offline"}"><i class="dot"></i>${syncing ? "Syncing" : issues.length ? "Sync issue" : online ? "Online" : "Offline"} · ${pending} pending</span></header><main>${message ? `<div class="notice">${escape(message)}</div>` : ""}${issues.length ? `<div class="notice">${issues.length} action(s) need attention and remain queued.</div>` : ""}<section class="card"><h1>${escape(manifest.team?.name ?? "Assigned route")}</h1><p>${escape(manifest.routeDate)} · ${escape(manifest.vehicle?.displayName ?? "Vehicle")}</p><p>Status: <b>${escape(manifest.lifecycleStatus)}</b> · Manifest ${manifest.manifestRevision}</p><div class="metrics"><div class="metric"><b>${p.done}/${p.total}</b><br>stops</div><div class="metric"><b>${p.actual}/${p.planned}</b><br>drums</div><div class="metric"><b>${p.remaining}</b><br>remaining</div></div><div class="actions"><button id="accept" class="primary">Accept route</button><button id="start" class="primary">Start route</button><button id="capacity">Near capacity</button><button id="complete">Complete route</button><button id="sync">Sync now</button><button id="logout">Logout</button></div></section><section class="card"><h2>Next stop</h2>${manifest.stops.find((s) => !s.execution) ? `Stop ${manifest.stops.find((s) => !s.execution)!.sequenceNumber}` : "All stops recorded"}</section><section class="card"><h2>Stops</h2>${manifest.stops.map((s) => `<button class="stop ${s.execution?.executionStatus === "completed" ? "done" : s.execution ? "issue" : ""}" data-stop="${s.routeOperationStopId}"><b>${s.sequenceNumber}. ${escape(s.address.line1 ?? s.address.address_line_1 ?? "Service address")}</b><br>${s.plannedDrumUnits} planned drums · ${escape(s.execution?.outcomeCode ?? "Pending")}</button>`).join("")}</section></main>`;
+  root!
+    .querySelector("main")
+    ?.insertAdjacentHTML(
+      "afterbegin",
+      `<div class="notice">${escape(trackingStatus)} · ${gpsPending} GPS pending</div>`
+    );
   document.querySelectorAll<HTMLElement>("[data-stop]").forEach(
     (b) =>
       (b.onclick = () => {
@@ -350,6 +465,9 @@ async function queueComplete() {
 function wireLogout() {
   document.querySelector("#logout")?.addEventListener("click", async () => {
     await clearOperationalData();
+    if (trackingTimer !== null) window.clearInterval(trackingTimer);
+    trackingTimer = null;
+    trackingDevice = null;
     await auth?.signOut();
     manifest = null;
     renderLogin();

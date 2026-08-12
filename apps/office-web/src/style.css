@@ -417,3 +417,29 @@ textarea {
     min-height: 280px;
   }
 }
+.tracking-map {
+  position: relative;
+  min-height: 360px;
+  overflow: hidden;
+  border-radius: 12px;
+  background: linear-gradient(135deg, #dceadf, #eef3e8);
+  border: 1px solid #b8c9bd;
+}
+.vehicle-marker {
+  position: absolute;
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  background: #177245;
+  color: white;
+  border: 3px solid white;
+  box-shadow: 0 2px 8px #0004;
+}
+.vehicle-marker.delayed,
+.vehicle-marker.stale {
+  background: #c67c00;
+}
+.vehicle-marker.offline,
+.vehicle-marker.revoked {
+  background: #a83232;
+}

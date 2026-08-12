@@ -405,6 +405,51 @@ export class MasterDataApiClient {
   routeExecutionProgress<T>(routeOperationId: string): Promise<T> {
     return this.request(`/route-operations/${routeOperationId}/execution`);
   }
+  ownTrackingDevice<T>(): Promise<T> {
+    return this.request("/driver/tracking/device");
+  }
+  ingestTrackingBatch<T>(
+    deviceId: string,
+    observations: readonly unknown[],
+    identity: IdempotentRequestIdentity
+  ): Promise<T> {
+    return this.request(
+      "/driver/tracking/observations",
+      { method: "POST", body: JSON.stringify({ deviceId, observations }) },
+      true,
+      identity
+    );
+  }
+  trackingDevices<T>(serviceRegionId: string): Promise<T> {
+    return this.request(`/vehicle-tracking/devices?${new URLSearchParams({ serviceRegionId })}`);
+  }
+  registerTrackingDevice<T>(value: unknown): Promise<T> {
+    return this.request(
+      "/vehicle-tracking/devices",
+      { method: "POST", body: JSON.stringify(value) },
+      true
+    );
+  }
+  changeTrackingDeviceLifecycle<T>(deviceId: string, target: string, reason: string): Promise<T> {
+    return this.request(
+      `/vehicle-tracking/devices/${deviceId}/lifecycle`,
+      { method: "POST", body: JSON.stringify({ target, reason }) },
+      true
+    );
+  }
+  assignTrackingDevice<T>(deviceId: string, vehicleId: string, reason: string): Promise<T> {
+    return this.request(
+      `/vehicle-tracking/devices/${deviceId}/assign`,
+      { method: "POST", body: JSON.stringify({ vehicleId, reason }) },
+      true
+    );
+  }
+  trackingAssignmentHistory<T>(deviceId: string): Promise<T> {
+    return this.request(`/vehicle-tracking/devices/${deviceId}/assignments`);
+  }
+  currentVehiclePositions<T>(serviceRegionId: string): Promise<T> {
+    return this.request(`/vehicle-tracking/positions?${new URLSearchParams({ serviceRegionId })}`);
+  }
   private async request<T>(
     path: string,
     init: RequestInit = {},
