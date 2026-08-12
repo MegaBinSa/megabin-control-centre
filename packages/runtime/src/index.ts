@@ -4,6 +4,7 @@ export * from "./dispatcher.js";
 export * from "./errors.js";
 export * from "./http.js";
 export * from "./master-data-http.js";
+export * from "./geography-http.js";
 export * from "./jobs.js";
 export * from "./memory.js";
 export * from "./supabase.js";

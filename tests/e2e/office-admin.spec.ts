@@ -243,3 +243,96 @@ test("stale update conflict requires refresh", async ({ page }) => {
     page.getByText("The record changed since it was loaded. Refresh and retry.")
   ).toBeVisible();
 });
+
+test("geography map editor supports draw, cancel, impact preview, and save", async ({ page }) => {
+  await syntheticSession(page, [
+    "master_data.read",
+    "master_data.write",
+    "geography.read",
+    "geography.write"
+  ]);
+  const regionId = "20000000-0000-4000-8000-000000000001";
+  const territoryId = "30000000-0000-4000-8000-000000000001";
+  await page.route("**/api/v1/master-data/service-regions*", (route) =>
+    route.fulfill({
+      json: {
+        ok: true,
+        data: {
+          items: [{ serviceRegionId: regionId, name: "Synthetic Region" }],
+          page: 1,
+          pageSize: 25,
+          total: 1
+        }
+      }
+    })
+  );
+  await page.route("**/api/v1/geography/map*", (route) =>
+    route.fulfill({
+      json: {
+        ok: true,
+        data: {
+          territories: [
+            {
+              territoryId,
+              name: "Central",
+              priority: 10,
+              serviceRegionId: regionId,
+              defaultDepotId: null,
+              serviceStatus: "active",
+              isActive: true,
+              preferredCollectionDays: [],
+              eligibleTeamIds: [],
+              geometry: {
+                type: "Polygon",
+                coordinates: [
+                  [
+                    [28.1, -25.9],
+                    [28.3, -25.9],
+                    [28.3, -25.7],
+                    [28.1, -25.7],
+                    [28.1, -25.9]
+                  ]
+                ]
+              },
+              updatedAt: "2026-08-12T00:00:00Z"
+            }
+          ],
+          depots: [
+            {
+              depotId: "40000000-0000-4000-8000-000000000001",
+              name: "Depot",
+              serviceRegionId: regionId,
+              latitude: -25.75,
+              longitude: 28.2,
+              geofenceRadiusMetres: 100,
+              isActive: true,
+              updatedAt: "2026-08-12T00:00:00Z"
+            }
+          ],
+          addresses: []
+        }
+      }
+    })
+  );
+  await page.route("**/api/v1/geography/territories/*/impact-preview", (route) =>
+    route.fulfill({ json: { ok: true, data: [{ reason: "fell_outside" }] } })
+  );
+  await page.getByRole("button", { name: "Geography" }).click();
+  await expect(page.getByLabel("Geography configuration map")).toBeVisible();
+  await page.getByRole("button", { name: "Draw territory" }).click();
+  await expect(page.getByRole("heading", { name: "Territory editor" })).toBeVisible();
+  await page.getByRole("button", { name: "Cancel" }).click();
+  await page.getByRole("button", { name: /Central/ }).click();
+  await page.getByRole("button", { name: "Edit geometry and metadata" }).click();
+  await page.getByRole("button", { name: "Preview impact" }).click();
+  await expect(page.getByText("1 active service(s) require review if saved.")).toBeVisible();
+  const [request] = await Promise.all([
+    page.waitForRequest(
+      (candidate) =>
+        candidate.method() === "PUT" &&
+        candidate.url().includes(`/geography/territories/${territoryId}`)
+    ),
+    page.getByRole("button", { name: "Save" }).click()
+  ]);
+  expect(request.postDataJSON()).toMatchObject({ name: "Central", priority: 10 });
+});

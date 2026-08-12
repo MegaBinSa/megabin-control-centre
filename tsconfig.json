@@ -6,6 +6,7 @@
     { "path": "./packages/config" },
     { "path": "./packages/domain-types" },
     { "path": "./packages/events" },
+    { "path": "./packages/geography" },
     { "path": "./packages/integrations" },
     { "path": "./packages/master-data" },
     { "path": "./packages/observability" },

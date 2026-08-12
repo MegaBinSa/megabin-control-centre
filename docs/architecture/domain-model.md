@@ -73,7 +73,6 @@ Phase 1A implements immutable UUID identities for `Client`, `ClientContact`, `Se
 
 `ServiceConfiguration` is effective-dated and owned by the client service. It carries permanent region, depot, team, collection-day, territory/override, and configured drum-unit values. Daily exceptions remain outside this model. Address text and provider references are mutable attributes, never identity. Scoped `ExternalReference` rows map provider identifiers to internal IDs without becoming foreign master keys.
 
-Geography uses PostGIS SRID 4326 geography points for service addresses and depots, and multipolygon geometry for territories. Territory overlap is resolved by explicit priority. Geometry edits do not mutate service assignments; later review workflows will identify affected services.
+Geography uses PostGIS SRID 4326 geography points for service addresses and depots, and multipolygon geometry for territories. Territory overlap is resolved by explicit priority. Geometry edits do not mutate service assignments; Phase 1C Geography-owned review records identify materially affected services. Confirming a review crosses the Service Configuration application boundary to create a new effective-dated assignment. A permanent override wins over normal spatial suggestion and does not expire automatically. Service Regions remain logical containers without invented polygons.
 
 Client and service lifecycle states are independent. Archival is a timestamped lifecycle transition and does not cascade-delete services or historical configuration. No billing Account entity exists.
-
