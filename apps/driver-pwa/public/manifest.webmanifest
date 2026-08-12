@@ -1,0 +1,16 @@
+{
+  "name": "MegaBin Driver",
+  "short_name": "MegaBin",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#f3f7f4",
+  "theme_color": "#12382f",
+  "icons": [
+    {
+      "src": "/icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ]
+}

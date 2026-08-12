@@ -14,6 +14,18 @@ interface Operation {
     readonly vehicle?: { readonly displayName?: string };
     readonly staff?: readonly { readonly displayName?: string }[];
   };
+  readonly execution?: {
+    readonly progress: {
+      readonly completedStops: number;
+      readonly notServicedStops: number;
+      readonly remainingStops: number;
+      readonly totalStops: number;
+      readonly plannedDrums: number;
+      readonly actualDrumsServiced: number;
+      readonly openIssueCount: number;
+      readonly capacityState: string;
+    };
+  };
 }
 
 const escape = (value: unknown) =>
@@ -42,7 +54,7 @@ export async function renderRouteOperationsWorkspace(
       ${error ? `<div class="error">${escape(error)}</div>` : ""}
       <section class="panel"><div class="toolbar"><label>Region<select id="region">${regions.map((region) => `<option value="${region.serviceRegionId}" ${region.serviceRegionId === selectedRegion ? "selected" : ""}>${escape(region.name)}</option>`).join("")}</select></label><label>Service date<input id="date" type="date" value="${escape(selectedDate)}"></label><button id="load">Load operations</button></div>
       ${permissions.includes("route_operations.create") ? '<div class="toolbar"><label>Published Route Version ID<input id="published-version" placeholder="UUID"></label><button class="button" id="handoff">Hand off published route</button></div>' : ""}</section>
-      <section class="panel"><h2>Operations by team</h2>${operations.length ? operations.map((operation) => `<article class="route-card"><h3>${escape(operation.manifest?.team?.name ?? operation.currentTeamId)}</h3><p><span class="status">${escape(operation.lifecycleStatus)}</span> · ${escape(operation.manifest?.vehicle?.displayName ?? operation.currentVehicleId)}</p><p>Staff: ${escape(operation.manifest?.staff?.map((staff) => staff.displayName).join(", ") || "Unassigned")}</p><p>Assignment revision ${operation.assignmentRevision} · Manifest revision ${operation.manifestRevision}</p><p>Accepted: ${operation.acceptedAt ? "Yes" : "No"} · Started: ${operation.startedAt ? "Yes" : "No"}</p>${permissions.includes("route_operations.reassign") && ["prepared", "assigned", "available"].includes(operation.lifecycleStatus) ? `<button data-reassign="${operation.routeOperationId}">Reassign</button>` : ""}</article>`).join("") : '<div class="empty">No route operations for this date.</div>'}</section>
+      <section class="panel"><h2>Operations by team</h2>${operations.length ? operations.map((operation) => `<article class="route-card"><h3>${escape(operation.manifest?.team?.name ?? operation.currentTeamId)}</h3><p><span class="status">${escape(operation.lifecycleStatus)}</span> · ${escape(operation.manifest?.vehicle?.displayName ?? operation.currentVehicleId)}</p><p>Staff: ${escape(operation.manifest?.staff?.map((staff) => staff.displayName).join(", ") || "Unassigned")}</p><p>Assignment revision ${operation.assignmentRevision} · Manifest revision ${operation.manifestRevision}</p><p>Accepted: ${operation.acceptedAt ? "Yes" : "No"} · Started: ${operation.startedAt ? "Yes" : "No"}</p>${operation.execution ? `<p><b>${operation.execution.progress.completedStops + operation.execution.progress.notServicedStops}/${operation.execution.progress.totalStops}</b> stops · ${operation.execution.progress.remainingStops} remaining · ${operation.execution.progress.actualDrumsServiced}/${operation.execution.progress.plannedDrums} drums</p><p>Capacity: ${escape(operation.execution.progress.capacityState)} · Open issues: ${operation.execution.progress.openIssueCount}</p>` : ""}${permissions.includes("route_operations.reassign") && ["prepared", "assigned", "available"].includes(operation.lifecycleStatus) ? `<button data-reassign="${operation.routeOperationId}">Reassign</button>` : ""}</article>`).join("") : '<div class="empty">No route operations for this date.</div>'}</section>
       <dialog id="reassign-dialog"><form id="reassign-form"><h2>Reassign route operation</h2><input type="hidden" name="routeOperationId"><input type="hidden" name="expectedAssignmentRevision"><label>Team ID<input name="teamId" required></label><label>Vehicle ID<input name="vehicleId" required></label><label>Staff IDs (comma separated)<input name="staffIds" required></label><label>Device ID (optional)<input name="deviceId"></label><label>Reason<textarea name="reason" required></textarea></label><div class="actions"><button type="button" id="cancel-reassign">Cancel</button><button class="button">Save reassignment</button></div></form></dialog>
     </main></div>`;
     const region = root.querySelector<HTMLSelectElement>("#region");
@@ -52,7 +64,15 @@ export async function renderRouteOperationsWorkspace(
       selectedRegion = region.value;
       selectedDate = date.value;
       try {
-        operations = await api.routeOperations(region.value, date.value);
+        const listed = await api.routeOperations<Operation[]>(region.value, date.value);
+        operations = await Promise.all(
+          listed.map(async (operation) => ({
+            ...operation,
+            execution: await api.routeExecutionProgress<NonNullable<Operation["execution"]>>(
+              operation.routeOperationId
+            )
+          }))
+        );
         error = "";
       } catch (cause) {
         error = cause instanceof Error ? cause.message : "Unable to load route operations.";

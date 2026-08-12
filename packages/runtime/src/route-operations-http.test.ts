@@ -113,4 +113,35 @@ describe("route operations HTTP boundary", () => {
     expect(response?.status).toBe(404);
     expect(rpc.rpc).not.toHaveBeenCalled();
   });
+
+  it("routes Driver execution writes only after path and idempotency validation", async () => {
+    const rpc = {
+      rpc: vi.fn().mockResolvedValue({ data: { outcome: "accepted" }, error: null })
+    } as unknown as RouteOperationsRpcClient;
+    const handler = createRouteOperationsHandler({ rpc, actorId: "driver", id: () => "c" });
+    const action = {
+      actionId: "20000000-0000-4000-8000-000000000010",
+      routeOperationId: operationId,
+      assignmentRevision: 1,
+      manifestRevision: 1,
+      deviceTimestamp: new Date().toISOString(),
+      clientSequence: 1,
+      idempotencyKey: "capacity-key",
+      correlationId: "30000000-0000-4000-8000-000000000010",
+      capacityState: "near_capacity",
+      payloadVersion: 1
+    };
+    const response = await handler(
+      request(`/driver/route-operations/${operationId}/capacity`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json", "Idempotency-Key": "capacity-key" },
+        body: JSON.stringify(action)
+      })
+    );
+    expect(response?.status).toBe(200);
+    expect(rpc.rpc).toHaveBeenCalledWith(
+      "driver_route_capacity",
+      expect.objectContaining({ p_action: action })
+    );
+  });
 });

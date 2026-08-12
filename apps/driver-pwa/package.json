@@ -1,0 +1,19 @@
+{
+  "name": "@megabin/driver-pwa",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "tsc --noEmit && vite build",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@megabin/api-client": "workspace:*",
+    "@megabin/auth": "workspace:*",
+    "@megabin/route-operations": "workspace:*"
+  },
+  "devDependencies": {
+    "vite": "8.2.1"
+  }
+}

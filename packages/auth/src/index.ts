@@ -42,3 +42,6 @@ export function createOfficeAuth(url: string, publishableKey: string): OfficeAut
     }
   };
 }
+
+export const createDriverAuth = createOfficeAuth;
+export type DriverAuth = OfficeAuth;
