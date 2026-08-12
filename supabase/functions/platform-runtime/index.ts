@@ -66,7 +66,8 @@ export default {
     const liveOperations = createLiveOperationsHandler({
       rpc,
       actorId,
-      id: () => crypto.randomUUID()
+      id: () => crypto.randomUUID(),
+      defer: (work) => EdgeRuntime.waitUntil(work)
     });
     const liveOperationsResponse = await liveOperations(request);
     if (liveOperationsResponse) return liveOperationsResponse;

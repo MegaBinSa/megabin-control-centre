@@ -15,6 +15,7 @@ interface Dependencies {
   readonly rpc: RpcClient;
   readonly actorId: string | null;
   readonly id: () => string;
+  readonly defer?: ((work: Promise<unknown>) => void) | undefined;
 }
 const json = (body: unknown, status = 200) =>
   Response.json(body, { status, headers: { "Cache-Control": "no-store" } });
@@ -111,6 +112,29 @@ export function createLiveOperationsHandler(dependencies: Dependencies) {
           rules: IntelligenceRules;
         };
         const evaluated = evaluateOperationalIntelligence(body.snapshot, body.rules);
+        if (dependencies.defer) {
+          dependencies.defer(
+            dependencies.rpc
+              .rpc("operational_intelligence_apply", {
+                p_actor_id: dependencies.actorId,
+                p_region_id: body.snapshot.serviceRegionId,
+                p_signals: evaluated.signals,
+                p_progress: evaluated.progress,
+                p_correlation_id: correlationId
+              })
+              .then(async (result) => {
+                if (result.error)
+                  await dependencies.rpc.rpc("operational_intelligence_record_failure", {
+                    p_actor_id: dependencies.actorId,
+                    p_region_id: body.snapshot.serviceRegionId,
+                    p_vehicle_id: body.snapshot.vehicleId,
+                    p_route_operation_id: body.snapshot.routeOperationId,
+                    p_failure_code: result.error.code ?? "processing_failed"
+                  });
+              })
+          );
+          return json({ ok: true, data: { accepted: true, correlationId } }, 202);
+        }
         return execute("operational_intelligence_apply", {
           p_actor_id: dependencies.actorId,
           p_region_id: body.snapshot.serviceRegionId,
