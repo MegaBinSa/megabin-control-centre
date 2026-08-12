@@ -1,0 +1,110 @@
+begin;
+select plan(42);
+select has_table('app_private','route_operations','route operation aggregate exists');
+select has_table('app_private','route_operation_manifests','immutable manifests exist');
+select has_table('app_private','route_operation_stops','stable operation stop identities exist');
+select has_table('app_private','route_operation_actions','durable offline action receipts exist');
+select has_function('api','route_operations_handoff',array['uuid','uuid','uuid'],'published handoff boundary exists');
+
+insert into auth.users(id,email,raw_user_meta_data,raw_app_meta_data) values
+ ('e1000000-0000-4000-8000-000000000001','ops@test.invalid','{}','{}'),
+ ('e1000000-0000-4000-8000-000000000002','driver@test.invalid','{}','{}'),
+ ('e1000000-0000-4000-8000-000000000003','other-driver@test.invalid','{}','{}'),
+ ('e1000000-0000-4000-8000-000000000004','system@test.invalid','{}','{}');
+insert into public.user_profiles(user_id,display_name) values
+ ('e1000000-0000-4000-8000-000000000001','Operations'),('e1000000-0000-4000-8000-000000000002','Driver One'),
+ ('e1000000-0000-4000-8000-000000000003','Driver Two'),('e1000000-0000-4000-8000-000000000004','System Admin');
+insert into app_private.user_roles(user_id,role_id)
+ select 'e1000000-0000-4000-8000-000000000001'::uuid,role_id from app_private.roles where role_key='operations_manager'
+ union all select 'e1000000-0000-4000-8000-000000000002'::uuid,role_id from app_private.roles where role_key='driver_team'
+ union all select 'e1000000-0000-4000-8000-000000000003'::uuid,role_id from app_private.roles where role_key='driver_team'
+ union all select 'e1000000-0000-4000-8000-000000000004'::uuid,role_id from app_private.roles where role_key='system_admin_developer';
+insert into app_private.service_regions(service_region_id,name,region_code) values
+ ('e2000000-0000-4000-8000-000000000001','Operations North','OPS_N'),('e2000000-0000-4000-8000-000000000002','Operations South','OPS_S');
+insert into app_private.user_access_scopes(user_id,scope_kind,scope_id) values
+ ('e1000000-0000-4000-8000-000000000001','service_region','e2000000-0000-4000-8000-000000000001'),
+ ('e1000000-0000-4000-8000-000000000002','team','e5000000-0000-4000-8000-000000000001'),
+ ('e1000000-0000-4000-8000-000000000003','team','e5000000-0000-4000-8000-000000000002');
+insert into app_private.depots(depot_id,service_region_id,name,address_line_1,suburb,city,latitude,longitude) values
+ ('e3000000-0000-4000-8000-000000000001','e2000000-0000-4000-8000-000000000001','Operations Depot','1 Depot','Test','Pretoria',-25.7,28.2);
+insert into app_private.vehicles(vehicle_id,service_region_id,default_depot_id,registration_reference,display_name,estimated_drum_capacity) values
+ ('e4000000-0000-4000-8000-000000000001','e2000000-0000-4000-8000-000000000001','e3000000-0000-4000-8000-000000000001','OPS-1','Truck One',20),
+ ('e4000000-0000-4000-8000-000000000002','e2000000-0000-4000-8000-000000000001','e3000000-0000-4000-8000-000000000001','OPS-2','Truck Two',20);
+insert into app_private.teams(team_id,service_region_id,default_depot_id,team_code,name,normal_vehicle_id) values
+ ('e5000000-0000-4000-8000-000000000001','e2000000-0000-4000-8000-000000000001','e3000000-0000-4000-8000-000000000001','OPS_A','Team One','e4000000-0000-4000-8000-000000000001'),
+ ('e5000000-0000-4000-8000-000000000002','e2000000-0000-4000-8000-000000000001','e3000000-0000-4000-8000-000000000001','OPS_B','Team Two','e4000000-0000-4000-8000-000000000002');
+insert into app_private.staff(staff_id,user_id,display_name,operational_role,default_team_id) values
+ ('e6000000-0000-4000-8000-000000000001','e1000000-0000-4000-8000-000000000002','Driver One','driver','e5000000-0000-4000-8000-000000000001'),
+ ('e6000000-0000-4000-8000-000000000002','e1000000-0000-4000-8000-000000000003','Driver Two','driver','e5000000-0000-4000-8000-000000000002');
+insert into app_private.operational_days(operational_day_id,service_date,service_region_id,timezone,lifecycle_status,locked_at,locked_by) values
+ ('e7000000-0000-4000-8000-000000000001',current_date,'e2000000-0000-4000-8000-000000000001','Africa/Johannesburg','locked',now(),'e1000000-0000-4000-8000-000000000001');
+insert into app_private.daily_roster_entries(daily_roster_entry_id,operational_day_id,team_id,normal_vehicle_id,assigned_vehicle_id,normal_depot_id,assigned_depot_id) values
+ ('e8000000-0000-4000-8000-000000000001','e7000000-0000-4000-8000-000000000001','e5000000-0000-4000-8000-000000000001','e4000000-0000-4000-8000-000000000001','e4000000-0000-4000-8000-000000000001','e3000000-0000-4000-8000-000000000001','e3000000-0000-4000-8000-000000000001');
+insert into app_private.daily_roster_staff_assignments(daily_roster_entry_id,staff_id,expected_team_id,assignment_role) values
+ ('e8000000-0000-4000-8000-000000000001','e6000000-0000-4000-8000-000000000001','e5000000-0000-4000-8000-000000000001','driver');
+insert into app_private.clients(client_id,client_type,display_name,lifecycle_status,activated_at) values ('e9000000-0000-4000-8000-000000000001','individual','Operational Client','active',now());
+insert into app_private.territories(territory_id,service_region_id,name) values ('ea000000-0000-4000-8000-000000000001','e2000000-0000-4000-8000-000000000001','Operational Territory');
+insert into app_private.service_addresses(service_address_id,address_line_1,suburb,city,latitude,longitude,access_notes,dangerous_animal) values ('eb000000-0000-4000-8000-000000000001','10 Operational Street','Test','Pretoria',-25.75,28.2,'Gate code held operationally',true);
+insert into app_private.client_services(client_service_id,client_id,service_address_id,lifecycle_status,service_start_date,cadence_code) values ('ec000000-0000-4000-8000-000000000001','e9000000-0000-4000-8000-000000000001','eb000000-0000-4000-8000-000000000001','active',current_date,'weekly');
+insert into app_private.service_configurations(service_configuration_id,client_service_id,service_region_id,territory_id,default_team_id,configured_drum_count,operational_drum_unit_count,effective_from) values ('ed000000-0000-4000-8000-000000000001','ec000000-0000-4000-8000-000000000001','e2000000-0000-4000-8000-000000000001','ea000000-0000-4000-8000-000000000001','e5000000-0000-4000-8000-000000000001',2,2,current_date);
+insert into app_private.route_plans(route_plan_id,operational_day_id,service_region_id,lifecycle_status,created_by) values ('ee000000-0000-4000-8000-000000000001','e7000000-0000-4000-8000-000000000001','e2000000-0000-4000-8000-000000000001','published','e1000000-0000-4000-8000-000000000001');
+insert into app_private.route_versions(route_version_id,route_plan_id,version_number,version_status,operational_day_updated_at,roster_signature,constraint_snapshot,published_at,published_by) values
+ ('ef000000-0000-4000-8000-000000000001','ee000000-0000-4000-8000-000000000001',1,'published',now(),'fixed','{}',now(),'e1000000-0000-4000-8000-000000000001');
+insert into app_private.planned_routes(planned_route_id,route_version_id,daily_roster_entry_id,roster_entry_version,route_sequence,team_id,vehicle_id,staff_snapshot,start_depot_id,end_depot_id,planned_start_at,planned_end_at,usable_window_minutes,vehicle_capacity_units,planned_capacity_units,planned_duration_minutes,planned_distance_metres) values
+ ('f0000000-0000-4000-8000-000000000001','ef000000-0000-4000-8000-000000000001','e8000000-0000-4000-8000-000000000001',1,1,'e5000000-0000-4000-8000-000000000001','e4000000-0000-4000-8000-000000000001','[{"staffId":"e6000000-0000-4000-8000-000000000001","role":"driver"}]','e3000000-0000-4000-8000-000000000001','e3000000-0000-4000-8000-000000000001',now(),now()+interval '1 hour',60,20,2,20,1000);
+insert into app_private.planned_route_stops(planned_route_stop_id,route_version_id,planned_route_id,sequence_number,client_service_id,service_configuration_id,service_address_id,territory_id,drum_units,latitude,longitude,address_snapshot,service_flags,planned_duration_minutes) values
+ ('f1000000-0000-4000-8000-000000000001','ef000000-0000-4000-8000-000000000001','f0000000-0000-4000-8000-000000000001',1,'ec000000-0000-4000-8000-000000000001','ed000000-0000-4000-8000-000000000001','eb000000-0000-4000-8000-000000000001','ea000000-0000-4000-8000-000000000001',2,-25.75,28.2,'{"line1":"10 Operational Street","suburb":"Test"}','{"accessInstructions":"Gate code held operationally","dangerousAnimal":true}',10);
+update app_private.route_plans set current_version_id='ef000000-0000-4000-8000-000000000001',current_published_version_id='ef000000-0000-4000-8000-000000000001' where route_plan_id='ee000000-0000-4000-8000-000000000001';
+
+select lives_ok($$select api.route_operations_handoff('e1000000-0000-4000-8000-000000000001','ef000000-0000-4000-8000-000000000001','f2000000-0000-4000-8000-000000000001')$$,'published route handoff succeeds');
+select is((select count(*) from app_private.route_operations),1::bigint,'one operation is created per published planned route');
+select is((select published_route_version_id from app_private.route_operations),'ef000000-0000-4000-8000-000000000001'::uuid,'source published version is preserved');
+select lives_ok($$select api.route_operations_handoff('e1000000-0000-4000-8000-000000000001','ef000000-0000-4000-8000-000000000001','f2000000-0000-4000-8000-000000000002')$$,'repeat handoff is idempotent');
+select is((select count(*) from app_private.route_operations),1::bigint,'repeat handoff creates no duplicate');
+select is((select source_planned_route_stop_id from app_private.route_operation_stops),'f1000000-0000-4000-8000-000000000001'::uuid,'manifest preserves planned stop identity');
+select is((select sequence_number from app_private.route_operation_stops),1,'manifest preserves stop sequence');
+select ok(not ((select manifest_document from app_private.route_operation_manifests) ? 'client'),'manifest excludes client identity');
+select is(jsonb_array_length(api.driver_route_operations_current('e1000000-0000-4000-8000-000000000002')),1,'assigned driver sees current operation');
+select is(jsonb_array_length(api.driver_route_operations_current('e1000000-0000-4000-8000-000000000003')),0,'other team driver sees no operation');
+select throws_ok($$select api.driver_route_operation_manifest('e1000000-0000-4000-8000-000000000003',(select route_operation_id from app_private.route_operations),null)$$,'42501',null,'cross-team manifest read denied');
+select throws_ok($$select api.route_operations_list('e1000000-0000-4000-8000-000000000001','e2000000-0000-4000-8000-000000000002',current_date)$$,'42501',null,'cross-region office read denied');
+select throws_ok($$select api.route_operations_list('e1000000-0000-4000-8000-000000000004','e2000000-0000-4000-8000-000000000001',current_date)$$,'42501',null,'technical role has no automatic operational authority');
+
+insert into app_private.route_versions(route_version_id,route_plan_id,version_number,version_status,operational_day_updated_at,roster_signature,constraint_snapshot,published_at,published_by) values
+ ('ef000000-0000-4000-8000-000000000002','ee000000-0000-4000-8000-000000000001',2,'published',now(),'fixed','{}',now(),'e1000000-0000-4000-8000-000000000001'),
+ ('ef000000-0000-4000-8000-000000000003','ee000000-0000-4000-8000-000000000001',3,'published',now(),'fixed','{}',now(),'e1000000-0000-4000-8000-000000000001'),
+ ('ef000000-0000-4000-8000-000000000004','ee000000-0000-4000-8000-000000000001',4,'draft',now(),'fixed','{}',null,null);
+insert into app_private.planned_routes(planned_route_id,route_version_id,daily_roster_entry_id,roster_entry_version,route_sequence,team_id,vehicle_id,staff_snapshot,start_depot_id,end_depot_id,planned_start_at,planned_end_at,usable_window_minutes,vehicle_capacity_units) values
+ ('f0000000-0000-4000-8000-000000000002','ef000000-0000-4000-8000-000000000002','e8000000-0000-4000-8000-000000000001',1,1,'e5000000-0000-4000-8000-000000000001','e4000000-0000-4000-8000-000000000001','[{"staffId":"e6000000-0000-4000-8000-000000000001","role":"driver"}]','e3000000-0000-4000-8000-000000000001','e3000000-0000-4000-8000-000000000001',now(),now()+interval '1 hour',60,20),
+ ('f0000000-0000-4000-8000-000000000003','ef000000-0000-4000-8000-000000000003','e8000000-0000-4000-8000-000000000001',1,1,'e5000000-0000-4000-8000-000000000001','e4000000-0000-4000-8000-000000000001','[{"staffId":"e6000000-0000-4000-8000-000000000001","role":"driver"}]','e3000000-0000-4000-8000-000000000001','e3000000-0000-4000-8000-000000000001',now(),now()+interval '1 hour',60,20);
+select throws_ok($$select api.route_operations_handoff('e1000000-0000-4000-8000-000000000001','ef000000-0000-4000-8000-000000000004','f2000000-0000-4000-8000-000000000008')$$,'55000',null,'handoff requires a Published Route Version');
+update app_private.route_plans set current_published_version_id='ef000000-0000-4000-8000-000000000002' where route_plan_id='ee000000-0000-4000-8000-000000000001';
+select lives_ok($$select api.route_operations_handoff('e1000000-0000-4000-8000-000000000001','ef000000-0000-4000-8000-000000000002','f2000000-0000-4000-8000-000000000009')$$,'older replacement candidate hands off');
+update app_private.route_plans set current_published_version_id='ef000000-0000-4000-8000-000000000003' where route_plan_id='ee000000-0000-4000-8000-000000000001';
+select lives_ok($$select api.route_operations_handoff('e1000000-0000-4000-8000-000000000001','ef000000-0000-4000-8000-000000000003','f2000000-0000-4000-8000-000000000010')$$,'new Published replacement hands off');
+select lives_ok($$select api.route_operation_supersede('e1000000-0000-4000-8000-000000000001',(select route_operation_id from app_private.route_operations where published_route_version_id='ef000000-0000-4000-8000-000000000002'),(select route_operation_id from app_private.route_operations where published_route_version_id='ef000000-0000-4000-8000-000000000003'),'New published plan','f2000000-0000-4000-8000-000000000011')$$,'non-started operation is explicitly superseded');
+select is(api.driver_route_operation_action('e1000000-0000-4000-8000-000000000002',(select route_operation_id from app_private.route_operations where published_route_version_id='ef000000-0000-4000-8000-000000000002'),jsonb_build_object('actionId','f3000000-0000-4000-8000-000000000010','routeOperationId',(select route_operation_id from app_private.route_operations where published_route_version_id='ef000000-0000-4000-8000-000000000002'),'assignmentRevision',1,'deviceTimestamp',now(),'clientSequence',1,'idempotencyKey','superseded-1','correlationId','f4000000-0000-4000-8000-000000000010','actionType','accept','payloadVersion',1,'payload','{}'::jsonb))->>'rejectionCode','operation_superseded','superseded operation rejects Driver action');
+delete from app_private.route_operation_actions where route_operation_id in (select route_operation_id from app_private.route_operations where published_route_version_id in ('ef000000-0000-4000-8000-000000000002','ef000000-0000-4000-8000-000000000003'));
+delete from app_private.route_operations where published_route_version_id in ('ef000000-0000-4000-8000-000000000002','ef000000-0000-4000-8000-000000000003');
+
+select lives_ok($$select api.route_operation_reassign('e1000000-0000-4000-8000-000000000001',(select route_operation_id from app_private.route_operations),1,'e5000000-0000-4000-8000-000000000002','e4000000-0000-4000-8000-000000000002',array['e6000000-0000-4000-8000-000000000002']::uuid[],null,'Emergency cover','f2000000-0000-4000-8000-000000000003')$$,'pre-start reassignment succeeds');
+select is((select assignment_revision from app_private.route_operations),2,'reassignment increments assignment revision');
+select is((select manifest_revision from app_private.route_operations),2,'reassignment increments manifest revision');
+select is((select count(*) from app_private.route_operation_assignments),2::bigint,'assignment history is preserved');
+select is((select normal_vehicle_id from app_private.teams where team_id='e5000000-0000-4000-8000-000000000002'),'e4000000-0000-4000-8000-000000000002'::uuid,'reassignment does not alter team defaults');
+select throws_ok($$select api.route_operation_reassign('e1000000-0000-4000-8000-000000000001',(select route_operation_id from app_private.route_operations),2,'e5000000-0000-4000-8000-000000000002','e4000000-0000-4000-8000-000000000002',array['e6000000-0000-4000-8000-000000000002']::uuid[],null,'','f2000000-0000-4000-8000-000000000004')$$,'22023',null,'reassignment requires a reason');
+select is((api.driver_route_operation_freshness('e1000000-0000-4000-8000-000000000003',(select route_operation_id from app_private.route_operations),1,null)->>'stale')::boolean,true,'stale manifest revision requires refresh');
+
+select is(api.driver_route_operation_action('e1000000-0000-4000-8000-000000000003',(select route_operation_id from app_private.route_operations),jsonb_build_object('actionId','f3000000-0000-4000-8000-000000000001','routeOperationId',(select route_operation_id from app_private.route_operations),'assignmentRevision',2,'deviceTimestamp',now(),'clientSequence',1,'idempotencyKey','accept-1','correlationId','f4000000-0000-4000-8000-000000000001','actionType','accept','payloadVersion',1,'payload','{}'::jsonb))->>'outcome','accepted','assigned driver accepts operation');
+select is(api.driver_route_operation_action('e1000000-0000-4000-8000-000000000003',(select route_operation_id from app_private.route_operations),jsonb_build_object('actionId','f3000000-0000-4000-8000-000000000001','routeOperationId',(select route_operation_id from app_private.route_operations),'assignmentRevision',2,'deviceTimestamp',(select device_timestamp from app_private.route_operation_actions where action_id='f3000000-0000-4000-8000-000000000001'),'clientSequence',1,'idempotencyKey','accept-1','correlationId','f4000000-0000-4000-8000-000000000001','actionType','accept','payloadVersion',1,'payload','{}'::jsonb))->>'outcome','duplicate','identical offline retry is duplicate-safe');
+select is(api.driver_route_operation_action('e1000000-0000-4000-8000-000000000003',(select route_operation_id from app_private.route_operations),jsonb_build_object('actionId','f3000000-0000-4000-8000-000000000001','routeOperationId',(select route_operation_id from app_private.route_operations),'assignmentRevision',2,'deviceTimestamp',now(),'clientSequence',2,'idempotencyKey','accept-1','correlationId','f4000000-0000-4000-8000-000000000001','actionType','accept','payloadVersion',1,'payload','{"changed":true}'::jsonb))->>'outcome','conflict','changed duplicate content conflicts');
+select is(api.driver_route_operation_action('e1000000-0000-4000-8000-000000000003',(select route_operation_id from app_private.route_operations),jsonb_build_object('actionId','f3000000-0000-4000-8000-000000000002','routeOperationId',(select route_operation_id from app_private.route_operations),'assignmentRevision',1,'deviceTimestamp',now(),'clientSequence',3,'idempotencyKey','stale-1','correlationId','f4000000-0000-4000-8000-000000000002','actionType','start','payloadVersion',1,'payload','{}'::jsonb))->>'rejectionCode','stale_assignment_revision','stale assignment revision is rejected');
+select is(api.driver_route_operation_action('e1000000-0000-4000-8000-000000000003',(select route_operation_id from app_private.route_operations),jsonb_build_object('actionId','f3000000-0000-4000-8000-000000000003','routeOperationId',(select route_operation_id from app_private.route_operations),'assignmentRevision',2,'deviceTimestamp',now(),'clientSequence',4,'idempotencyKey','start-1','correlationId','f4000000-0000-4000-8000-000000000003','actionType','start','payloadVersion',1,'payload','{}'::jsonb))->>'outcome','accepted','accepted assignment may start');
+select is((select lifecycle_status from app_private.route_operations),'in_progress','route start changes authoritative lifecycle once');
+select throws_ok($$select api.route_operation_reassign('e1000000-0000-4000-8000-000000000001',(select route_operation_id from app_private.route_operations),2,'e5000000-0000-4000-8000-000000000001','e4000000-0000-4000-8000-000000000001',array['e6000000-0000-4000-8000-000000000001']::uuid[],null,'Too late','f2000000-0000-4000-8000-000000000005')$$,'55000',null,'started operation rejects normal reassignment');
+select throws_ok($$select api.route_operation_cancel('e1000000-0000-4000-8000-000000000001',(select route_operation_id from app_private.route_operations),'Too late','f2000000-0000-4000-8000-000000000006')$$,'55000',null,'started operation cannot be silently cancelled');
+select throws_ok($$select api.route_operation_supersede('e1000000-0000-4000-8000-000000000001',(select route_operation_id from app_private.route_operations),gen_random_uuid(),'Too late','f2000000-0000-4000-8000-000000000007')$$,'55000',null,'started operation cannot be silently superseded');
+select ok((select count(*)>=5 from app_private.business_audit_facts where module_key='route-operations'),'implemented route operation changes are audited');
+select ok((select count(*)>=5 from app_private.outbox_events where producer_module='route-operations'),'implemented route operation events use durable outbox');
+select is((select version_status from app_private.route_versions where route_version_id='ef000000-0000-4000-8000-000000000001'),'published','route operations never mutate published source');
+select * from finish(); rollback;

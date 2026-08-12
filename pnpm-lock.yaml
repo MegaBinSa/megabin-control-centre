@@ -102,6 +102,12 @@ importers:
 
   packages/permissions: {}
 
+  packages/route-operations:
+    dependencies:
+      '@megabin/domain-types':
+        specifier: workspace:*
+        version: link:../domain-types
+
   packages/route-planning:
     dependencies:
       '@megabin/integrations':
@@ -128,6 +134,9 @@ importers:
       '@megabin/observability':
         specifier: workspace:*
         version: link:../observability
+      '@megabin/route-operations':
+        specifier: workspace:*
+        version: link:../route-operations
       '@megabin/route-planning':
         specifier: workspace:*
         version: link:../route-planning

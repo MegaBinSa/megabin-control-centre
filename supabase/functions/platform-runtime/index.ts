@@ -9,6 +9,7 @@ import {
   createGeographyHandler,
   createRosterHandler,
   createRouteHandler,
+  createRouteOperationsHandler,
   MemoryJobStateStore,
   SupabaseRuntimeDatabase,
   type RuntimeRpcClient
@@ -95,6 +96,13 @@ export default {
     });
     const routeResponse = await routes(request);
     if (routeResponse) return routeResponse;
+    const routeOperations = createRouteOperationsHandler({
+      rpc,
+      actorId,
+      id: () => crypto.randomUUID()
+    });
+    const routeOperationsResponse = await routeOperations(request);
+    if (routeOperationsResponse) return routeOperationsResponse;
     const roster = createRosterHandler({ rpc, actorId, id: () => crypto.randomUUID() });
     const rosterResponse = await roster(request);
     if (rosterResponse) return rosterResponse;

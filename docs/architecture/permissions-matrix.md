@@ -88,3 +88,15 @@ All grants remain service-region scoped. Technical system access does not imply 
 All route access is service-region scoped. Published versions cannot be edited even by a role with write permission.
 
 Phase 2B adds `routes.optimize`, `routes.optimization.read`, and `routes.optimization.apply` to Director/Admin, Operations Manager, and Office/Admin. Driver/Team and System Admin/Developer receive no automatic authority. Every operation remains service-region scoped.
+
+## Phase 2C Route Operations permissions
+
+| Role | Office read | Create/assign | Reassign/control | Driver read/action |
+|---|---|---|---|---|
+| Director/Admin | Yes | Yes | Yes | Only when also current assigned staff |
+| Operations Manager | Yes | Yes | Yes | Only when also current assigned staff |
+| Office/Admin | Yes | Yes | Yes | No |
+| Driver/Team | No | No | No | Current non-revoked assignment only |
+| System Admin/Developer | No by default | No | No | No |
+
+Permissions are `route_operations.read`, `.create`, `.assign`, `.reassign`, `.control`, `.driver.read`, and `.driver.act`. Office authority is region-scoped. Driver access additionally requires active staff membership in the current assignment and matching team/region scope; an assigned device must match.
