@@ -25,3 +25,7 @@ Address validation (`Unvalidated`, `Valid`, `Invalid`, `Needs Review`) and geoco
 ## Route Optimization Attempt
 
 `Pending -> Running -> Succeeded -> Accepted|Rejected` is the successful candidate path. `Pending|Running -> Failed|Cancelled|Superseded` are terminal non-application outcomes. A failed or rejected attempt leaves its source Route Version unchanged. Only a Succeeded attempt can be accepted, and acceptance creates a new Draft Route Version transactionally; it never publishes or mutates the source.
+
+## Route Operation
+
+Handoff creates the planned assignment and moves directly to `Available`. Driver actions enforce `Available -> Accepted -> In Progress`, `In Progress -> Suspended`, and `Suspended -> In Progress`. Those actions are offline-capable and idempotent; only suspend/resume is an explicit reversible pair. Office may reassign, cancel, or supersede only `Prepared`, `Assigned`, or `Available`, with a reason and the relevant concurrency/replacement checks. `Completed` and `Archived` exist as foundations but have no Phase 2C command. Backend RPCs are authoritative.

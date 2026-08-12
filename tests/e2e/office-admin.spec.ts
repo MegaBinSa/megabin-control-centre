@@ -670,3 +670,130 @@ test("Office route optimization compares and accepts a candidate", async ({ page
   await expect(page.getByText("Version 2")).toBeVisible();
   await expect(page.getByText("Strategy: provider optimized")).toBeVisible();
 });
+
+test("Office Route Operations hands off and reassigns a published route", async ({ page }) => {
+  await syntheticSession(page, [
+    "master_data.read",
+    "route_operations.read",
+    "route_operations.create",
+    "route_operations.reassign"
+  ]);
+  const regionId = "f2000000-0000-4000-8000-000000000001";
+  const operationId = "f3000000-0000-4000-8000-000000000001";
+  let handedOff = false;
+  let revision = 1;
+  const operations = () =>
+    handedOff
+      ? [
+          {
+            routeOperationId: operationId,
+            lifecycleStatus: "available",
+            assignmentRevision: revision,
+            manifestRevision: revision,
+            currentTeamId: "team-a",
+            currentVehicleId: "vehicle-a",
+            acceptedAt: null,
+            startedAt: null,
+            manifest: {
+              team: { name: "Team A" },
+              vehicle: { displayName: "Truck A" },
+              staff: [{ displayName: "Driver A" }]
+            }
+          }
+        ]
+      : [];
+  await page.route("**/api/v1/master-data/service-regions*", (route) =>
+    route.fulfill({
+      json: {
+        ok: true,
+        data: {
+          items: [{ serviceRegionId: regionId, name: "Synthetic Region" }],
+          page: 1,
+          pageSize: 25,
+          total: 1
+        }
+      }
+    })
+  );
+  await page.route("**/api/v1/route-operations?*", (route) =>
+    route.fulfill({ json: { ok: true, data: operations() } })
+  );
+  await page.route("**/api/v1/route-operations/handoff", (route) => {
+    handedOff = true;
+    return route.fulfill({ status: 201, json: { ok: true, data: { operations: operations() } } });
+  });
+  await page.route(`**/api/v1/route-operations/${operationId}/reassign`, (route) => {
+    revision = 2;
+    return route.fulfill({ json: { ok: true, data: operations()[0] } });
+  });
+  await page.getByRole("button", { name: "Route Operations" }).click();
+  await page.getByLabel("Service date").fill("2026-08-20");
+  await page.getByLabel("Published Route Version ID").fill("f4000000-0000-4000-8000-000000000001");
+  await page.getByRole("button", { name: "Hand off published route" }).click();
+  await expect(page.getByText("Team A")).toBeVisible();
+  await page.getByRole("button", { name: "Reassign" }).click();
+  await page.getByLabel("Staff IDs (comma separated)").fill("f5000000-0000-4000-8000-000000000001");
+  await page.getByLabel("Reason").fill("Synthetic operational cover");
+  await page.getByRole("button", { name: "Save reassignment" }).click();
+  await expect(page.getByText("Assignment revision 2")).toBeVisible();
+});
+
+test("future Driver browser API harness reads, accepts, and starts its operation", async ({
+  page
+}) => {
+  const operationId = "f6000000-0000-4000-8000-000000000001";
+  const requests: string[] = [];
+  await page.route("https://driver.phase2c.test/api/v1/**", async (route) => {
+    const path = new URL(route.request().url()).pathname;
+    requests.push(`${route.request().method()} ${path}`);
+    if (path.endsWith("/manifest"))
+      return route.fulfill({
+        json: {
+          ok: true,
+          data: { routeOperationId: operationId, manifestRevision: 1, stops: [] }
+        }
+      });
+    return route.fulfill({
+      json: {
+        ok: true,
+        data: { actionId: crypto.randomUUID(), outcome: "accepted" }
+      }
+    });
+  });
+  await page.goto("about:blank");
+  const results = await page.evaluate(async (id) => {
+    let sequenceId = 0;
+    const uuid = () => `f7000000-0000-4000-8000-${String(++sequenceId).padStart(12, "0")}`;
+    const manifest = await fetch(
+      `https://driver.phase2c.test/api/v1/driver/route-operations/${id}/manifest`
+    ).then((response) => response.json());
+    const act = async (actionType: string, sequence: number) => {
+      const key = uuid();
+      return fetch(`https://driver.phase2c.test/api/v1/driver/route-operations/${id}/actions`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json", "Idempotency-Key": key },
+        body: JSON.stringify({
+          actionId: uuid(),
+          routeOperationId: id,
+          assignmentRevision: 1,
+          deviceTimestamp: new Date().toISOString(),
+          clientSequence: sequence,
+          idempotencyKey: key,
+          correlationId: uuid(),
+          actionType,
+          payloadVersion: 1,
+          payload: {}
+        })
+      }).then((response) => response.json());
+    };
+    return { manifest, accepted: await act("accept", 1), started: await act("start", 2) };
+  }, operationId);
+  expect(results.manifest.data.routeOperationId).toBe(operationId);
+  expect(results.accepted.data.outcome).toBe("accepted");
+  expect(results.started.data.outcome).toBe("accepted");
+  expect(requests).toEqual([
+    `GET /api/v1/driver/route-operations/${operationId}/manifest`,
+    `POST /api/v1/driver/route-operations/${operationId}/actions`,
+    `POST /api/v1/driver/route-operations/${operationId}/actions`
+  ]);
+});

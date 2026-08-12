@@ -26,6 +26,8 @@ No HTTP server or public endpoint is introduced in Phase 0B-4. The shared packag
 
 Initial error codes are `authentication_required`, `permission_denied`, `validation_failed`, `conflict`, `idempotency_key_reused`, `not_found`, `rate_limited`, and `internal_error`.
 
+Route Operations additionally uses `stale_assignment_revision`, `invalid_lifecycle_transition`, `operation_already_started`, and `published_route_version_required`. Phase 2C fixed endpoints are `/route-operations`, its handoff/detail/reassign/supersede/cancel/history operations, and `/driver/route-operations` with manifest/freshness/action/receipt operations. Driver responses never return Office planning documents.
+
 ## Contract publication
 
 OpenAPI must be generated from the implemented request/response contracts when API handlers are introduced. The specification is a build artifact, not a separately edited source of truth. Supabase's Data API schema endpoint is not the Control Centre's application API contract.

@@ -19,6 +19,7 @@
     "@megabin/integrations": "workspace:*",
     "@megabin/observability": "workspace:*",
     "@megabin/route-planning": "workspace:*",
+    "@megabin/route-operations": "workspace:*",
     "@megabin/validation": "workspace:*",
     "zod": "4.1.11"
   },

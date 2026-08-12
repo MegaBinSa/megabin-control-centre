@@ -10,6 +10,10 @@ export type ApiErrorCode =
   | "validation_failed"
   | "conflict"
   | "idempotency_key_reused"
+  | "stale_assignment_revision"
+  | "invalid_lifecycle_transition"
+  | "operation_already_started"
+  | "published_route_version_required"
   | "not_found"
   | "rate_limited"
   | "internal_error";
@@ -289,9 +293,84 @@ export class MasterDataApiClient {
   routeProviderHealth<T>(serviceRegionId: string): Promise<T> {
     return this.request(`/route-providers/health?${new URLSearchParams({ serviceRegionId })}`);
   }
-  private async request<T>(path: string, init: RequestInit = {}, write = false): Promise<T> {
+  handoffRouteOperations<T>(publishedRouteVersionId: string): Promise<T> {
+    return this.request(
+      "/route-operations/handoff",
+      { method: "POST", body: JSON.stringify({ publishedRouteVersionId }) },
+      true
+    );
+  }
+  routeOperations<T>(serviceRegionId: string, serviceDate: string): Promise<T> {
+    return this.request(
+      `/route-operations?${new URLSearchParams({ serviceRegionId, serviceDate })}`
+    );
+  }
+  routeOperation<T>(routeOperationId: string): Promise<T> {
+    return this.request(`/route-operations/${routeOperationId}`);
+  }
+  reassignRouteOperation<T>(routeOperationId: string, value: unknown): Promise<T> {
+    return this.request(
+      `/route-operations/${routeOperationId}/reassign`,
+      { method: "POST", body: JSON.stringify(value) },
+      true
+    );
+  }
+  supersedeRouteOperation<T>(routeOperationId: string, value: unknown): Promise<T> {
+    return this.request(
+      `/route-operations/${routeOperationId}/supersede`,
+      { method: "POST", body: JSON.stringify(value) },
+      true
+    );
+  }
+  cancelRouteOperation<T>(routeOperationId: string, reason: string): Promise<T> {
+    return this.request(
+      `/route-operations/${routeOperationId}/cancel`,
+      { method: "POST", body: JSON.stringify({ reason }) },
+      true
+    );
+  }
+  assignedRouteOperations<T>(): Promise<T> {
+    return this.request("/driver/route-operations");
+  }
+  routeOperationManifest<T>(routeOperationId: string, deviceId?: string): Promise<T> {
+    return this.request(
+      `/driver/route-operations/${routeOperationId}/manifest${deviceId ? `?${new URLSearchParams({ deviceId })}` : ""}`
+    );
+  }
+  routeOperationFreshness<T>(
+    routeOperationId: string,
+    manifestRevision: number,
+    deviceId?: string
+  ): Promise<T> {
+    return this.request(
+      `/driver/route-operations/${routeOperationId}/freshness?${new URLSearchParams({ manifestRevision: String(manifestRevision), ...(deviceId ? { deviceId } : {}) })}`
+    );
+  }
+  submitRouteOperationAction<T>(
+    routeOperationId: string,
+    value: { readonly idempotencyKey: string; readonly correlationId: string } & Record<
+      string,
+      unknown
+    >
+  ): Promise<T> {
+    return this.request(
+      `/driver/route-operations/${routeOperationId}/actions`,
+      { method: "POST", body: JSON.stringify(value) },
+      true,
+      { idempotencyKey: value.idempotencyKey, correlationId: value.correlationId }
+    );
+  }
+  routeOperationActionReceipt<T>(actionId: string): Promise<T> {
+    return this.request(`/driver/route-operation-actions/${actionId}`);
+  }
+  private async request<T>(
+    path: string,
+    init: RequestInit = {},
+    write = false,
+    identity?: IdempotentRequestIdentity
+  ): Promise<T> {
     const token = await this.options.accessToken();
-    const correlationId = crypto.randomUUID();
+    const correlationId = identity?.correlationId ?? crypto.randomUUID();
     const response = await this.fetcher(
       `${this.options.baseUrl.replace(/\/$/, "")}${API_BASE_PATH}${path}`,
       {
@@ -300,7 +379,7 @@ export class MasterDataApiClient {
           "Content-Type": "application/json",
           "X-Correlation-Id": correlationId,
           ...(token ? { Authorization: `Bearer ${token}` } : {}),
-          ...(write ? { "Idempotency-Key": crypto.randomUUID() } : {}),
+          ...(write ? { "Idempotency-Key": identity?.idempotencyKey ?? crypto.randomUUID() } : {}),
           ...init.headers
         }
       }

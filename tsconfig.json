@@ -13,6 +13,7 @@
     { "path": "./packages/observability" },
     { "path": "./packages/permissions" },
     { "path": "./packages/route-planning" },
+    { "path": "./packages/route-operations" },
     { "path": "./packages/runtime" },
     { "path": "./packages/testing" },
     { "path": "./packages/ui" },

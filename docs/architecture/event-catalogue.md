@@ -81,3 +81,19 @@ Geometry and client/address details are excluded from events. Permanent override
 | `Vehicles.VehicleAvailabilityWindowChanged` | Vehicles | Operational vehicle window saved | window/region IDs |
 
 Events intentionally exclude assignment snapshots and notes. Future Routes may consume locked/active roster events, but no route reaction exists in Phase 1D.
+
+## Phase 2C accepted Route Operations events
+
+| Event v1 | Trigger | Concise payload |
+|---|---|---|
+| `RouteOperations.RouteOperationCreated` | Handoff creates an operation | operation, Published Version, Planned Route, revisions |
+| `RouteOperations.RouteAssigned` | Initial assignment commits | operation, team, vehicle, revision |
+| `RouteOperations.RouteReassigned` | Reasoned pre-start reassignment | operation, team, vehicle, revision, reason |
+| `RouteOperations.AssignmentAccepted` | Assigned Driver accepts | operation, revision, action ID |
+| `RouteOperations.RouteStarted` | Accepted operation starts | operation, revision, action ID |
+| `RouteOperations.RouteSuspended` | In-progress operation suspends | operation, revision, action ID |
+| `RouteOperations.RouteResumed` | Suspended operation resumes | operation, revision, action ID |
+| `RouteOperations.RouteSuperseded` | Explicit pre-start replacement | operation, replacement, reason |
+| `RouteOperations.ManifestRevisionChanged` | Reassignment creates a manifest | operation, manifest revision |
+
+Cancellation is audited but has no event until a consumer is approved. Payloads exclude manifests, staff snapshots, addresses, and raw offline actions.

@@ -4,6 +4,7 @@ import { MasterDataApiClient } from "@megabin/api-client";
 import { renderGeographyWorkspace } from "./geography.js";
 import { renderRosterWorkspace } from "./roster.js";
 import { renderRoutesWorkspace } from "./routes.js";
+import { renderRouteOperationsWorkspace } from "./route-operations.js";
 
 const modules = [
   "Clients",
@@ -130,7 +131,7 @@ function render(): void {
         `<tr><td>${escapeText(String(record.displayName ?? record.name ?? record.contactName ?? record.addressLine1 ?? "—"))}</td><td>${escapeText(String(record.regionName ?? record.city ?? "—"))}</td><td><span class="status">${escapeText(String(record.lifecycleStatus ?? record.operationalAvailability ?? (record.isActive === false ? "Inactive" : "Active")))}</span></td><td>${canWrite ? `<button data-edit="${index}">Edit</button>` : ""}</td></tr>`
     )
     .join("");
-  appRoot.innerHTML = `<div class="shell"><aside><div class="brand">MegaBin Control Centre</div><nav>${visibleModules.map((name) => `<button data-module="${name}" ${name === active ? 'aria-current="page"' : ""}>${name}</button>`).join("")}${identity.permissions.includes("geography.read") ? '<button id="geography-workspace">Geography</button>' : ""}${identity.permissions.includes("roster.read") ? '<button id="roster-workspace">Daily Roster</button>' : ""}${identity.permissions.includes("routes.read") ? '<button id="routes-workspace">Route Planning</button>' : ""}</nav></aside><main>
+  appRoot.innerHTML = `<div class="shell"><aside><div class="brand">MegaBin Control Centre</div><nav>${visibleModules.map((name) => `<button data-module="${name}" ${name === active ? 'aria-current="page"' : ""}>${name}</button>`).join("")}${identity.permissions.includes("geography.read") ? '<button id="geography-workspace">Geography</button>' : ""}${identity.permissions.includes("roster.read") ? '<button id="roster-workspace">Daily Roster</button>' : ""}${identity.permissions.includes("routes.read") ? '<button id="routes-workspace">Route Planning</button>' : ""}${identity.permissions.includes("route_operations.read") ? '<button id="route-operations-workspace">Route Operations</button>' : ""}</nav></aside><main>
     <header><div><h1>${active}</h1><p>Authoritative master-data administration · ${escapeText(identity.displayName)}</p></div><div class="header-actions">${canWrite ? `<button class="button" id="create">Add ${active.replace(/s$/, "")}</button>` : ""}<button id="logout">Sign out</button></div></header>
     ${errorMessage ? `<div class="error">${escapeText(errorMessage)}</div>` : ""}
     <div class="toolbar"><input id="search" type="search" placeholder="Search ${active.toLowerCase()}"/><select aria-label="Status"><option>All statuses</option><option>Active</option><option>Inactive / archived</option></select></div>
@@ -165,6 +166,13 @@ function render(): void {
   });
   document.querySelector("#routes-workspace")?.addEventListener("click", () => {
     void renderRoutesWorkspace(appRoot, api, identity?.permissions ?? [], async () => {
+      await auth.signOut();
+      identity = null;
+      render();
+    });
+  });
+  document.querySelector("#route-operations-workspace")?.addEventListener("click", () => {
+    void renderRouteOperationsWorkspace(appRoot, api, identity?.permissions ?? [], async () => {
       await auth.signOut();
       identity = null;
       render();

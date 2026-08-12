@@ -1027,6 +1027,66 @@
         }
       }
     },
+    "/api/v1/route-operations/handoff": {
+      "post": {
+        "operationId": "handoffPublishedRoute"
+      }
+    },
+    "/api/v1/route-operations": {
+      "get": {
+        "operationId": "listRouteOperations"
+      }
+    },
+    "/api/v1/route-operations/{routeOperationId}": {
+      "get": {
+        "operationId": "getRouteOperation"
+      }
+    },
+    "/api/v1/route-operations/{routeOperationId}/reassign": {
+      "post": {
+        "operationId": "reassignRouteOperation"
+      }
+    },
+    "/api/v1/route-operations/{routeOperationId}/supersede": {
+      "post": {
+        "operationId": "supersedeRouteOperation"
+      }
+    },
+    "/api/v1/route-operations/{routeOperationId}/cancel": {
+      "post": {
+        "operationId": "cancelRouteOperation"
+      }
+    },
+    "/api/v1/route-operations/{routeOperationId}/assignment-history": {
+      "get": {
+        "operationId": "getRouteOperationAssignmentHistory"
+      }
+    },
+    "/api/v1/driver/route-operations": {
+      "get": {
+        "operationId": "listAssignedRouteOperations"
+      }
+    },
+    "/api/v1/driver/route-operations/{routeOperationId}/manifest": {
+      "get": {
+        "operationId": "getDriverRouteManifest"
+      }
+    },
+    "/api/v1/driver/route-operations/{routeOperationId}/freshness": {
+      "get": {
+        "operationId": "getRouteManifestFreshness"
+      }
+    },
+    "/api/v1/driver/route-operations/{routeOperationId}/actions": {
+      "post": {
+        "operationId": "submitRouteOperationAction"
+      }
+    },
+    "/api/v1/driver/route-operation-actions/{actionId}": {
+      "get": {
+        "operationId": "getRouteOperationActionReceipt"
+      }
+    },
     "/api/v1/master-data/clients": {
       "get": {
         "operationId": "list-clients",
