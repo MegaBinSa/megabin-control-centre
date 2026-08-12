@@ -112,3 +112,15 @@ Permissions are `route_operations.read`, `.create`, `.assign`, `.reassign`, `.co
 | System Admin/Developer | No by default | No | No | No |
 
 Permissions are `vehicle_tracking.read`, `.health.read`, `.manage_devices`, `.assign_devices`, and `.ingest`. Technical database access does not imply operational location visibility.
+
+## Phase 3C Live Operations Intelligence permissions
+
+| Role | Live regional view | Read facts/Needs Attention | Review/manage | Process inference |
+|---|---|---|---|---|
+| Director/Admin | Yes | Yes | Yes | Yes |
+| Operations Manager | Yes | Yes | Yes | Yes |
+| Office/Admin | Yes | Yes | Yes | No |
+| Driver/Team | No | No | No | No |
+| System Admin/Developer | No by default | No by default | No | No |
+
+Permissions are `live_operations.read`, `operational_intelligence.read`, `.review`, `.process`, `needs_attention.read`, and `.manage`. Every operation is region-scoped; technical access does not grant sensitive fleet visibility.

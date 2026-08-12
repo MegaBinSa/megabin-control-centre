@@ -1155,6 +1155,51 @@
         "operationId": "listCurrentVehiclePositions"
       }
     },
+    "/api/v1/live-operations": {
+      "get": {
+        "operationId": "getLiveOperationsOverview"
+      }
+    },
+    "/api/v1/live-operations/vehicles/{vehicleId}": {
+      "get": {
+        "operationId": "getLiveOperationsVehicleDetail"
+      }
+    },
+    "/api/v1/live-operations/routes/{routeOperationId}/progress": {
+      "get": {
+        "operationId": "getLiveRouteProgress"
+      }
+    },
+    "/api/v1/operational-intelligence/facts": {
+      "get": {
+        "operationId": "listOperationalFacts"
+      }
+    },
+    "/api/v1/operational-intelligence/evaluate": {
+      "post": {
+        "operationId": "evaluateOperationalIntelligence"
+      }
+    },
+    "/api/v1/operational-intelligence/facts/{factId}/{action}": {
+      "post": {
+        "operationId": "reviewOperationalFact"
+      }
+    },
+    "/api/v1/operational-intelligence/facts/{factId}": {
+      "get": {
+        "operationId": "getOperationalFact"
+      }
+    },
+    "/api/v1/needs-attention": {
+      "get": {
+        "operationId": "listNeedsAttention"
+      }
+    },
+    "/api/v1/needs-attention/{itemId}": {
+      "get": {
+        "operationId": "getNeedsAttentionItem"
+      }
+    },
     "/api/v1/master-data/clients": {
       "get": {
         "operationId": "list-clients",

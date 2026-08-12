@@ -119,3 +119,13 @@ Events exclude addresses, access instructions, free-text reason, manifests, and 
 | `VehicleTracking.DeviceRevoked` | Device lifecycle becomes revoked | device and region IDs |
 
 Individual GPS observations emit no durable business event. `TrackingHealthChanged` remains deferred until a low-noise transition consumer is approved.
+
+## Phase 3C accepted intelligence events
+
+| Event v1 | Trigger | Concise payload |
+|---|---|---|
+| `OperationalIntelligence.FactCreated` | A new deduplicated fact opens | fact, type, region, confidence, severity |
+| `OperationalIntelligence.FactResolved` | Recovery evidence or human review closes a fact | fact, type/status, region |
+| `NeedsAttention.ItemCreated` | A fact creates its review item | item, fact, region |
+
+Repeated evaluations, observation points, evidence details, coordinates, and acknowledgements emit no event. Human reviews remain in business audit facts.

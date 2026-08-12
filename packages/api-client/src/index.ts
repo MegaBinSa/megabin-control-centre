@@ -450,6 +450,36 @@ export class MasterDataApiClient {
   currentVehiclePositions<T>(serviceRegionId: string): Promise<T> {
     return this.request(`/vehicle-tracking/positions?${new URLSearchParams({ serviceRegionId })}`);
   }
+  liveOperations<T>(serviceRegionId: string): Promise<T> {
+    return this.request(`/live-operations?${new URLSearchParams({ serviceRegionId })}`);
+  }
+  liveOperationsVehicle<T>(vehicleId: string): Promise<T> {
+    return this.request(`/live-operations/vehicles/${vehicleId}`);
+  }
+  liveRouteProgress<T>(routeOperationId: string): Promise<T> {
+    return this.request(`/live-operations/routes/${routeOperationId}/progress`);
+  }
+  operationalFacts<T>(serviceRegionId: string, status = "open"): Promise<T> {
+    return this.request(
+      `/operational-intelligence/facts?${new URLSearchParams({ serviceRegionId, status })}`
+    );
+  }
+  operationalFact<T>(factId: string): Promise<T> {
+    return this.request(`/operational-intelligence/facts/${factId}`);
+  }
+  needsAttention<T>(serviceRegionId: string, status = "open"): Promise<T> {
+    return this.request(`/needs-attention?${new URLSearchParams({ serviceRegionId, status })}`);
+  }
+  needsAttentionItem<T>(itemId: string): Promise<T> {
+    return this.request(`/needs-attention/${itemId}`);
+  }
+  reviewOperationalFact<T>(factId: string, action: string, reason?: string): Promise<T> {
+    return this.request(
+      `/operational-intelligence/facts/${factId}/${action}`,
+      { method: "POST", body: JSON.stringify({ reason }) },
+      true
+    );
+  }
   private async request<T>(
     path: string,
     init: RequestInit = {},
