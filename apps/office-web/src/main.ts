@@ -5,6 +5,7 @@ import { renderGeographyWorkspace } from "./geography.js";
 import { renderRosterWorkspace } from "./roster.js";
 import { renderRoutesWorkspace } from "./routes.js";
 import { renderRouteOperationsWorkspace } from "./route-operations.js";
+import { renderTrackingWorkspace } from "./tracking.js";
 
 const modules = [
   "Clients",
@@ -139,6 +140,10 @@ function render(): void {
     <dialog id="create-dialog"><form id="create-form"><h2>Add ${active.replace(/s$/, "")}</h2>${createFields[active]}<div class="actions"><button type="button" id="cancel">Cancel</button><button class="button" type="submit">Save</button></div></form></dialog>
     <dialog id="edit-dialog"><form id="edit-form"><h2>Edit ${active.replace(/s$/, "")}</h2><input name="id" type="hidden"><input name="expectedUpdatedAt" type="hidden"><label>Editable values (JSON)<textarea name="patch" rows="12" required></textarea></label><div class="actions"><button type="button" id="archive">Archive</button><button type="button" id="edit-cancel">Cancel</button><button class="button">Save</button></div></form></dialog>
   </main></div>`;
+  if (identity.permissions.includes("vehicle_tracking.read"))
+    appRoot
+      .querySelector("nav")
+      ?.insertAdjacentHTML("beforeend", '<button id="tracking-workspace">Live Vehicles</button>');
   document.querySelectorAll<HTMLButtonElement>("[data-module]").forEach((button) =>
     button.addEventListener("click", () => {
       active = button.dataset.module as ModuleName;
@@ -173,6 +178,13 @@ function render(): void {
   });
   document.querySelector("#route-operations-workspace")?.addEventListener("click", () => {
     void renderRouteOperationsWorkspace(appRoot, api, identity?.permissions ?? [], async () => {
+      await auth.signOut();
+      identity = null;
+      render();
+    });
+  });
+  document.querySelector("#tracking-workspace")?.addEventListener("click", () => {
+    void renderTrackingWorkspace(appRoot, api, identity?.permissions ?? [], async () => {
       await auth.signOut();
       identity = null;
       render();

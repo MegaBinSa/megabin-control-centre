@@ -818,3 +818,78 @@ test("future Driver browser API harness reads, accepts, and starts its operation
     `POST /api/v1/driver/route-operations/${operationId}/actions`
   ]);
 });
+
+test("Office Live Vehicles shows regional map, status, and device administration", async ({
+  page
+}) => {
+  await syntheticSession(page, [
+    "master_data.read",
+    "vehicle_tracking.read",
+    "vehicle_tracking.health.read",
+    "vehicle_tracking.manage_devices",
+    "vehicle_tracking.assign_devices"
+  ]);
+  const regionId = "81000000-0000-4000-8000-000000000001";
+  await page.route("**/api/v1/master-data/service-regions*", (route) =>
+    route.fulfill({
+      json: {
+        ok: true,
+        data: {
+          items: [{ serviceRegionId: regionId, name: "Tracking North" }],
+          page: 1,
+          pageSize: 25,
+          total: 1
+        }
+      }
+    })
+  );
+  await page.route("**/api/v1/vehicle-tracking/positions?*", (route) =>
+    route.fulfill({
+      json: {
+        ok: true,
+        data: [
+          {
+            vehicleId: "82000000-0000-4000-8000-000000000001",
+            vehicleDisplayName: "Truck Track",
+            registrationReference: "TRACK-1",
+            deviceId: "83000000-0000-4000-8000-000000000001",
+            deviceName: "Driver Phone",
+            deviceStatus: "active",
+            teamName: "Team Tracking",
+            routeOperationId: "84000000-0000-4000-8000-000000000001",
+            latitude: -25.7479,
+            longitude: 28.2293,
+            recordedAt: new Date().toISOString(),
+            ageSeconds: 12,
+            accuracyMetres: 10,
+            health: "healthy"
+          }
+        ]
+      }
+    })
+  );
+  await page.route("**/api/v1/vehicle-tracking/devices?*", (route) =>
+    route.fulfill({
+      json: {
+        ok: true,
+        data: [
+          {
+            vehicleTrackingDeviceId: "83000000-0000-4000-8000-000000000001",
+            deviceName: "Driver Phone",
+            deviceReference: "PWA-1",
+            lifecycleStatus: "active",
+            vehicleDisplayName: "Truck Track",
+            lastSeenAt: new Date().toISOString()
+          }
+        ]
+      }
+    })
+  );
+  await page.getByRole("button", { name: "Live Vehicles" }).click();
+  await expect(page.getByRole("heading", { name: "Live Vehicles" })).toBeVisible();
+  await expect(page.getByText("Team Tracking")).toBeVisible();
+  await expect(page.getByText("Truck Track", { exact: true }).first()).toBeVisible();
+  await page.locator(".vehicle-marker").click();
+  await expect(page.getByText("accuracy 10 m")).toBeVisible();
+  await expect(page.getByRole("button", { name: "Register device" })).toBeVisible();
+});

@@ -109,3 +109,13 @@ Cancellation is audited but has no event until a consumer is approved. Payloads 
 | `OperationalIssues.IssueCreated` | An alert-worthy stop result opens an issue | issue, operation, stop, type |
 
 Events exclude addresses, access instructions, free-text reason, manifests, and raw device payloads.
+
+## Phase 3B accepted Vehicle Tracking events
+
+| Event v1 | Trigger | Concise payload |
+|---|---|---|
+| `VehicleTracking.DeviceRegistered` | Authorized device registration commits | device and region IDs |
+| `VehicleTracking.DeviceAssigned` | A current vehicle assignment commits | device, vehicle, and region IDs |
+| `VehicleTracking.DeviceRevoked` | Device lifecycle becomes revoked | device and region IDs |
+
+Individual GPS observations emit no durable business event. `TrackingHealthChanged` remains deferred until a low-noise transition consumer is approved.

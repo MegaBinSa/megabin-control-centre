@@ -46,12 +46,14 @@ Material changes to the architecture require an ADR. An ADR may clarify the blue
 | [Route Optimization](route-optimization.md) | Phase 2B provider boundaries, attempts, candidates, validation, and fallback |
 | [Route Operations](route-operations.md) | Phase 2C handoff, manifests, assignments, Driver authorization, and offline actions |
 | [Driver PWA execution](driver-pwa-execution.md) | Phase 3A installable app, offline cache and queue, stop outcomes, completion, and Office progress |
+| [Vehicle Tracking](vehicle-tracking.md) | Phase 3B devices, assignments, GPS ingestion, current positions, health, privacy, and retention |
 | [Office master-data workflow](../workflows/office-master-data-administration.md) | Authenticated Office administration behavior |
 | [Office geography workflow](../workflows/office-geography-administration.md) | Territory map editing and assignment-review workflow |
 | [Office Daily Roster workflow](../workflows/office-daily-roster.md) | Daily planning, readiness, substitution, and lock workflow |
 | [Office route optimization workflow](../workflows/office-route-optimization.md) | Provider status, candidate comparison, acceptance, rejection, and safe fallback |
 | [Office Route Operations workflow](../workflows/office-route-operations.md) | Published handoff, operational visibility, and pre-start reassignment |
 | [Driver route execution workflow](../workflows/driver-route-execution.md) | Assigned-route download, offline field actions, synchronization, and completion |
+| [Office vehicle tracking workflow](../workflows/office-vehicle-tracking.md) | Regional live map/status and tracking-device administration |
 | [Office local development](../runbooks/office-local-development.md) | Local Auth, API, and browser-test workflow |
 | [Master-data migration considerations](master-data-migration-considerations.md) | Import, identity, and transition constraints |
 | [State-machine catalogue](state-machine-catalogue.md) | Implemented lifecycle states and transitions |

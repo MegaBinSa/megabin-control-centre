@@ -100,3 +100,15 @@ Phase 2B adds `routes.optimize`, `routes.optimization.read`, and `routes.optimiz
 | System Admin/Developer | No by default | No | No | No |
 
 Permissions are `route_operations.read`, `.create`, `.assign`, `.reassign`, `.control`, `.driver.read`, and `.driver.act`. Office authority is region-scoped. Driver access additionally requires active staff membership in the current assignment and matching team/region scope; an assigned device must match.
+
+## Phase 3B Vehicle Tracking permissions
+
+| Role | Regional positions/health | Manage devices | Assign devices | Own-device ingest |
+|---|---|---|---|---|
+| Director/Admin | Yes | Yes | Yes | Only with explicit Driver relationship |
+| Operations Manager | Yes | Yes | Yes | Only with explicit Driver relationship |
+| Office/Admin | Yes | Yes | Yes | No |
+| Driver/Team | No all-vehicle view | No | No | Active owned device and current team/region scope only |
+| System Admin/Developer | No by default | No | No | No |
+
+Permissions are `vehicle_tracking.read`, `.health.read`, `.manage_devices`, `.assign_devices`, and `.ingest`. Technical database access does not imply operational location visibility.

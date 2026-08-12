@@ -1117,6 +1117,44 @@
         "operationId": "getRouteOperationActionReceipt"
       }
     },
+    "/api/v1/driver/tracking/device": {
+      "get": {
+        "operationId": "getOwnTrackingDevice"
+      }
+    },
+    "/api/v1/driver/tracking/observations": {
+      "post": {
+        "operationId": "ingestTrackingBatch"
+      }
+    },
+    "/api/v1/vehicle-tracking/devices": {
+      "get": {
+        "operationId": "listTrackingDevices"
+      },
+      "post": {
+        "operationId": "registerTrackingDevice"
+      }
+    },
+    "/api/v1/vehicle-tracking/devices/{deviceId}/lifecycle": {
+      "post": {
+        "operationId": "changeTrackingDeviceLifecycle"
+      }
+    },
+    "/api/v1/vehicle-tracking/devices/{deviceId}/assign": {
+      "post": {
+        "operationId": "assignTrackingDevice"
+      }
+    },
+    "/api/v1/vehicle-tracking/devices/{deviceId}/assignments": {
+      "get": {
+        "operationId": "getTrackingAssignmentHistory"
+      }
+    },
+    "/api/v1/vehicle-tracking/positions": {
+      "get": {
+        "operationId": "listCurrentVehiclePositions"
+      }
+    },
     "/api/v1/master-data/clients": {
       "get": {
         "operationId": "list-clients",
