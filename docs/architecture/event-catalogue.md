@@ -75,6 +75,8 @@ Geometry and client/address details are excluded from events. Permanent override
 | `Routes.RoutePublished` | Routes | A version becomes the operationally published plan | plan/version IDs, version number |
 | `Routes.RouteReplanned` | Routes | A new version is created from changed planning inputs | plan/version/day IDs, version number |
 | `Routes.RouteAssignmentChanged` | Routes | An authorized Draft stop move changes assignment/sequence | plan/version/stop IDs |
+| `Routes.RouteOptimizationRequested` | Routes | Authorized refinement is queued | plan/attempt/source-version IDs |
+| `Routes.OptimizedRouteVersionCreated` | Routes | A validated candidate is accepted as a new Draft | plan/attempt/source/candidate version IDs |
 | `Workforce.StaffAvailabilityChanged` | Workforce | Operational availability window saved | window/region IDs |
 | `Vehicles.VehicleAvailabilityWindowChanged` | Vehicles | Operational vehicle window saved | window/region IDs |
 

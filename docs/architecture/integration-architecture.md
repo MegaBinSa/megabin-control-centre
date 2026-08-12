@@ -38,6 +38,8 @@ The PostgreSQL outbox is the initial durable event mechanism. No message broker 
 | Spreadsheet transition | Imports only approved temporary fields, creates batch provenance and conflicts, and never silently overwrites owned data |
 | Accounting | Imports financial facts; Control Centre derives operational state without claiming financial authority |
 | Mapping | Supplies geocoding/distance calculations; owns no MegaBin business entity |
+| Routing | Supplies travel matrices, ordered road routes, static-road estimates, and internalized geometry through a Routes-owned contract |
+| Optimization | Supplies candidate assignments and ordering through a separate Routes-owned contract; it is not assumed to share the routing vendor |
 | GPS/tracking | Ingests scoped telemetry and device metadata; Tracking module derives current vehicle state |
 | Communications | Sends message intents and consumes provider delivery events without placing provider logic in domain workflows |
 
@@ -45,4 +47,4 @@ The PostgreSQL outbox is the initial durable event mechanism. No message broker 
 
 Core transactions must define behavior when a provider is unavailable. External dispatch normally occurs after the authoritative transaction through the outbox. Provider identifiers and payload metadata remain scoped to adapters so a provider can be replaced without changing master entity identities or business rules.
 
-The standard install-to-decommission process, environment modes, and health states are defined in the [integration lifecycle](integration-lifecycle.md).
+The standard install-to-decommission process, environment modes, and health states are defined in the [integration lifecycle](integration-lifecycle.md). Phase 2B selects deterministic fake routing and optimization adapters by safe environment configuration. A production adapter requires credentials in the runtime secret store and a provider-selection ADR; provider keys, SDK types, raw payloads, and credentials do not enter route-domain records.

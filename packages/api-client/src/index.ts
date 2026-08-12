@@ -262,6 +262,33 @@ export class MasterDataApiClient {
       true
     );
   }
+  startRouteOptimization<T>(sourceVersionId: string, expectedUpdatedAt: string): Promise<T> {
+    return this.request(
+      "/route-optimizations",
+      { method: "POST", body: JSON.stringify({ sourceVersionId, expectedUpdatedAt }) },
+      true
+    );
+  }
+  routeOptimization<T>(attemptId: string): Promise<T> {
+    return this.request(`/route-optimizations/${attemptId}`);
+  }
+  acceptRouteOptimization<T>(attemptId: string, expectedSourceUpdatedAt: string): Promise<T> {
+    return this.request(
+      `/route-optimizations/${attemptId}/accept`,
+      { method: "POST", body: JSON.stringify({ expectedSourceUpdatedAt }) },
+      true
+    );
+  }
+  rejectRouteOptimization<T>(attemptId: string, reason: string): Promise<T> {
+    return this.request(
+      `/route-optimizations/${attemptId}/reject`,
+      { method: "POST", body: JSON.stringify({ reason }) },
+      true
+    );
+  }
+  routeProviderHealth<T>(serviceRegionId: string): Promise<T> {
+    return this.request(`/route-providers/health?${new URLSearchParams({ serviceRegionId })}`);
+  }
   private async request<T>(path: string, init: RequestInit = {}, write = false): Promise<T> {
     const token = await this.options.accessToken();
     const correlationId = crypto.randomUUID();

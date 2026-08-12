@@ -559,3 +559,114 @@ test("Office route planning generate, inspect unassigned work, ready, and publis
   await page.getByRole("button", { name: "Publish" }).click();
   await expect(page.getByText("published", { exact: true })).toBeVisible();
 });
+
+test("Office route optimization compares and accepts a candidate", async ({ page }) => {
+  await syntheticSession(page, [
+    "master_data.read",
+    "routes.read",
+    "routes.write",
+    "routes.optimize",
+    "routes.optimization.read",
+    "routes.optimization.apply"
+  ]);
+  const regionId = "d2000000-0000-4000-8000-000000000001";
+  let version = 1;
+  const plan = () => ({
+    routeVersionId:
+      version === 1
+        ? "d3000000-0000-4000-8000-000000000001"
+        : "d3000000-0000-4000-8000-000000000002",
+    routePlanId: "d4000000-0000-4000-8000-000000000001",
+    versionNumber: version,
+    versionStatus: "draft",
+    generationMethod: version === 1 ? "deterministic_baseline" : "provider_optimized",
+    isStale: false,
+    updatedAt: "2026-08-12T06:00:00Z",
+    routes: [],
+    unassignedServices: []
+  });
+  await page.route("**/api/v1/master-data/service-regions*", (route) =>
+    route.fulfill({
+      json: {
+        ok: true,
+        data: {
+          items: [{ serviceRegionId: regionId, name: "Region" }],
+          page: 1,
+          pageSize: 25,
+          total: 1
+        }
+      }
+    })
+  );
+  await page.route("**/api/v1/roster/daily*", (route) =>
+    route.fulfill({ json: { ok: true, data: null } })
+  );
+  await page.route("**/api/v1/route-providers/health*", (route) =>
+    route.fulfill({
+      json: {
+        ok: true,
+        data: [
+          { providerKey: "fake-optimizer", capability: "optimization", healthStatus: "healthy" }
+        ]
+      }
+    })
+  );
+  await page.route("**/api/v1/route-plans?*", (route) =>
+    route.fulfill({ json: { ok: true, data: plan() } })
+  );
+  await page.route("**/api/v1/route-optimizations", (route) =>
+    route.fulfill({
+      status: 202,
+      json: {
+        ok: true,
+        data: {
+          routeOptimizationAttemptId: "d5000000-0000-4000-8000-000000000001",
+          sourceRouteVersionId: plan().routeVersionId,
+          candidateRouteVersionId: null,
+          lifecycleStatus: "succeeded",
+          routingProvider: "fake-routing",
+          optimizationProvider: "fake-optimizer",
+          comparison: {
+            baselineDistanceMetres: 1000,
+            candidateDistanceMetres: 800,
+            baselineDurationMinutes: 50,
+            candidateDurationMinutes: 45
+          },
+          providerWarnings: [],
+          candidateResult: {
+            routes: [
+              {
+                routeId: "route",
+                stopIds: ["stop"],
+                geometry: {
+                  format: "geojson_linestring",
+                  coordinates: [
+                    [28.2, -25.75],
+                    [28.22, -25.76]
+                  ],
+                  source: "provider_road"
+                }
+              }
+            ],
+            unassignedStopIds: []
+          },
+          failureClassification: null,
+          failureSummary: null
+        }
+      }
+    })
+  );
+  await page.route("**/api/v1/route-optimizations/*/accept", (route) => {
+    version = 2;
+    return route.fulfill({ json: { ok: true, data: plan() } });
+  });
+  await page.getByRole("button", { name: "Route Planning" }).click();
+  await expect(page.getByText("Optimization provider:")).toContainText("healthy");
+  await page.getByRole("button", { name: "Optimize" }).click();
+  await expect(page.getByRole("heading", { name: "Optimization candidate" })).toBeVisible();
+  await expect(page.getByText("Candidate 800 m")).toBeVisible();
+  await expect(page.getByLabel("Optimized candidate road route")).toBeVisible();
+  await page.getByRole("button", { name: "Accept candidate" }).click();
+  await expect(page.getByText("Version 2")).toBeVisible();
+  await expect(page.getByText("Strategy: provider optimized")).toBeVisible();
+});

@@ -43,9 +43,11 @@ Material changes to the architecture require an ADR. An ADR may clarify the blue
 | [Geography administration](geography-administration.md) | Phase 1C PostGIS, map boundary, priority, impact, and review contracts |
 | [Daily Roster](daily-roster.md) | Phase 1D operational-day, availability, substitution, validation, and locking contracts |
 | [Route Planning](route-planning.md) | Phase 2A route aggregate, eligibility, deterministic baseline, versioning, and publication |
+| [Route Optimization](route-optimization.md) | Phase 2B provider boundaries, attempts, candidates, validation, and fallback |
 | [Office master-data workflow](../workflows/office-master-data-administration.md) | Authenticated Office administration behavior |
 | [Office geography workflow](../workflows/office-geography-administration.md) | Territory map editing and assignment-review workflow |
 | [Office Daily Roster workflow](../workflows/office-daily-roster.md) | Daily planning, readiness, substitution, and lock workflow |
+| [Office route optimization workflow](../workflows/office-route-optimization.md) | Provider status, candidate comparison, acceptance, rejection, and safe fallback |
 | [Office local development](../runbooks/office-local-development.md) | Local Auth, API, and browser-test workflow |
 | [Master-data migration considerations](master-data-migration-considerations.md) | Import, identity, and transition constraints |
 | [State-machine catalogue](state-machine-catalogue.md) | Implemented lifecycle states and transitions |

@@ -7,6 +7,7 @@ export * from "./master-data-http.js";
 export * from "./geography-http.js";
 export * from "./roster-http.js";
 export * from "./routes-http.js";
+export * from "./route-optimization.js";
 export * from "./jobs.js";
 export * from "./memory.js";
 export * from "./supabase.js";
