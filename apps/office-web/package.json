@@ -13,6 +13,7 @@
   },
   "dependencies": {
     "@megabin/api-client": "workspace:*",
-    "@megabin/auth": "workspace:*"
+    "@megabin/auth": "workspace:*",
+    "@megabin/geography": "workspace:*"
   }
 }

@@ -94,6 +94,65 @@ export class MasterDataApiClient {
   profile<T>(): Promise<T> {
     return this.request("/office/profile");
   }
+  geographyMap<T>(serviceRegionId: string): Promise<T> {
+    return this.request(`/geography/map?${new URLSearchParams({ serviceRegionId })}`);
+  }
+  geographyPointQuery<T>(body: unknown): Promise<T> {
+    return this.request("/geography/point-query", { method: "POST", body: JSON.stringify(body) });
+  }
+  createTerritoryGeometry<T>(body: unknown): Promise<T> {
+    return this.request(
+      "/geography/territories",
+      { method: "POST", body: JSON.stringify(body) },
+      true
+    );
+  }
+  updateTerritoryGeometry<T>(id: string, body: unknown): Promise<T> {
+    return this.request(
+      `/geography/territories/${id}`,
+      { method: "PUT", body: JSON.stringify(body) },
+      true
+    );
+  }
+  territoryOverlaps<T>(id: string, body: unknown): Promise<T> {
+    return this.request(`/geography/territories/${id}/overlaps`, {
+      method: "POST",
+      body: JSON.stringify(body)
+    });
+  }
+  territoryImpact<T>(id: string, body: unknown): Promise<T> {
+    return this.request(`/geography/territories/${id}/impact-preview`, {
+      method: "POST",
+      body: JSON.stringify(body)
+    });
+  }
+  geographyReviews<T>(serviceRegionId: string, status = "open"): Promise<T> {
+    return this.request(`/geography/reviews?${new URLSearchParams({ serviceRegionId, status })}`);
+  }
+  resolveGeographyReview<T>(id: string, body: unknown): Promise<T> {
+    return this.request(
+      `/geography/reviews/${id}/resolve`,
+      { method: "POST", body: JSON.stringify(body) },
+      true
+    );
+  }
+  setTerritoryOverride<T>(clientServiceId: string, body: unknown): Promise<T> {
+    return this.request(
+      `/geography/services/${clientServiceId}/territory-override`,
+      { method: "PUT", body: JSON.stringify(body) },
+      true
+    );
+  }
+  updateDepotGeography<T>(depotId: string, body: unknown): Promise<T> {
+    return this.request(
+      `/geography/depots/${depotId}`,
+      { method: "PATCH", body: JSON.stringify(body) },
+      true
+    );
+  }
+  serviceAddressGeography<T>(serviceAddressId: string): Promise<T> {
+    return this.request(`/geography/service-addresses/${serviceAddressId}/context`);
+  }
   private async request<T>(path: string, init: RequestInit = {}, write = false): Promise<T> {
     const token = await this.options.accessToken();
     const correlationId = crypto.randomUUID();

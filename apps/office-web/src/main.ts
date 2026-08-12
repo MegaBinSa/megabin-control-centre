@@ -1,6 +1,7 @@
 import "./style.css";
 import { createOfficeAuth, type OfficeIdentity } from "@megabin/auth";
 import { MasterDataApiClient } from "@megabin/api-client";
+import { renderGeographyWorkspace } from "./geography.js";
 
 const modules = [
   "Clients",
@@ -127,7 +128,7 @@ function render(): void {
         `<tr><td>${escapeText(String(record.displayName ?? record.name ?? record.contactName ?? record.addressLine1 ?? "—"))}</td><td>${escapeText(String(record.regionName ?? record.city ?? "—"))}</td><td><span class="status">${escapeText(String(record.lifecycleStatus ?? record.operationalAvailability ?? (record.isActive === false ? "Inactive" : "Active")))}</span></td><td>${canWrite ? `<button data-edit="${index}">Edit</button>` : ""}</td></tr>`
     )
     .join("");
-  appRoot.innerHTML = `<div class="shell"><aside><div class="brand">MegaBin Control Centre</div><nav>${visibleModules.map((name) => `<button data-module="${name}" ${name === active ? 'aria-current="page"' : ""}>${name}</button>`).join("")}</nav></aside><main>
+  appRoot.innerHTML = `<div class="shell"><aside><div class="brand">MegaBin Control Centre</div><nav>${visibleModules.map((name) => `<button data-module="${name}" ${name === active ? 'aria-current="page"' : ""}>${name}</button>`).join("")}${identity.permissions.includes("geography.read") ? '<button id="geography-workspace">Geography</button>' : ""}</nav></aside><main>
     <header><div><h1>${active}</h1><p>Authoritative master-data administration · ${escapeText(identity.displayName)}</p></div><div class="header-actions">${canWrite ? `<button class="button" id="create">Add ${active.replace(/s$/, "")}</button>` : ""}<button id="logout">Sign out</button></div></header>
     ${errorMessage ? `<div class="error">${escapeText(errorMessage)}</div>` : ""}
     <div class="toolbar"><input id="search" type="search" placeholder="Search ${active.toLowerCase()}"/><select aria-label="Status"><option>All statuses</option><option>Active</option><option>Inactive / archived</option></select></div>
@@ -141,6 +142,18 @@ function render(): void {
       void load();
     })
   );
+  document.querySelector("#geography-workspace")?.addEventListener("click", () => {
+    void renderGeographyWorkspace(
+      appRoot,
+      api,
+      identity?.permissions.includes("geography.write") === true,
+      async () => {
+        await auth.signOut();
+        identity = null;
+        render();
+      }
+    );
+  });
   const dialog = document.querySelector<HTMLDialogElement>("#create-dialog");
   document.querySelector("#create")?.addEventListener("click", () => dialog?.showModal());
   document.querySelector("#cancel")?.addEventListener("click", () => dialog?.close());

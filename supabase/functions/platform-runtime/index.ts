@@ -5,6 +5,7 @@ import type { ActorReference } from "@megabin/domain-types";
 import {
   createRuntimeHandler,
   createMasterDataHandler,
+  createGeographyHandler,
   MemoryJobStateStore,
   SupabaseRuntimeDatabase,
   type RuntimeRpcClient
@@ -52,6 +53,9 @@ export default {
       { accepted: true }
     );
     const actorId = jwtSubject(request);
+    const geography = createGeographyHandler({ rpc, actorId, id: () => crypto.randomUUID() });
+    const geographyResponse = await geography(request);
+    if (geographyResponse) return geographyResponse;
     const masterData = createMasterDataHandler({ rpc, actorId, id: () => crypto.randomUUID() });
     const masterDataResponse = await masterData(request);
     if (masterDataResponse) return masterDataResponse;

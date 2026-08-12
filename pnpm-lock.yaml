@@ -47,6 +47,9 @@ importers:
       '@megabin/auth':
         specifier: workspace:*
         version: link:../../packages/auth
+      '@megabin/geography':
+        specifier: workspace:*
+        version: link:../../packages/geography
     devDependencies:
       vite:
         specifier: 8.2.1
@@ -69,6 +72,8 @@ importers:
       '@megabin/domain-types':
         specifier: workspace:*
         version: link:../domain-types
+
+  packages/geography: {}
 
   packages/integrations:
     dependencies:

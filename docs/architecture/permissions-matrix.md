@@ -50,3 +50,15 @@ Region-scoped access requires a matching service-region scope; global scope is e
 ## Phase 1B enforcement
 
 Office navigation is permission-aware, but it is never the security boundary. The application API loads role/permission/scope assignments from application-controlled tables and re-authorizes each request. Client and contact routes require `clients.sensitive.read`; other resources require `master_data.read`; writes require `master_data.write`. A Driver/Team role has none of these permissions and cannot enter Office administration. Region-filtered lists apply the same region predicate to returned rows after authorization, preventing cross-region object access.
+
+## Phase 1C geography permissions
+
+| Role | `geography.read` | `geography.write` |
+|---|---|---|
+| Director/Admin | Yes, assigned scope | Yes, assigned scope |
+| Operations Manager | Yes, assigned scope | Yes, assigned scope |
+| Office/Admin | Yes, assigned scope | Yes, assigned scope |
+| Driver/Team | No | No |
+| System Admin/Developer | Yes, assigned scope | No by default |
+
+Every geography API re-authorizes service-region scope. The browser has no direct execute grant on privileged geography RPCs and no direct write grant on Geography tables.

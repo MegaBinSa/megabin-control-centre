@@ -14,6 +14,303 @@
     }
   },
   "paths": {
+    "/api/v1/geography/map": {
+      "get": {
+        "operationId": "getGeographyMap",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful geography response"
+          },
+          "400": {
+            "description": "Invalid geography input"
+          },
+          "401": {
+            "description": "Authentication required"
+          },
+          "403": {
+            "description": "Permission or region scope denied"
+          },
+          "409": {
+            "description": "Stale write"
+          }
+        }
+      }
+    },
+    "/api/v1/geography/point-query": {
+      "post": {
+        "operationId": "queryTerritoriesForPoint",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful geography response"
+          },
+          "400": {
+            "description": "Invalid geography input"
+          },
+          "401": {
+            "description": "Authentication required"
+          },
+          "403": {
+            "description": "Permission or region scope denied"
+          },
+          "409": {
+            "description": "Stale write"
+          }
+        }
+      }
+    },
+    "/api/v1/geography/territories": {
+      "post": {
+        "operationId": "createTerritoryGeometry",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful geography response"
+          },
+          "400": {
+            "description": "Invalid geography input"
+          },
+          "401": {
+            "description": "Authentication required"
+          },
+          "403": {
+            "description": "Permission or region scope denied"
+          },
+          "409": {
+            "description": "Stale write"
+          }
+        }
+      }
+    },
+    "/api/v1/geography/territories/{id}": {
+      "put": {
+        "operationId": "updateTerritoryGeometry",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful geography response"
+          },
+          "400": {
+            "description": "Invalid geography input"
+          },
+          "401": {
+            "description": "Authentication required"
+          },
+          "403": {
+            "description": "Permission or region scope denied"
+          },
+          "409": {
+            "description": "Stale write"
+          }
+        }
+      }
+    },
+    "/api/v1/geography/territories/{id}/overlaps": {
+      "post": {
+        "operationId": "analyzeTerritoryOverlap",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful geography response"
+          },
+          "400": {
+            "description": "Invalid geography input"
+          },
+          "401": {
+            "description": "Authentication required"
+          },
+          "403": {
+            "description": "Permission or region scope denied"
+          },
+          "409": {
+            "description": "Stale write"
+          }
+        }
+      }
+    },
+    "/api/v1/geography/territories/{id}/impact-preview": {
+      "post": {
+        "operationId": "previewTerritoryImpact",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful geography response"
+          },
+          "400": {
+            "description": "Invalid geography input"
+          },
+          "401": {
+            "description": "Authentication required"
+          },
+          "403": {
+            "description": "Permission or region scope denied"
+          },
+          "409": {
+            "description": "Stale write"
+          }
+        }
+      }
+    },
+    "/api/v1/geography/reviews": {
+      "get": {
+        "operationId": "listGeographyReviews",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful geography response"
+          },
+          "400": {
+            "description": "Invalid geography input"
+          },
+          "401": {
+            "description": "Authentication required"
+          },
+          "403": {
+            "description": "Permission or region scope denied"
+          },
+          "409": {
+            "description": "Stale write"
+          }
+        }
+      }
+    },
+    "/api/v1/geography/reviews/{id}/resolve": {
+      "post": {
+        "operationId": "resolveGeographyReview",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful geography response"
+          },
+          "400": {
+            "description": "Invalid geography input"
+          },
+          "401": {
+            "description": "Authentication required"
+          },
+          "403": {
+            "description": "Permission or region scope denied"
+          },
+          "409": {
+            "description": "Stale write"
+          }
+        }
+      }
+    },
+    "/api/v1/geography/services/{id}/territory-override": {
+      "put": {
+        "operationId": "setTerritoryOverride",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful geography response"
+          },
+          "400": {
+            "description": "Invalid geography input"
+          },
+          "401": {
+            "description": "Authentication required"
+          },
+          "403": {
+            "description": "Permission or region scope denied"
+          },
+          "409": {
+            "description": "Stale write"
+          }
+        }
+      }
+    },
+    "/api/v1/geography/depots/{id}": {
+      "patch": {
+        "operationId": "updateDepotGeography",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful geography response"
+          },
+          "400": {
+            "description": "Invalid geography input"
+          },
+          "401": {
+            "description": "Authentication required"
+          },
+          "403": {
+            "description": "Permission or region scope denied"
+          },
+          "409": {
+            "description": "Stale write"
+          }
+        }
+      }
+    },
+    "/api/v1/geography/service-addresses/{id}/context": {
+      "get": {
+        "operationId": "getServiceAddressGeography",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful geography response"
+          },
+          "400": {
+            "description": "Invalid geography input"
+          },
+          "401": {
+            "description": "Authentication required"
+          },
+          "403": {
+            "description": "Permission or region scope denied"
+          },
+          "409": {
+            "description": "Stale write"
+          }
+        }
+      }
+    },
     "/api/v1/master-data/clients": {
       "get": {
         "operationId": "list-clients",
