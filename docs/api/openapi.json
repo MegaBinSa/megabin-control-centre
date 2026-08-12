@@ -835,6 +835,78 @@
         }
       }
     },
+    "/api/v1/route-versions/{versionId}/stops/{stopId}/unassign": {
+      "post": {
+        "operationId": "unassignPlannedStop",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Route-planning response"
+          },
+          "400": {
+            "description": "Validation failure"
+          },
+          "403": {
+            "description": "Permission denied"
+          },
+          "409": {
+            "description": "Stale version"
+          }
+        }
+      }
+    },
+    "/api/v1/route-versions/{versionId}/unassigned/{unassignedId}/assign": {
+      "post": {
+        "operationId": "assignUnassignedService",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Route-planning response"
+          },
+          "400": {
+            "description": "Validation failure"
+          },
+          "403": {
+            "description": "Permission denied"
+          },
+          "409": {
+            "description": "Stale version"
+          }
+        }
+      }
+    },
+    "/api/v1/route-versions/{versionId}/routes/{routeId}/start-time": {
+      "post": {
+        "operationId": "updatePlannedStartTime",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Route-planning response"
+          },
+          "400": {
+            "description": "Validation failure"
+          },
+          "403": {
+            "description": "Permission denied"
+          },
+          "409": {
+            "description": "Stale version"
+          }
+        }
+      }
+    },
     "/api/v1/master-data/clients": {
       "get": {
         "operationId": "list-clients",

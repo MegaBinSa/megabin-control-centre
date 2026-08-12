@@ -110,6 +110,49 @@ export function createRouteHandler(
           201
         );
       }
+      m = /^\/route-versions\/([0-9a-f-]+)\/stops\/([0-9a-f-]+)\/unassign$/.exec(path);
+      if (m && request.method === "POST") {
+        const b = (await request.json()) as Record<string, unknown>;
+        return execute(
+          "route_stop_unassign",
+          { p_actor_id: actor, p_stop_id: m[2], p_reason: b.reason, p_correlation_id: cid },
+          deps,
+          cid
+        );
+      }
+      m = /^\/route-versions\/([0-9a-f-]+)\/unassigned\/([0-9a-f-]+)\/assign$/.exec(path);
+      if (m && request.method === "POST") {
+        const b = (await request.json()) as Record<string, unknown>;
+        return execute(
+          "route_service_assign",
+          {
+            p_actor_id: actor,
+            p_unassigned_id: m[2],
+            p_target_route_id: b.targetRouteId,
+            p_target_sequence: b.targetSequence,
+            p_reason: b.reason,
+            p_correlation_id: cid
+          },
+          deps,
+          cid
+        );
+      }
+      m = /^\/route-versions\/([0-9a-f-]+)\/routes\/([0-9a-f-]+)\/start-time$/.exec(path);
+      if (m && request.method === "POST") {
+        const b = (await request.json()) as Record<string, unknown>;
+        return execute(
+          "route_start_time_update",
+          {
+            p_actor_id: actor,
+            p_planned_route_id: m[2],
+            p_planned_start_at: b.plannedStartAt,
+            p_reason: b.reason,
+            p_correlation_id: cid
+          },
+          deps,
+          cid
+        );
+      }
       m = /^\/route-versions\/([0-9a-f-]+)(?:\/(validate|ready|publish))?$/.exec(path);
       if (m) {
         if (!m[2] && request.method === "GET")
@@ -185,6 +228,15 @@ export function routeOpenApiPaths(): Record<string, unknown> {
     "/api/v1/route-versions/{id}/validate": { post: op("validateRouteVersion") },
     "/api/v1/route-versions/{id}/ready": { post: op("readyRouteVersion") },
     "/api/v1/route-versions/{id}/publish": { post: op("publishRouteVersion") },
-    "/api/v1/route-versions/{versionId}/stops/{stopId}/move": { post: op("movePlannedStop") }
+    "/api/v1/route-versions/{versionId}/stops/{stopId}/move": { post: op("movePlannedStop") },
+    "/api/v1/route-versions/{versionId}/stops/{stopId}/unassign": {
+      post: op("unassignPlannedStop")
+    },
+    "/api/v1/route-versions/{versionId}/unassigned/{unassignedId}/assign": {
+      post: op("assignUnassignedService")
+    },
+    "/api/v1/route-versions/{versionId}/routes/{routeId}/start-time": {
+      post: op("updatePlannedStartTime")
+    }
   };
 }

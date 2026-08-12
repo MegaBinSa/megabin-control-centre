@@ -241,6 +241,27 @@ export class MasterDataApiClient {
       true
     );
   }
+  unassignRouteStop<T>(routeVersionId: string, stopId: string, reason: string): Promise<T> {
+    return this.request(
+      `/route-versions/${routeVersionId}/stops/${stopId}/unassign`,
+      { method: "POST", body: JSON.stringify({ reason }) },
+      true
+    );
+  }
+  assignRouteService<T>(routeVersionId: string, unassignedId: string, body: unknown): Promise<T> {
+    return this.request(
+      `/route-versions/${routeVersionId}/unassigned/${unassignedId}/assign`,
+      { method: "POST", body: JSON.stringify(body) },
+      true
+    );
+  }
+  updateRouteStartTime<T>(routeVersionId: string, routeId: string, body: unknown): Promise<T> {
+    return this.request(
+      `/route-versions/${routeVersionId}/routes/${routeId}/start-time`,
+      { method: "POST", body: JSON.stringify(body) },
+      true
+    );
+  }
   private async request<T>(path: string, init: RequestInit = {}, write = false): Promise<T> {
     const token = await this.options.accessToken();
     const correlationId = crypto.randomUUID();
