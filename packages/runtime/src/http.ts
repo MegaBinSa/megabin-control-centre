@@ -16,6 +16,7 @@ import { rosterOpenApiPaths } from "./roster-http.js";
 import { routeOpenApiPaths } from "./routes-http.js";
 import { routeOperationsOpenApiPaths } from "./route-operations-http.js";
 import { vehicleTrackingOpenApiPaths } from "./vehicle-tracking-http.js";
+import { liveOperationsOpenApiPaths } from "./live-operations-http.js";
 
 interface ProofBody {
   readonly value: string;
@@ -238,6 +239,7 @@ export function createOpenApiDocument(): Readonly<Record<string, unknown>> {
       ...routeOpenApiPaths(),
       ...routeOperationsOpenApiPaths(),
       ...vehicleTrackingOpenApiPaths,
+      ...liveOperationsOpenApiPaths,
       ...masterDataOpenApiPaths(),
       "/api/v1/platform-proof": { post: { operationId: "executePlatformProof" } },
       "/api/v1/health/live": { get: { operationId: "getLiveness" } },

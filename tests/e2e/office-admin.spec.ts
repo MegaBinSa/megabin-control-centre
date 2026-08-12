@@ -893,3 +893,106 @@ test("Office Live Vehicles shows regional map, status, and device administration
   await expect(page.getByText("accuracy 10 m")).toBeVisible();
   await expect(page.getByRole("button", { name: "Register device" })).toBeVisible();
 });
+
+test("Office Live Operations reviews and dismisses inferred facts", async ({ page }) => {
+  await syntheticSession(page, [
+    "master_data.read",
+    "live_operations.read",
+    "operational_intelligence.read",
+    "operational_intelligence.review",
+    "needs_attention.read"
+  ]);
+  const regionId = "91000000-0000-4000-8000-000000000001";
+  const operationId = "92000000-0000-4000-8000-000000000001";
+  const factId = "93000000-0000-4000-8000-000000000001";
+  await page.route("**/api/v1/master-data/service-regions*", (route) =>
+    route.fulfill({
+      json: {
+        ok: true,
+        data: {
+          items: [{ serviceRegionId: regionId, name: "Live North" }],
+          page: 1,
+          pageSize: 25,
+          total: 1
+        }
+      }
+    })
+  );
+  await page.route("**/api/v1/live-operations?*", (route) =>
+    route.fulfill({
+      json: {
+        ok: true,
+        data: {
+          openNeedsAttention: 1,
+          routes: [
+            {
+              routeOperationId: operationId,
+              vehicleId: "94000000-0000-4000-8000-000000000001",
+              vehicleName: "Truck Live",
+              registrationReference: "LIVE-1",
+              teamName: "Team Live",
+              routeStatus: "in_progress",
+              currentInterpretation: "between_stops",
+              authoritativeCompletedStops: 2,
+              inferredVisitedStops: 1,
+              remainingStops: 3,
+              scheduleRisk: "at_risk",
+              trackingHealth: "healthy",
+              openFactCount: 1,
+              position: {
+                latitude: -25.75,
+                longitude: 28.24,
+                recordedAt: new Date().toISOString(),
+                accuracyMetres: 12
+              }
+            }
+          ]
+        }
+      }
+    })
+  );
+  await page.route("**/api/v1/operational-intelligence/facts?*", (route) =>
+    route.fulfill({
+      json: {
+        ok: true,
+        data: [
+          {
+            operationalFactId: factId,
+            factType: "route_deviation",
+            vehicleName: "Truck Live",
+            teamName: "Team Live",
+            routeOperationId: operationId,
+            severity: "warning",
+            confidence: "high",
+            lifecycleStatus: "open",
+            detectedAt: new Date().toISOString(),
+            summary: "Sustained route corridor deviation",
+            evidence: { consecutiveObservations: 3 }
+          }
+        ]
+      }
+    })
+  );
+  await page.route("**/api/v1/needs-attention?*", (route) =>
+    route.fulfill({
+      json: { ok: true, data: [{ needsAttentionItemId: "95000000-0000-4000-8000-000000000001" }] }
+    })
+  );
+  await page.route(`**/api/v1/operational-intelligence/facts/${factId}/dismiss`, (route) =>
+    route.fulfill({
+      json: { ok: true, data: { operationalFactId: factId, lifecycleStatus: "dismissed" } }
+    })
+  );
+  await page.getByRole("button", { name: "Live Operations" }).click();
+  await expect(page.getByRole("heading", { name: "Live Operations" })).toBeVisible();
+  await expect(page.getByText("Team Live").first()).toBeVisible();
+  await expect(page.getByText("Sustained route corridor deviation")).toBeVisible();
+  await page.locator(".vehicle-marker").click();
+  await expect(page.getByText("2 authoritative, 1 inferred, 3 remaining")).toBeVisible();
+  page.once("dialog", (dialog) => dialog.accept("Synthetic false positive"));
+  const request = page.waitForRequest((candidate) =>
+    candidate.url().endsWith(`/operational-intelligence/facts/${factId}/dismiss`)
+  );
+  await page.getByRole("button", { name: "Dismiss false positive" }).click();
+  expect((await request).postDataJSON()).toEqual({ reason: "Synthetic false positive" });
+});

@@ -11,6 +11,7 @@ import {
   createRouteHandler,
   createRouteOperationsHandler,
   createVehicleTrackingHandler,
+  createLiveOperationsHandler,
   MemoryJobStateStore,
   SupabaseRuntimeDatabase,
   type RuntimeRpcClient
@@ -62,6 +63,13 @@ export default {
       { accepted: true }
     );
     const actorId = jwtSubject(request);
+    const liveOperations = createLiveOperationsHandler({
+      rpc,
+      actorId,
+      id: () => crypto.randomUUID()
+    });
+    const liveOperationsResponse = await liveOperations(request);
+    if (liveOperationsResponse) return liveOperationsResponse;
     const vehicleTracking = createVehicleTrackingHandler({
       rpc,
       actorId,

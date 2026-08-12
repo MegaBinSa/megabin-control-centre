@@ -33,3 +33,8 @@ Handoff creates the planned assignment and moves directly to `Available`. Driver
 
 - Tracking Device: `Registered -> Active <-> Suspended -> Revoked | Retired`. Revoked and Retired are terminal for ingestion.
 - Tracking health is a derived read state: `Unknown | Healthy | Delayed | Stale | Offline | Suspended | Revoked`; it is not persisted as operational truth.
+
+## Operational Intelligence and Needs Attention
+
+- Derived Fact: `Open -> Acknowledged -> Resolved | Dismissed`; automatic recovery may move `Open|Acknowledged -> Resolved`. `Superseded` is reserved for rule/source-version replacement. Evidence remains immutable through human review.
+- Needs Attention: `Open -> Acknowledged -> Resolved | Dismissed`. It follows the linked fact lifecycle and does not duplicate evidence or implement a generic workflow engine.

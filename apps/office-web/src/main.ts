@@ -6,6 +6,7 @@ import { renderRosterWorkspace } from "./roster.js";
 import { renderRoutesWorkspace } from "./routes.js";
 import { renderRouteOperationsWorkspace } from "./route-operations.js";
 import { renderTrackingWorkspace } from "./tracking.js";
+import { renderLiveOperationsWorkspace } from "./live-operations.js";
 
 const modules = [
   "Clients",
@@ -144,6 +145,13 @@ function render(): void {
     appRoot
       .querySelector("nav")
       ?.insertAdjacentHTML("beforeend", '<button id="tracking-workspace">Live Vehicles</button>');
+  if (identity.permissions.includes("live_operations.read"))
+    appRoot
+      .querySelector("nav")
+      ?.insertAdjacentHTML(
+        "beforeend",
+        '<button id="live-operations-workspace">Live Operations</button>'
+      );
   document.querySelectorAll<HTMLButtonElement>("[data-module]").forEach((button) =>
     button.addEventListener("click", () => {
       active = button.dataset.module as ModuleName;
@@ -185,6 +193,13 @@ function render(): void {
   });
   document.querySelector("#tracking-workspace")?.addEventListener("click", () => {
     void renderTrackingWorkspace(appRoot, api, identity?.permissions ?? [], async () => {
+      await auth.signOut();
+      identity = null;
+      render();
+    });
+  });
+  document.querySelector("#live-operations-workspace")?.addEventListener("click", () => {
+    void renderLiveOperationsWorkspace(appRoot, api, identity?.permissions ?? [], async () => {
       await auth.signOut();
       identity = null;
       render();
