@@ -53,6 +53,9 @@ importers:
       '@megabin/geography':
         specifier: workspace:*
         version: link:../../packages/geography
+      '@megabin/route-planning':
+        specifier: workspace:*
+        version: link:../../packages/route-planning
     devDependencies:
       vite:
         specifier: 8.2.1
@@ -98,6 +101,8 @@ importers:
   packages/observability: {}
 
   packages/permissions: {}
+
+  packages/route-planning: {}
 
   packages/runtime:
     dependencies:

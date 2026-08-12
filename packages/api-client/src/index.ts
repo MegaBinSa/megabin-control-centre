@@ -199,6 +199,69 @@ export class MasterDataApiClient {
   removeAvailability<T>(kind: "staff" | "vehicle", id: string): Promise<T> {
     return this.request(`/availability/${kind}/${id}`, { method: "DELETE" }, true);
   }
+  findRoutePlan<T>(serviceRegionId: string, serviceDate: string): Promise<T | null> {
+    return this.request(`/route-plans?${new URLSearchParams({ serviceRegionId, serviceDate })}`);
+  }
+  generateRoutePlan<T>(operationalDayId: string): Promise<T> {
+    return this.request(
+      "/route-plans/generate",
+      { method: "POST", body: JSON.stringify({ operationalDayId }) },
+      true
+    );
+  }
+  validateRouteVersion<T>(routeVersionId: string): Promise<T> {
+    return this.request(
+      `/route-versions/${routeVersionId}/validate`,
+      { method: "POST", body: "{}" },
+      true
+    );
+  }
+  transitionRouteVersion<T>(
+    routeVersionId: string,
+    target: "ready" | "publish",
+    expectedUpdatedAt: string
+  ): Promise<T> {
+    return this.request(
+      `/route-versions/${routeVersionId}/${target}`,
+      { method: "POST", body: JSON.stringify({ expectedUpdatedAt }) },
+      true
+    );
+  }
+  replanRoutePlan<T>(routePlanId: string, body: unknown): Promise<T> {
+    return this.request(
+      `/route-plans/${routePlanId}/replan`,
+      { method: "POST", body: JSON.stringify(body) },
+      true
+    );
+  }
+  moveRouteStop<T>(routeVersionId: string, stopId: string, body: unknown): Promise<T> {
+    return this.request(
+      `/route-versions/${routeVersionId}/stops/${stopId}/move`,
+      { method: "POST", body: JSON.stringify(body) },
+      true
+    );
+  }
+  unassignRouteStop<T>(routeVersionId: string, stopId: string, reason: string): Promise<T> {
+    return this.request(
+      `/route-versions/${routeVersionId}/stops/${stopId}/unassign`,
+      { method: "POST", body: JSON.stringify({ reason }) },
+      true
+    );
+  }
+  assignRouteService<T>(routeVersionId: string, unassignedId: string, body: unknown): Promise<T> {
+    return this.request(
+      `/route-versions/${routeVersionId}/unassigned/${unassignedId}/assign`,
+      { method: "POST", body: JSON.stringify(body) },
+      true
+    );
+  }
+  updateRouteStartTime<T>(routeVersionId: string, routeId: string, body: unknown): Promise<T> {
+    return this.request(
+      `/route-versions/${routeVersionId}/routes/${routeId}/start-time`,
+      { method: "POST", body: JSON.stringify(body) },
+      true
+    );
+  }
   private async request<T>(path: string, init: RequestInit = {}, write = false): Promise<T> {
     const token = await this.options.accessToken();
     const correlationId = crypto.randomUUID();

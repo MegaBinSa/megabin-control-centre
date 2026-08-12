@@ -435,3 +435,127 @@ test("Office daily roster generate, edit, ready, and lock workflow", async ({ pa
   await expect(page.getByText("locked", { exact: true })).toBeVisible();
   await expect(page.getByRole("button", { name: "Edit daily assignment" })).toHaveCount(0);
 });
+
+test("Office route planning generate, inspect unassigned work, ready, and publish workflow", async ({
+  page
+}) => {
+  await syntheticSession(page, [
+    "master_data.read",
+    "routes.read",
+    "routes.generate",
+    "routes.write",
+    "routes.validate",
+    "routes.publish"
+  ]);
+  const regionId = "c2000000-0000-4000-8000-000000000001",
+    dayId = "c3000000-0000-4000-8000-000000000001",
+    planId = "c4000000-0000-4000-8000-000000000001",
+    versionId = "c5000000-0000-4000-8000-000000000001";
+  let generated = false;
+  let status = "draft";
+  await page.route("**/api/v1/master-data/service-regions*", (route) =>
+    route.fulfill({
+      json: {
+        ok: true,
+        data: {
+          items: [{ serviceRegionId: regionId, name: "Synthetic Region" }],
+          page: 1,
+          pageSize: 25,
+          total: 1
+        }
+      }
+    })
+  );
+  await page.route("**/api/v1/roster/daily*", (route) =>
+    route.fulfill({
+      json: {
+        ok: true,
+        data: {
+          operationalDay: {
+            operationalDayId: dayId,
+            serviceDate: "2026-08-20",
+            serviceRegionId: regionId,
+            timezone: "Africa/Johannesburg",
+            lifecycleStatus: "locked",
+            generatedAt: "2026-08-20T05:00:00Z",
+            lockedAt: "2026-08-20T05:10:00Z",
+            updatedAt: "2026-08-20T05:10:00Z"
+          },
+          entries: []
+        }
+      }
+    })
+  );
+  const plan = () => ({
+    routeVersionId: versionId,
+    routePlanId: planId,
+    versionNumber: 1,
+    versionStatus: status,
+    isStale: false,
+    updatedAt: `2026-08-20T05:${status.length}:00Z`,
+    routes: [
+      {
+        plannedRouteId: "route",
+        teamId: "team",
+        teamName: "Team A",
+        vehicleId: "vehicle",
+        vehicleName: "Truck A",
+        vehicleCapacityUnits: 20,
+        plannedCapacityUnits: 3,
+        plannedDurationMinutes: 15,
+        usableWindowMinutes: 480,
+        stops: [
+          {
+            plannedRouteStopId: "stop",
+            clientServiceId: "service",
+            sequenceNumber: 1,
+            drumUnits: 3,
+            latitude: -25.75,
+            longitude: 28.2,
+            addressSnapshot: { line1: "10 Route Street" }
+          }
+        ]
+      }
+    ],
+    unassignedServices: [
+      {
+        unassignedRouteServiceId: "u",
+        clientServiceId: "missing",
+        reasonCode: "missing_coordinates",
+        remediation: "Geocode and validate the service address."
+      }
+    ]
+  });
+  await page.route("**/api/v1/route-plans?*", (route) =>
+    route.fulfill({ json: { ok: true, data: generated ? plan() : null } })
+  );
+  await page.route("**/api/v1/route-plans/generate", (route) => {
+    generated = true;
+    return route.fulfill({ status: 201, json: { ok: true, data: plan() } });
+  });
+  await page.route("**/api/v1/route-versions/*/validate", (route) =>
+    route.fulfill({
+      json: {
+        ok: true,
+        data: { valid: true, issues: [{ code: "unassigned_services", blocking: false }] }
+      }
+    })
+  );
+  await page.route("**/api/v1/route-versions/*/ready", (route) => {
+    status = "ready";
+    return route.fulfill({ json: { ok: true, data: plan() } });
+  });
+  await page.route("**/api/v1/route-versions/*/publish", (route) => {
+    status = "published";
+    return route.fulfill({ json: { ok: true, data: plan() } });
+  });
+  await page.getByRole("button", { name: "Route Planning" }).click();
+  await page.getByLabel("Service date").fill("2026-08-20");
+  await page.getByRole("button", { name: "Generate", exact: true }).click();
+  await expect(page.getByText("Team A")).toBeVisible();
+  await expect(page.getByText("missing_coordinates")).toBeVisible();
+  await expect(page.getByLabel("Schematic route geography")).toBeVisible();
+  await page.getByRole("button", { name: "Mark Ready" }).click();
+  await page.getByRole("button", { name: "Publish" }).click();
+  await expect(page.getByText("published", { exact: true })).toBeVisible();
+});

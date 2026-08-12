@@ -74,3 +74,15 @@ Every geography API re-authorizes service-region scope. The browser has no direc
 | System Admin/Developer | No by default | No | No | No | No | No |
 
 All grants remain service-region scoped. Technical system access does not imply operational authority.
+
+## Phase 2A route-planning permissions
+
+| Role | Read | Generate/write/validate | Publish | Replan |
+|---|---|---|---|---|
+| Director/Admin | Yes | Yes | Yes | Yes |
+| Operations Manager | Yes | Yes | Yes | Yes |
+| Office/Admin | Yes | Yes | Yes | No |
+| Driver/Team | No | No | No | No |
+| System Admin/Developer | No by default | No | No | No |
+
+All route access is service-region scoped. Published versions cannot be edited even by a role with write permission.
