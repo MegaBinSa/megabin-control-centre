@@ -105,9 +105,10 @@ export function createRouteOperationsHandler(
         });
       if (path === "/driver/route-operations" && request.method === "GET")
         return execute("driver_route_operations_current", { p_actor_id: actor });
-      let match = /^\/driver\/route-operations\/([0-9a-f-]+)\/(manifest|freshness|actions)$/.exec(
-        path
-      );
+      let match =
+        /^\/driver\/route-operations\/([0-9a-f-]+)\/(manifest|freshness|actions|stops|capacity|completion-readiness|complete)$/.exec(
+          path
+        );
       if (match) {
         if (match[2] === "manifest" && request.method === "GET")
           return execute("driver_route_operation_manifest", {
@@ -122,6 +123,39 @@ export function createRouteOperationsHandler(
             p_local_manifest_revision: Number(url.searchParams.get("manifestRevision")),
             p_device_id: url.searchParams.get("deviceId")
           });
+        if (match[2] === "stops" && request.method === "GET")
+          return execute("driver_route_operation_stops", {
+            p_actor_id: actor,
+            p_route_operation_id: match[1],
+            p_device_id: url.searchParams.get("deviceId")
+          });
+        if (match[2] === "completion-readiness" && request.method === "GET")
+          return execute("driver_route_completion_readiness", {
+            p_actor_id: actor,
+            p_route_operation_id: match[1],
+            p_device_id: url.searchParams.get("deviceId")
+          });
+        if ((match[2] === "capacity" || match[2] === "complete") && request.method === "POST") {
+          const value = await body(request);
+          if (value.routeOperationId !== match[1])
+            return fail(
+              "validation_failed",
+              "Route operation identity does not match the path.",
+              400,
+              correlationId
+            );
+          if (value.idempotencyKey !== request.headers.get("Idempotency-Key"))
+            return fail(
+              "validation_failed",
+              "Idempotency key does not match the body.",
+              400,
+              correlationId
+            );
+          return execute(
+            match[2] === "capacity" ? "driver_route_capacity" : "driver_route_complete",
+            { p_actor_id: actor, p_route_operation_id: match[1], p_action: value }
+          );
+        }
         if (match[2] === "actions" && request.method === "POST") {
           const value = await body(request);
           if (value.routeOperationId !== match[1])
@@ -145,6 +179,29 @@ export function createRouteOperationsHandler(
           });
         }
       }
+      match = /^\/driver\/route-operations\/([0-9a-f-]+)\/stops\/([0-9a-f-]+)\/result$/.exec(path);
+      if (match && request.method === "POST") {
+        const value = await body(request);
+        if (value.routeOperationId !== match[1] || value.routeOperationStopId !== match[2])
+          return fail(
+            "validation_failed",
+            "Route and stop identity must match the path.",
+            400,
+            correlationId
+          );
+        if (value.idempotencyKey !== request.headers.get("Idempotency-Key"))
+          return fail(
+            "validation_failed",
+            "Offline and HTTP idempotency keys must match.",
+            400,
+            correlationId
+          );
+        return execute("driver_route_stop_result", {
+          p_actor_id: actor,
+          p_route_operation_id: match[1],
+          p_action: value
+        });
+      }
       match = /^\/driver\/route-operation-actions\/([0-9a-f-]+)$/.exec(path);
       if (match && request.method === "GET")
         return execute("driver_route_operation_action_receipt", {
@@ -152,7 +209,7 @@ export function createRouteOperationsHandler(
           p_action_id: match[1]
         });
       match =
-        /^\/route-operations\/([0-9a-f-]+)(?:\/(reassign|supersede|cancel|assignment-history))?$/.exec(
+        /^\/route-operations\/([0-9a-f-]+)(?:\/(reassign|supersede|cancel|assignment-history|execution))?$/.exec(
           path
         );
       if (match) {
@@ -163,6 +220,11 @@ export function createRouteOperationsHandler(
           });
         if (match[2] === "assignment-history" && request.method === "GET")
           return execute("route_operation_assignment_history", {
+            p_actor_id: actor,
+            p_route_operation_id: match[1]
+          });
+        if (match[2] === "execution" && request.method === "GET")
+          return execute("office_route_execution_progress", {
             p_actor_id: actor,
             p_route_operation_id: match[1]
           });
@@ -230,6 +292,24 @@ export function routeOperationsOpenApiPaths(): Readonly<Record<string, unknown>>
     },
     "/api/v1/driver/route-operations/{routeOperationId}/actions": {
       post: { operationId: "submitRouteOperationAction" }
+    },
+    "/api/v1/driver/route-operations/{routeOperationId}/stops": {
+      get: { operationId: "getDriverRouteStops" }
+    },
+    "/api/v1/driver/route-operations/{routeOperationId}/stops/{routeOperationStopId}/result": {
+      post: { operationId: "submitDriverStopResult" }
+    },
+    "/api/v1/driver/route-operations/{routeOperationId}/capacity": {
+      post: { operationId: "setDriverRouteCapacity" }
+    },
+    "/api/v1/driver/route-operations/{routeOperationId}/completion-readiness": {
+      get: { operationId: "getDriverRouteCompletionReadiness" }
+    },
+    "/api/v1/driver/route-operations/{routeOperationId}/complete": {
+      post: { operationId: "completeDriverRoute" }
+    },
+    "/api/v1/route-operations/{routeOperationId}/execution": {
+      get: { operationId: "getOfficeRouteExecutionProgress" }
     },
     "/api/v1/driver/route-operation-actions/{actionId}": {
       get: { operationId: "getRouteOperationActionReceipt" }

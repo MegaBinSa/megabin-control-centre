@@ -1,6 +1,6 @@
 # Route Operations
 
-**Status:** Phase 2C implemented foundation
+**Status:** Phase 3A execution foundation implemented
 **Last reviewed:** 2026-08-12
 
 ## Boundary and identity
@@ -17,10 +17,10 @@ The Driver manifest contains operation/date/source IDs, revisions, lifecycle, as
 
 Driver access requires an active user/profile, `.driver.read` or `.driver.act`, an active staff record on the current non-revoked assignment, and matching global, service-region, or team scope. An assigned device must also match. APIs expose only current assignments, the narrow manifest, freshness, actions, and receipts. The future identity tuple is `user + current team assignment + authorised device (when assigned) + Route Operation`.
 
-Implemented synthetic actions are `accept`, `start`, `suspend`, and `resume`. PostgreSQL durably records action/operation IDs, assignment revision, device when present, actor, client sequence/timestamp, idempotency/correlation IDs, action/payload versions, and a receipt in the same transaction as an accepted effect. Identical retries return `duplicate`; changed reuse returns `conflict`; stale revisions and invalid/superseded/cancelled states return `rejected`. Device sequence is diagnostic only.
+Implemented lifecycle actions are `accept`, `start`, `suspend`, and `resume`. PostgreSQL durably records action/operation IDs, assignment revision, device when present, actor, client sequence/timestamp, idempotency/correlation IDs, action/payload versions, and a receipt in the same transaction as an accepted effect. Identical retries return `duplicate`; changed reuse returns `conflict`; stale revisions and invalid/superseded/cancelled states return `rejected`. Device sequence is diagnostic only.
 
 ## Supersession, security, and extension
 
 Office may cancel a non-started operation with a reason. Explicit supersession requires an existing replacement operation from a different Published version for the same day/region. Accepted, In Progress, Suspended, or Completed operations cannot be silently cancelled or superseded.
 
-All tables are in `app_private`, have RLS enabled, and deny browser roles. Bounded `api` RPCs re-authorize every actor. Audit/outbox data uses concise IDs/state and excludes manifests and offline payloads. `Planned Route Stop -> Route Operation Stop` supplies stable future execution identity; collection outcomes, GPS, live progress/re-optimisation, messaging, and full Driver PWA UX remain deferred.
+All tables are in `app_private`, have RLS enabled, and deny browser roles. Bounded `api` RPCs re-authorize every actor. Audit/outbox data uses concise IDs/state and excludes manifests and offline payloads. `Planned Route Stop -> Route Operation Stop -> Stop Execution` supplies stable execution identity. Phase 3A adds the Driver PWA, terminal stop outcomes, actual drum counts, capacity state, completion, minimal issue creation, and derived Office progress. GPS, live re-optimisation, and messaging remain deferred.

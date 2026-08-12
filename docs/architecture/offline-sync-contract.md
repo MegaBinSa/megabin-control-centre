@@ -1,6 +1,6 @@
 # Offline Synchronization Contract
 
-**Status:** Phase 0B-5 generic contract
+**Status:** Phase 3A route-execution implementation
 
 ## Action envelope
 
@@ -17,4 +17,4 @@ Client timestamps and sequence numbers help ordering and diagnosis but never ove
 
 A conflict records the incoming value/event, current authoritative server state, source device or integration, reason, status (`open`, `resolved`, or `dismissed`), and optional resolver/time. Resolution is explicit and audited; last-write-wins is prohibited.
 
-No route caching, GPS buffering, stop workflow, or MegaBin-specific conflict reason is implemented in this phase.
+Phase 3A applies this contract to route lifecycle, stop result, capacity, and completion actions. The Driver PWA persists the manifest projection and action queue in IndexedDB, preserves unresolved work across reloads, synchronizes in client-sequence order, and keeps failures/conflicts/rejections visible. It does not cache API responses through the service worker. GPS buffering remains deferred.

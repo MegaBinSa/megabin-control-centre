@@ -97,3 +97,15 @@ Events intentionally exclude assignment snapshots and notes. Future Routes may c
 | `RouteOperations.ManifestRevisionChanged` | Reassignment creates a manifest | operation, manifest revision |
 
 Cancellation is audited but has no event until a consumer is approved. Payloads exclude manifests, staff snapshots, addresses, and raw offline actions.
+
+## Phase 3A accepted execution events
+
+| Event v1 | Trigger | Concise payload |
+|---|---|---|
+| `RouteOperations.StopOutcomeRecorded` | A validated terminal stop result commits | operation, stop, outcome, actual count when present |
+| `RouteOperations.RouteProgressChanged` | A stop result changes derived progress | operation and aggregate counts |
+| `RouteOperations.CapacityStateChanged` | Driver reports normal/near capacity | operation and capacity state |
+| `RouteOperations.RouteCompleted` | Completion gate succeeds | operation and actual serviced count |
+| `OperationalIssues.IssueCreated` | An alert-worthy stop result opens an issue | issue, operation, stop, type |
+
+Events exclude addresses, access instructions, free-text reason, manifests, and raw device payloads.

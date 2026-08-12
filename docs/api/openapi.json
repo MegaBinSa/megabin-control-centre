@@ -1082,6 +1082,36 @@
         "operationId": "submitRouteOperationAction"
       }
     },
+    "/api/v1/driver/route-operations/{routeOperationId}/stops": {
+      "get": {
+        "operationId": "getDriverRouteStops"
+      }
+    },
+    "/api/v1/driver/route-operations/{routeOperationId}/stops/{routeOperationStopId}/result": {
+      "post": {
+        "operationId": "submitDriverStopResult"
+      }
+    },
+    "/api/v1/driver/route-operations/{routeOperationId}/capacity": {
+      "post": {
+        "operationId": "setDriverRouteCapacity"
+      }
+    },
+    "/api/v1/driver/route-operations/{routeOperationId}/completion-readiness": {
+      "get": {
+        "operationId": "getDriverRouteCompletionReadiness"
+      }
+    },
+    "/api/v1/driver/route-operations/{routeOperationId}/complete": {
+      "post": {
+        "operationId": "completeDriverRoute"
+      }
+    },
+    "/api/v1/route-operations/{routeOperationId}/execution": {
+      "get": {
+        "operationId": "getOfficeRouteExecutionProgress"
+      }
+    },
     "/api/v1/driver/route-operation-actions/{actionId}": {
       "get": {
         "operationId": "getRouteOperationActionReceipt"

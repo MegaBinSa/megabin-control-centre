@@ -363,6 +363,48 @@ export class MasterDataApiClient {
   routeOperationActionReceipt<T>(actionId: string): Promise<T> {
     return this.request(`/driver/route-operation-actions/${actionId}`);
   }
+  routeOperationStops<T>(routeOperationId: string, deviceId?: string): Promise<T> {
+    return this.request(
+      `/driver/route-operations/${routeOperationId}/stops${deviceId ? `?${new URLSearchParams({ deviceId })}` : ""}`
+    );
+  }
+  submitRouteStopResult<T>(
+    routeOperationId: string,
+    stopId: string,
+    value: { readonly idempotencyKey: string; readonly correlationId: string } & Record<
+      string,
+      unknown
+    >
+  ): Promise<T> {
+    return this.request(
+      `/driver/route-operations/${routeOperationId}/stops/${stopId}/result`,
+      { method: "POST", body: JSON.stringify(value) },
+      true,
+      value
+    );
+  }
+  setRouteCapacity<T>(routeOperationId: string, value: unknown): Promise<T> {
+    return this.request(
+      `/driver/route-operations/${routeOperationId}/capacity`,
+      { method: "POST", body: JSON.stringify(value) },
+      true
+    );
+  }
+  routeCompletionReadiness<T>(routeOperationId: string, deviceId?: string): Promise<T> {
+    return this.request(
+      `/driver/route-operations/${routeOperationId}/completion-readiness${deviceId ? `?${new URLSearchParams({ deviceId })}` : ""}`
+    );
+  }
+  completeRouteOperation<T>(routeOperationId: string, value: unknown): Promise<T> {
+    return this.request(
+      `/driver/route-operations/${routeOperationId}/complete`,
+      { method: "POST", body: JSON.stringify(value) },
+      true
+    );
+  }
+  routeExecutionProgress<T>(routeOperationId: string): Promise<T> {
+    return this.request(`/route-operations/${routeOperationId}/execution`);
+  }
   private async request<T>(
     path: string,
     init: RequestInit = {},

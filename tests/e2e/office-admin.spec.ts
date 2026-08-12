@@ -718,6 +718,26 @@ test("Office Route Operations hands off and reassigns a published route", async 
   await page.route("**/api/v1/route-operations?*", (route) =>
     route.fulfill({ json: { ok: true, data: operations() } })
   );
+  await page.route(`**/api/v1/route-operations/${operationId}/execution`, (route) =>
+    route.fulfill({
+      json: {
+        ok: true,
+        data: {
+          progress: {
+            completedStops: 1,
+            notServicedStops: 1,
+            remainingStops: 2,
+            totalStops: 4,
+            plannedDrums: 8,
+            actualDrumsServiced: 2,
+            openIssueCount: 1,
+            capacityState: "normal"
+          },
+          stops: []
+        }
+      }
+    })
+  );
   await page.route("**/api/v1/route-operations/handoff", (route) => {
     handedOff = true;
     return route.fulfill({ status: 201, json: { ok: true, data: { operations: operations() } } });
@@ -731,6 +751,7 @@ test("Office Route Operations hands off and reassigns a published route", async 
   await page.getByLabel("Published Route Version ID").fill("f4000000-0000-4000-8000-000000000001");
   await page.getByRole("button", { name: "Hand off published route" }).click();
   await expect(page.getByText("Team A")).toBeVisible();
+  await expect(page.getByText("2/4 stops")).toBeVisible();
   await page.getByRole("button", { name: "Reassign" }).click();
   await page.getByLabel("Staff IDs (comma separated)").fill("f5000000-0000-4000-8000-000000000001");
   await page.getByLabel("Reason").fill("Synthetic operational cover");
