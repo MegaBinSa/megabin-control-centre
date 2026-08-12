@@ -56,6 +56,8 @@ The diagram is conceptual: it does not prescribe table names, cardinality implem
 | Team | Operational collection unit eligible for work and vehicle assignments |
 | Staff/Driver | Operational person; linked to a system user only when login access is required |
 | Vehicle | Vehicle master record, capacity configuration, availability, and tracking-device relationship |
+| Operational Day | Immutable region/date operating aggregate with lifecycle and lock state |
+| Daily Roster Entry | Versioned day-specific team, staff, vehicle, and depot facts derived from permanent defaults |
 | Daily Roster | Date-specific, historically preserved assignment of teams, staff/drivers, and vehicles |
 | Route | Versioned daily plan assigned using roster and master-data facts |
 | Route Stop / Collection | Scheduled service instance and eventual immutable collection outcome facts |
@@ -74,5 +76,7 @@ Phase 1A implements immutable UUID identities for `Client`, `ClientContact`, `Se
 `ServiceConfiguration` is effective-dated and owned by the client service. It carries permanent region, depot, team, collection-day, territory/override, and configured drum-unit values. Daily exceptions remain outside this model. Address text and provider references are mutable attributes, never identity. Scoped `ExternalReference` rows map provider identifiers to internal IDs without becoming foreign master keys.
 
 Geography uses PostGIS SRID 4326 geography points for service addresses and depots, and multipolygon geometry for territories. Territory overlap is resolved by explicit priority. Geometry edits do not mutate service assignments; Phase 1C Geography-owned review records identify materially affected services. Confirming a review crosses the Service Configuration application boundary to create a new effective-dated assignment. A permanent override wins over normal spatial suggestion and does not expire automatically. Service Regions remain logical containers without invented polygons.
+
+Daily Roster sits between permanent master data and future Routes. Operational Day has an immutable UUID and is unique by service region/date. Entries snapshot expected defaults and preserve actual day-specific assignments plus append-only change history. Availability windows remain owned by Workforce and Vehicles; roster generation consumes them without changing master records.
 
 Client and service lifecycle states are independent. Archival is a timestamped lifecycle transition and does not cascade-delete services or historical configuration. No billing Account entity exists.

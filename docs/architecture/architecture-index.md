@@ -41,8 +41,10 @@ Material changes to the architecture require an ADR. An ADR may clarify the blue
 | [Health endpoints](health-endpoints.md) | Liveness, readiness, and safe platform health response |
 | [Master-data API](master-data-api.md) | Phase 1B authenticated administration contracts and write boundary |
 | [Geography administration](geography-administration.md) | Phase 1C PostGIS, map boundary, priority, impact, and review contracts |
+| [Daily Roster](daily-roster.md) | Phase 1D operational-day, availability, substitution, validation, and locking contracts |
 | [Office master-data workflow](../workflows/office-master-data-administration.md) | Authenticated Office administration behavior |
 | [Office geography workflow](../workflows/office-geography-administration.md) | Territory map editing and assignment-review workflow |
+| [Office Daily Roster workflow](../workflows/office-daily-roster.md) | Daily planning, readiness, substitution, and lock workflow |
 | [Office local development](../runbooks/office-local-development.md) | Local Auth, API, and browser-test workflow |
 | [Master-data migration considerations](master-data-migration-considerations.md) | Import, identity, and transition constraints |
 | [State-machine catalogue](state-machine-catalogue.md) | Implemented lifecycle states and transitions |

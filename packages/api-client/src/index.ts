@@ -153,6 +153,52 @@ export class MasterDataApiClient {
   serviceAddressGeography<T>(serviceAddressId: string): Promise<T> {
     return this.request(`/geography/service-addresses/${serviceAddressId}/context`);
   }
+  findRoster<T>(serviceRegionId: string, serviceDate: string): Promise<T | null> {
+    return this.request(`/roster/daily?${new URLSearchParams({ serviceRegionId, serviceDate })}`);
+  }
+  generateRoster<T>(serviceRegionId: string, serviceDate: string): Promise<T> {
+    return this.request(
+      "/roster/generate",
+      { method: "POST", body: JSON.stringify({ serviceRegionId, serviceDate }) },
+      true
+    );
+  }
+  validateRoster<T>(operationalDayId: string): Promise<T> {
+    return this.request(
+      `/roster/operational-days/${operationalDayId}/validate`,
+      { method: "POST", body: "{}" },
+      true
+    );
+  }
+  transitionRoster<T>(operationalDayId: string, body: unknown): Promise<T> {
+    return this.request(
+      `/roster/operational-days/${operationalDayId}/transition`,
+      { method: "POST", body: JSON.stringify(body) },
+      true
+    );
+  }
+  updateRosterEntry<T>(entryId: string, body: unknown): Promise<T> {
+    return this.request(
+      `/roster/entries/${entryId}`,
+      { method: "PUT", body: JSON.stringify(body) },
+      true
+    );
+  }
+  availabilityWindows<T>(serviceRegionId: string, from: string, to: string): Promise<T> {
+    return this.request(
+      `/availability/windows?${new URLSearchParams({ serviceRegionId, from, to })}`
+    );
+  }
+  saveAvailability<T>(kind: "staff" | "vehicle", body: unknown, id?: string): Promise<T> {
+    return this.request(
+      `/availability/${kind}${id ? `/${id}` : ""}`,
+      { method: id ? "PUT" : "POST", body: JSON.stringify(body) },
+      true
+    );
+  }
+  removeAvailability<T>(kind: "staff" | "vehicle", id: string): Promise<T> {
+    return this.request(`/availability/${kind}/${id}`, { method: "DELETE" }, true);
+  }
   private async request<T>(path: string, init: RequestInit = {}, write = false): Promise<T> {
     const token = await this.options.accessToken();
     const correlationId = crypto.randomUUID();

@@ -59,3 +59,18 @@ Phase 1B exposes these workflows through the authenticated API without changing 
 | `Geography.TerritoryGeometryChanged` | Geography | Authoritative geometry/rule change commits | `territoryId`, `territoryChangeId` |
 
 Geometry and client/address details are excluded from events. Permanent override changes are audited by Service Configuration; a durable override event is deferred until a consumer exists.
+
+## Phase 1D accepted events
+
+| Event v1 | Producer | Trigger | Payload minimum |
+|---|---|---|---|
+| `DailyRoster.OperationalDayCreated` | Daily Roster | First idempotent generation creates the day | day, region, date IDs |
+| `DailyRoster.AssignmentSubstituted` | Daily Roster | Draft/Ready assignment changes | day/entry IDs, version |
+| `DailyRoster.RosterReady` | Daily Roster | Readiness gate succeeds | day ID, status |
+| `DailyRoster.RosterLocked` | Daily Roster | Ready roster locks | day ID, status |
+| `DailyRoster.RosterUnlocked` | Daily Roster | Authorised reasoned unlock | day ID, status |
+| `DailyRoster.ActiveAssignmentChanged` | Daily Roster | Emergency post-start assignment changes | day/entry IDs, version |
+| `Workforce.StaffAvailabilityChanged` | Workforce | Operational availability window saved | window/region IDs |
+| `Vehicles.VehicleAvailabilityWindowChanged` | Vehicles | Operational vehicle window saved | window/region IDs |
+
+Events intentionally exclude assignment snapshots and notes. Future Routes may consume locked/active roster events, but no route reaction exists in Phase 1D.

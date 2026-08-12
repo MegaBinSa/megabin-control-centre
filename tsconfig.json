@@ -5,6 +5,7 @@
     { "path": "./packages/auth" },
     { "path": "./packages/config" },
     { "path": "./packages/domain-types" },
+    { "path": "./packages/daily-roster" },
     { "path": "./packages/events" },
     { "path": "./packages/geography" },
     { "path": "./packages/integrations" },

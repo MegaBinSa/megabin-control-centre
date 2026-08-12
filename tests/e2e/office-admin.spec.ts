@@ -336,3 +336,102 @@ test("geography map editor supports draw, cancel, impact preview, and save", asy
   ]);
   expect(request.postDataJSON()).toMatchObject({ name: "Central", priority: 10 });
 });
+
+test("Office daily roster generate, edit, ready, and lock workflow", async ({ page }) => {
+  await syntheticSession(page, [
+    "master_data.read",
+    "roster.read",
+    "roster.write",
+    "roster.generate",
+    "roster.lock",
+    "availability.manage"
+  ]);
+  const regionId = "b2000000-0000-4000-8000-000000000001",
+    dayId = "b3000000-0000-4000-8000-000000000001",
+    entryId = "b4000000-0000-4000-8000-000000000001";
+  let status = "draft";
+  let generated = false;
+  await page.route("**/api/v1/master-data/service-regions*", (route) =>
+    route.fulfill({
+      json: {
+        ok: true,
+        data: {
+          items: [{ serviceRegionId: regionId, name: "Synthetic Region" }],
+          page: 1,
+          pageSize: 25,
+          total: 1
+        }
+      }
+    })
+  );
+  const roster = () => ({
+    operationalDay: {
+      operationalDayId: dayId,
+      serviceDate: "2026-08-20",
+      serviceRegionId: regionId,
+      timezone: "Africa/Johannesburg",
+      lifecycleStatus: status,
+      generatedAt: "2026-08-20T05:00:00Z",
+      lockedAt: status === "locked" ? "2026-08-20T05:30:00Z" : null,
+      updatedAt: `2026-08-20T05:0${status.length}:00Z`
+    },
+    entries: [
+      {
+        dailyRosterEntryId: entryId,
+        teamId: "team",
+        teamName: "Team A",
+        normalVehicleId: "vehicle",
+        assignedVehicleId: "vehicle",
+        vehicleName: "Truck A",
+        normalDepotId: "depot",
+        assignedDepotId: "depot",
+        depotName: "Depot A",
+        entryStatus: "planned",
+        availabilityState: "available",
+        vehicleIsSubstitution: false,
+        depotIsOverride: false,
+        substitutionReason: null,
+        version: 1,
+        updatedAt: "2026-08-20T05:00:00Z",
+        staff: [
+          {
+            staffId: "staff",
+            displayName: "Driver A",
+            assignmentRole: "driver",
+            expectedTeamId: "team",
+            isSubstitution: false,
+            substitutionReason: null
+          }
+        ]
+      }
+    ]
+  });
+  await page.route("**/api/v1/roster/daily*", (route) =>
+    route.fulfill({ json: { ok: true, data: generated ? roster() : null } })
+  );
+  await page.route("**/api/v1/roster/generate", (route) => {
+    generated = true;
+    return route.fulfill({ status: 201, json: { ok: true, data: roster() } });
+  });
+  await page.route("**/api/v1/roster/operational-days/*/validate", (route) =>
+    route.fulfill({ json: { ok: true, data: { ready: true, issues: [] } } })
+  );
+  await page.route("**/api/v1/roster/entries/*", (route) =>
+    route.fulfill({ json: { ok: true, data: {} } })
+  );
+  await page.route("**/api/v1/roster/operational-days/*/transition", async (route) => {
+    status = String((await route.request().postDataJSON()).target);
+    return route.fulfill({ json: { ok: true, data: roster().operationalDay } });
+  });
+  await page.getByRole("button", { name: "Daily Roster" }).click();
+  await page.getByLabel("Service date").fill("2026-08-20");
+  await page.getByRole("button", { name: "Generate roster" }).click();
+  await expect(page.getByText("Team A")).toBeVisible();
+  await page.getByRole("button", { name: "Edit daily assignment" }).click();
+  await page.getByLabel("Substitution / emergency reason").fill("Synthetic cover");
+  await page.getByRole("button", { name: "Save assignment" }).click();
+  await page.getByRole("button", { name: "Mark Ready" }).click();
+  await page.getByRole("button", { name: "Lock roster" }).click();
+  await expect(page.getByText("locked", { exact: true })).toBeVisible();
+  await expect(page.getByRole("button", { name: "Edit daily assignment" })).toHaveCount(0);
+});

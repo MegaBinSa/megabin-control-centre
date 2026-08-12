@@ -311,6 +311,314 @@
         }
       }
     },
+    "/api/v1/roster/generate": {
+      "post": {
+        "operationId": "generateDailyRoster",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful roster response"
+          },
+          "400": {
+            "description": "Roster validation failure"
+          },
+          "403": {
+            "description": "Permission or scope denied"
+          },
+          "409": {
+            "description": "Stale or conflicting assignment"
+          }
+        }
+      }
+    },
+    "/api/v1/roster/daily": {
+      "get": {
+        "operationId": "findDailyRoster",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful roster response"
+          },
+          "400": {
+            "description": "Roster validation failure"
+          },
+          "403": {
+            "description": "Permission or scope denied"
+          },
+          "409": {
+            "description": "Stale or conflicting assignment"
+          }
+        }
+      }
+    },
+    "/api/v1/roster/operational-days/{id}": {
+      "get": {
+        "operationId": "getDailyRoster",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful roster response"
+          },
+          "400": {
+            "description": "Roster validation failure"
+          },
+          "403": {
+            "description": "Permission or scope denied"
+          },
+          "409": {
+            "description": "Stale or conflicting assignment"
+          }
+        }
+      }
+    },
+    "/api/v1/roster/operational-days/{id}/validate": {
+      "post": {
+        "operationId": "validateDailyRoster",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful roster response"
+          },
+          "400": {
+            "description": "Roster validation failure"
+          },
+          "403": {
+            "description": "Permission or scope denied"
+          },
+          "409": {
+            "description": "Stale or conflicting assignment"
+          }
+        }
+      }
+    },
+    "/api/v1/roster/operational-days/{id}/transition": {
+      "post": {
+        "operationId": "transitionOperationalDay",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful roster response"
+          },
+          "400": {
+            "description": "Roster validation failure"
+          },
+          "403": {
+            "description": "Permission or scope denied"
+          },
+          "409": {
+            "description": "Stale or conflicting assignment"
+          }
+        }
+      }
+    },
+    "/api/v1/roster/entries/{id}": {
+      "put": {
+        "operationId": "updateRosterEntry",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful roster response"
+          },
+          "400": {
+            "description": "Roster validation failure"
+          },
+          "403": {
+            "description": "Permission or scope denied"
+          },
+          "409": {
+            "description": "Stale or conflicting assignment"
+          }
+        }
+      }
+    },
+    "/api/v1/availability/windows": {
+      "get": {
+        "operationId": "listAvailabilityWindows",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful roster response"
+          },
+          "400": {
+            "description": "Roster validation failure"
+          },
+          "403": {
+            "description": "Permission or scope denied"
+          },
+          "409": {
+            "description": "Stale or conflicting assignment"
+          }
+        }
+      }
+    },
+    "/api/v1/availability/staff": {
+      "post": {
+        "operationId": "createStaffAvailability",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful roster response"
+          },
+          "400": {
+            "description": "Roster validation failure"
+          },
+          "403": {
+            "description": "Permission or scope denied"
+          },
+          "409": {
+            "description": "Stale or conflicting assignment"
+          }
+        }
+      }
+    },
+    "/api/v1/availability/staff/{id}": {
+      "put": {
+        "operationId": "updateStaffAvailability",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful roster response"
+          },
+          "400": {
+            "description": "Roster validation failure"
+          },
+          "403": {
+            "description": "Permission or scope denied"
+          },
+          "409": {
+            "description": "Stale or conflicting assignment"
+          }
+        }
+      },
+      "delete": {
+        "operationId": "removeStaffAvailability",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful roster response"
+          },
+          "400": {
+            "description": "Roster validation failure"
+          },
+          "403": {
+            "description": "Permission or scope denied"
+          },
+          "409": {
+            "description": "Stale or conflicting assignment"
+          }
+        }
+      }
+    },
+    "/api/v1/availability/vehicle": {
+      "post": {
+        "operationId": "createVehicleAvailability",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful roster response"
+          },
+          "400": {
+            "description": "Roster validation failure"
+          },
+          "403": {
+            "description": "Permission or scope denied"
+          },
+          "409": {
+            "description": "Stale or conflicting assignment"
+          }
+        }
+      }
+    },
+    "/api/v1/availability/vehicle/{id}": {
+      "put": {
+        "operationId": "updateVehicleAvailability",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful roster response"
+          },
+          "400": {
+            "description": "Roster validation failure"
+          },
+          "403": {
+            "description": "Permission or scope denied"
+          },
+          "409": {
+            "description": "Stale or conflicting assignment"
+          }
+        }
+      },
+      "delete": {
+        "operationId": "removeVehicleAvailability",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful roster response"
+          },
+          "400": {
+            "description": "Roster validation failure"
+          },
+          "403": {
+            "description": "Permission or scope denied"
+          },
+          "409": {
+            "description": "Stale or conflicting assignment"
+          }
+        }
+      }
+    },
     "/api/v1/master-data/clients": {
       "get": {
         "operationId": "list-clients",
