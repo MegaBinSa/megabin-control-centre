@@ -62,3 +62,15 @@ Office navigation is permission-aware, but it is never the security boundary. Th
 | System Admin/Developer | Yes, assigned scope | No by default |
 
 Every geography API re-authorizes service-region scope. The browser has no direct execute grant on privileged geography RPCs and no direct write grant on Geography tables.
+
+## Phase 1D roster permissions
+
+| Role | Read | Prepare/write | Generate | Lock | Unlock | Availability |
+|---|---|---|---|---|---|---|
+| Director/Admin | Yes | Yes | Yes | Yes | Yes | Yes |
+| Operations Manager | Yes | Yes | Yes | Yes | Yes | Yes |
+| Office/Admin | Yes | Yes | Yes | Yes | No | Yes |
+| Driver/Team | No | No | No | No | No | No |
+| System Admin/Developer | No by default | No | No | No | No | No |
+
+All grants remain service-region scoped. Technical system access does not imply operational authority.

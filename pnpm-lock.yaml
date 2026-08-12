@@ -47,6 +47,9 @@ importers:
       '@megabin/auth':
         specifier: workspace:*
         version: link:../../packages/auth
+      '@megabin/daily-roster':
+        specifier: workspace:*
+        version: link:../../packages/daily-roster
       '@megabin/geography':
         specifier: workspace:*
         version: link:../../packages/geography
@@ -64,6 +67,8 @@ importers:
         version: 2.57.4
 
   packages/config: {}
+
+  packages/daily-roster: {}
 
   packages/domain-types: {}
 

@@ -12,6 +12,7 @@ import type { RuntimeDependencies } from "./contracts.js";
 import { ForcedRollbackError, RuntimeError } from "./errors.js";
 import { masterDataOpenApiPaths } from "./master-data-http.js";
 import { geographyOpenApiPaths } from "./geography-http.js";
+import { rosterOpenApiPaths } from "./roster-http.js";
 
 interface ProofBody {
   readonly value: string;
@@ -230,6 +231,7 @@ export function createOpenApiDocument(): Readonly<Record<string, unknown>> {
     },
     paths: {
       ...geographyOpenApiPaths(),
+      ...rosterOpenApiPaths(),
       ...masterDataOpenApiPaths(),
       "/api/v1/platform-proof": { post: { operationId: "executePlatformProof" } },
       "/api/v1/health/live": { get: { operationId: "getLiveness" } },
