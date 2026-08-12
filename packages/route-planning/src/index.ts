@@ -50,11 +50,45 @@ export interface RoutePlanDocument {
   readonly routePlanId: string;
   readonly versionNumber: number;
   readonly versionStatus: RouteVersionStatus;
+  readonly generationMethod: "deterministic_baseline" | "provider_optimized";
   readonly isStale: boolean;
   readonly updatedAt: string;
   readonly routes: readonly PlannedRoute[];
   readonly unassignedServices: readonly UnassignedService[];
 }
+export interface RouteOptimizationAttempt {
+  readonly routeOptimizationAttemptId: string;
+  readonly sourceRouteVersionId: string;
+  readonly candidateRouteVersionId: string | null;
+  readonly lifecycleStatus:
+    | "pending"
+    | "running"
+    | "succeeded"
+    | "failed"
+    | "cancelled"
+    | "superseded"
+    | "accepted"
+    | "rejected";
+  readonly routingProvider: string;
+  readonly optimizationProvider: string;
+  readonly comparison: Readonly<Record<string, number>> | null;
+  readonly providerWarnings: readonly string[];
+  readonly candidateResult: Readonly<{
+    routes: readonly Readonly<{
+      routeId: string;
+      stopIds: readonly string[];
+      geometry: Readonly<{
+        format: "geojson_linestring";
+        coordinates: readonly (readonly [number, number])[];
+        source: "provider_road";
+      }>;
+    }>[];
+    unassignedStopIds: readonly string[];
+  }> | null;
+  readonly failureClassification: string | null;
+  readonly failureSummary: string | null;
+}
 export function routeVersionEditable(status: RouteVersionStatus): boolean {
   return status === "draft";
 }
+export * from "./providers.js";

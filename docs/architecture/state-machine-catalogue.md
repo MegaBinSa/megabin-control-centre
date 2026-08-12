@@ -21,3 +21,7 @@ Address validation (`Unvalidated`, `Valid`, `Invalid`, `Needs Review`) and geoco
 ## Operational Day / Daily Roster
 
 `Draft -> Ready -> Locked -> Active -> Closed -> Archived`. Ready and Locked require no blocking roster issues. Ready may return to Draft for preparation. Locked may return to Ready only with `roster.unlock` and a reason. Active may return to Locked only as an explicit emergency freeze. Locked, Closed, and Archived reject normal assignment edits; Active changes require a reason and preserve history. Backend commands enforce transitions and optimistic concurrency.
+
+## Route Optimization Attempt
+
+`Pending -> Running -> Succeeded -> Accepted|Rejected` is the successful candidate path. `Pending|Running -> Failed|Cancelled|Superseded` are terminal non-application outcomes. A failed or rejected attempt leaves its source Route Version unchanged. Only a Succeeded attempt can be accepted, and acceptance creates a new Draft Route Version transactionally; it never publishes or mutates the source.

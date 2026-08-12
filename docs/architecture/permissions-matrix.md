@@ -86,3 +86,5 @@ All grants remain service-region scoped. Technical system access does not imply 
 | System Admin/Developer | No by default | No | No | No |
 
 All route access is service-region scoped. Published versions cannot be edited even by a role with write permission.
+
+Phase 2B adds `routes.optimize`, `routes.optimization.read`, and `routes.optimization.apply` to Director/Admin, Operations Manager, and Office/Admin. Driver/Team and System Admin/Developer receive no automatic authority. Every operation remains service-region scoped.

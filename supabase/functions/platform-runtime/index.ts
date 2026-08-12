@@ -1,6 +1,7 @@
 import "@supabase/functions-js/edge-runtime.d.ts";
 import { withSupabase } from "@supabase/server";
 import { FakeIntegrationAdapter } from "@megabin/integrations";
+import { FakeOptimizationProvider, FakeRoutingProvider } from "@megabin/route-planning";
 import type { ActorReference } from "@megabin/domain-types";
 import {
   createRuntimeHandler,
@@ -12,6 +13,10 @@ import {
   SupabaseRuntimeDatabase,
   type RuntimeRpcClient
 } from "@megabin/runtime";
+
+declare const EdgeRuntime: {
+  waitUntil(work: Promise<unknown>): void;
+};
 
 function environment(): "local" | "staging" | "production" {
   const value = Deno.env.get("MEGABIN_ENVIRONMENT") ?? "local";
@@ -55,7 +60,36 @@ export default {
       { accepted: true }
     );
     const actorId = jwtSubject(request);
-    const routes = createRouteHandler({ rpc, actorId, id: () => crypto.randomUUID() });
+    const providerConfigurationResult = await rpc.rpc("route_provider_configuration", {
+      p_environment_name: runtimeEnvironment
+    });
+    const providerConfiguration =
+      providerConfigurationResult.error === null &&
+      providerConfigurationResult.data &&
+      typeof providerConfigurationResult.data === "object"
+        ? (providerConfigurationResult.data as Record<string, unknown>)
+        : {};
+    const routing =
+      providerConfiguration["routes.routing-provider"] === "fake-routing"
+        ? new FakeRoutingProvider()
+        : undefined;
+    const optimizer =
+      routing && providerConfiguration["routes.optimization-provider"] === "fake-optimizer"
+        ? new FakeOptimizationProvider(routing)
+        : undefined;
+    const routes = createRouteHandler({
+      rpc,
+      actorId,
+      id: () => crypto.randomUUID(),
+      routing,
+      optimizer,
+      providerRuntime: {
+        timeoutMs: Number(providerConfiguration["routes.provider-timeout-ms"] ?? 15000),
+        maxRetries: Number(providerConfiguration["routes.provider-max-retries"] ?? 2),
+        maxStops: Number(providerConfiguration["routes.provider-max-stops"] ?? 200)
+      },
+      defer: (work) => EdgeRuntime.waitUntil(work)
+    });
     const routeResponse = await routes(request);
     if (routeResponse) return routeResponse;
     const roster = createRosterHandler({ rpc, actorId, id: () => crypto.randomUUID() });

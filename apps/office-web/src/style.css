@@ -328,6 +328,26 @@ textarea {
   background: #e5e0fa;
   color: #4c3184;
 }
+.optimization-panel {
+  margin: 16px 0;
+  padding: 16px;
+  border: 1px solid #9ebdad;
+  border-radius: 10px;
+  background: #f4faf7;
+}
+.optimization-panel header {
+  margin: 0;
+}
+.comparison {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 10px;
+}
+.comparison span {
+  padding: 10px;
+  background: white;
+  border-radius: 7px;
+}
 .route-planner {
   display: grid;
   grid-template-columns: minmax(0, 1.6fr) minmax(280px, 1fr);

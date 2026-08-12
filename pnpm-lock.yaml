@@ -102,7 +102,14 @@ importers:
 
   packages/permissions: {}
 
-  packages/route-planning: {}
+  packages/route-planning:
+    dependencies:
+      '@megabin/integrations':
+        specifier: workspace:*
+        version: link:../integrations
+      '@megabin/observability':
+        specifier: workspace:*
+        version: link:../observability
 
   packages/runtime:
     dependencies:
@@ -121,6 +128,9 @@ importers:
       '@megabin/observability':
         specifier: workspace:*
         version: link:../observability
+      '@megabin/route-planning':
+        specifier: workspace:*
+        version: link:../route-planning
       '@megabin/validation':
         specifier: workspace:*
         version: link:../validation

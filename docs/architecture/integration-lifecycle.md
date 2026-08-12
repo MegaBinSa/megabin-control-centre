@@ -22,6 +22,8 @@ install -> configure -> test -> enable -> monitor -> disable -> decommission
 
 The Phase 0B-5 fake adapter supports capture and test modes only. Its replaceability test proves application-facing code depends on the adapter interface rather than provider details.
 
+Phase 2B adds independent fake routing and optimization adapters. They are deterministic and remain the local, staging, and CI defaults. Their provider-neutral contracts, bounded retries, timeout classification, safe usage records, and health projection are described in [Route Optimization](route-optimization.md). Enabling a billable production provider is a later explicit lifecycle and ADR decision.
+
 ## Health and failure
 
 Health is `healthy`, `degraded`, `unhealthy`, `disabled`, or `unknown`. Failures are classified as retryable, rate limited, authentication, invalid request, or permanent. Health summaries and failure metadata must be safe to expose to technical operators and must not include provider credentials or unredacted payloads.

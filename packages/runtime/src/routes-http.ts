@@ -1,4 +1,10 @@
 import type { ApiErrorCode } from "@megabin/api-client";
+import type {
+  OptimizationProvider,
+  OptimizationRequest,
+  RoutingProvider
+} from "@megabin/route-planning";
+import { runOptimization } from "./route-optimization.js";
 export interface RouteRpcClient {
   rpc(
     name: string,
@@ -9,6 +15,14 @@ export interface RouteHttpDependencies {
   readonly rpc: RouteRpcClient;
   readonly actorId: string | null;
   readonly id: () => string;
+  readonly routing?: RoutingProvider;
+  readonly optimizer?: OptimizationProvider;
+  readonly providerRuntime?: Readonly<{
+    timeoutMs: number;
+    maxRetries: number;
+    maxStops: number;
+  }>;
+  readonly defer?: (work: Promise<void>) => void;
 }
 const json = (body: unknown, status = 200) =>
   Response.json(body, { status, headers: { "Cache-Control": "no-store" } });
@@ -33,6 +47,9 @@ async function execute(
   status = 200
 ) {
   const r = await deps.rpc.rpc(name, parameters);
+  return respond(r, cid, status);
+}
+function respond(r: Awaited<ReturnType<RouteRpcClient["rpc"]>>, cid: string, status = 200) {
   if (!r.error) return json({ ok: true, data: camel(r.data) }, status);
   const m = r.error.message;
   if (r.error.code === "42501") return fail("permission_denied", "Permission denied.", 403, cid);
@@ -50,7 +67,13 @@ export function createRouteHandler(
   return async (request) => {
     const url = new URL(request.url);
     const path = url.pathname.replace(/^.*\/api\/v1/, "");
-    if (!path.startsWith("/route-plans") && !path.startsWith("/route-versions")) return null;
+    if (
+      !path.startsWith("/route-plans") &&
+      !path.startsWith("/route-versions") &&
+      !path.startsWith("/route-optimizations") &&
+      !path.startsWith("/route-providers")
+    )
+      return null;
     const cid = request.headers.get("X-Correlation-Id") ?? deps.id();
     if (!deps.actorId)
       return fail("authentication_required", "Authentication is required.", 401, cid);
@@ -61,6 +84,74 @@ export function createRouteHandler(
       return fail("validation_failed", "Idempotency-Key is required.", 400, cid);
     const actor = deps.actorId;
     try {
+      if (path === "/route-optimizations" && request.method === "POST") {
+        if (!deps.routing || !deps.optimizer)
+          return fail("internal_error", "Optimization providers are not configured.", 500, cid);
+        const b = (await request.json()) as Record<string, unknown>;
+        const parameters = {
+          p_actor_id: actor,
+          p_source_version_id: b.sourceVersionId,
+          p_expected_updated_at: b.expectedUpdatedAt,
+          p_correlation_id: cid,
+          p_routing_provider: deps.routing.providerKey,
+          p_optimization_provider: deps.optimizer.providerKey,
+          p_adapter_version: deps.optimizer.adapterVersion
+        };
+        const started = await deps.rpc.rpc("route_optimization_start", parameters);
+        if (started.error) return respond(started, cid);
+        const attempt = camel(started.data) as Record<string, unknown>;
+        const work = completeOptimization(deps, actor, cid, attempt);
+        if (deps.defer) {
+          deps.defer(work.then(() => undefined));
+          return json({ ok: true, data: attempt }, 202);
+        }
+        const completed = await work;
+        return completed
+          ? json({ ok: true, data: camel(completed) }, 202)
+          : fail("internal_error", "The optimization result could not be recorded.", 500, cid);
+      }
+      const optimizationMatch = /^\/route-optimizations\/([0-9a-f-]+)(?:\/(accept|reject))?$/.exec(
+        path
+      );
+      if (optimizationMatch) {
+        if (!optimizationMatch[2] && request.method === "GET")
+          return execute(
+            "route_optimization_get",
+            { p_actor_id: actor, p_attempt_id: optimizationMatch[1] },
+            deps,
+            cid
+          );
+        if (optimizationMatch[2] && request.method === "POST") {
+          const b = (await request.json()) as Record<string, unknown>;
+          return execute(
+            optimizationMatch[2] === "accept"
+              ? "route_optimization_apply"
+              : "route_optimization_reject",
+            optimizationMatch[2] === "accept"
+              ? {
+                  p_actor_id: actor,
+                  p_attempt_id: optimizationMatch[1],
+                  p_expected_source_updated_at: b.expectedSourceUpdatedAt,
+                  p_correlation_id: cid
+                }
+              : {
+                  p_actor_id: actor,
+                  p_attempt_id: optimizationMatch[1],
+                  p_reason: b.reason,
+                  p_correlation_id: cid
+                },
+            deps,
+            cid
+          );
+        }
+      }
+      if (path === "/route-providers/health" && request.method === "GET")
+        return execute(
+          "route_provider_health",
+          { p_actor_id: actor, p_region_id: url.searchParams.get("serviceRegionId") },
+          deps,
+          cid
+        );
       if (path === "/route-plans" && request.method === "GET")
         return execute(
           "route_plan_find",
@@ -208,6 +299,64 @@ export function createRouteHandler(
     }
   };
 }
+async function completeOptimization(
+  deps: RouteHttpDependencies,
+  actor: string,
+  cid: string,
+  attempt: Record<string, unknown>
+): Promise<unknown | null> {
+  if (!deps.routing || !deps.optimizer) return null;
+  const startedAt = Date.now();
+  const input = attempt.inputSnapshot as OptimizationRequest;
+  const limits = deps.providerRuntime ?? { timeoutMs: 15000, maxRetries: 2, maxStops: 200 };
+  if (input.stops.length > limits.maxStops) {
+    const rejected = await deps.rpc.rpc("route_optimization_fail", {
+      p_actor_id: actor,
+      p_attempt_id: attempt.routeOptimizationAttemptId,
+      p_classification: "invalid_request",
+      p_summary: "The route plan exceeds the configured provider request-size limit.",
+      p_duration_ms: Date.now() - startedAt,
+      p_correlation_id: cid
+    });
+    return rejected.error ? null : rejected.data;
+  }
+  const result = await runOptimization(
+    {
+      routing: deps.routing,
+      optimizer: deps.optimizer,
+      timeoutMs: limits.timeoutMs,
+      maxRetries: limits.maxRetries
+    },
+    input
+  );
+  let completed = result.ok
+    ? await deps.rpc.rpc("route_optimization_complete", {
+        p_actor_id: actor,
+        p_attempt_id: attempt.routeOptimizationAttemptId,
+        p_result: result.value,
+        p_duration_ms: Date.now() - startedAt,
+        p_correlation_id: cid
+      })
+    : await deps.rpc.rpc("route_optimization_fail", {
+        p_actor_id: actor,
+        p_attempt_id: attempt.routeOptimizationAttemptId,
+        p_classification: result.classification,
+        p_summary: result.safeMessage,
+        p_duration_ms: Date.now() - startedAt,
+        p_correlation_id: cid
+      });
+  if (result.ok && completed.error) {
+    completed = await deps.rpc.rpc("route_optimization_fail", {
+      p_actor_id: actor,
+      p_attempt_id: attempt.routeOptimizationAttemptId,
+      p_classification: "invalid_response",
+      p_summary: "The provider result failed independent validation.",
+      p_duration_ms: Date.now() - startedAt,
+      p_correlation_id: cid
+    });
+  }
+  return completed.error ? null : completed.data;
+}
 export function routeOpenApiPaths(): Record<string, unknown> {
   const op = (operationId: string) => ({
     operationId,
@@ -221,6 +370,11 @@ export function routeOpenApiPaths(): Record<string, unknown> {
   });
   return {
     "/api/v1/route-plans": { get: op("findRoutePlan") },
+    "/api/v1/route-optimizations": { post: op("startRouteOptimization") },
+    "/api/v1/route-optimizations/{id}": { get: op("getRouteOptimization") },
+    "/api/v1/route-optimizations/{id}/accept": { post: op("acceptRouteOptimization") },
+    "/api/v1/route-optimizations/{id}/reject": { post: op("rejectRouteOptimization") },
+    "/api/v1/route-providers/health": { get: op("getRouteProviderHealth") },
     "/api/v1/route-plans/generate": { post: op("generateRoutePlan") },
     "/api/v1/route-plans/{id}": { get: op("getRoutePlan") },
     "/api/v1/route-plans/{id}/replan": { post: op("replanRoutePlan") },

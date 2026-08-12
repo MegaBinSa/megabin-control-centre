@@ -12,6 +12,10 @@
   "files": [
     "dist"
   ],
+  "dependencies": {
+    "@megabin/integrations": "workspace:*",
+    "@megabin/observability": "workspace:*"
+  },
   "scripts": {
     "build": "tsc --build",
     "clean": "tsc --build --clean",
