@@ -1,5 +1,5 @@
 begin;
-select plan(30);
+select plan(31);
 select has_table('app_private','route_optimization_attempts','optimization attempts exist');
 select has_table('app_private','routing_provider_usage','safe usage telemetry exists');
 select has_table('app_private','routing_provider_health','provider health projection exists');
@@ -12,6 +12,7 @@ select ok((select rowsecurity from pg_tables where schemaname='app_private' and 
 select is((select count(*) from app_private.permissions where permission_key in ('routes.optimize','routes.optimization.read','routes.optimization.apply')),3::bigint,'granular permissions registered');
 select is((select default_value#>>'{}' from app_private.configuration_definitions where configuration_key='routes.routing-provider'),'fake-routing','fake routing is safe default');
 select is((select default_value#>>'{}' from app_private.configuration_definitions where configuration_key='routes.optimization-provider'),'fake-optimizer','fake optimizer is safe default');
+select is((select (default_value#>>'{}')::integer from app_private.configuration_definitions where configuration_key='routes.provider-max-retry-delay-ms'),5000,'provider retry-after delay is capped by safe configuration');
 select ok(not has_table_privilege('authenticated','app_private.route_optimization_attempts','select'),'browser cannot read attempts directly');
 select ok(not has_function_privilege('authenticated','api.route_optimization_start(uuid,uuid,timestamptz,uuid,text,text,text)','execute'),'browser cannot invoke privileged RPC');
 

@@ -43,6 +43,7 @@ export type AdapterResult<TResult> =
       readonly ok: false;
       readonly classification: IntegrationErrorClassification;
       readonly safeMessage: string;
+      readonly retryAfterMs?: number;
     };
 
 export interface IntegrationAdapter<TRequest, TResult> {

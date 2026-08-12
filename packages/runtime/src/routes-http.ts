@@ -20,6 +20,7 @@ export interface RouteHttpDependencies {
   readonly providerRuntime?: Readonly<{
     timeoutMs: number;
     maxRetries: number;
+    maxRetryAfterMs: number;
     maxStops: number;
   }>;
   readonly defer?: (work: Promise<void>) => void;
@@ -308,7 +309,12 @@ async function completeOptimization(
   if (!deps.routing || !deps.optimizer) return null;
   const startedAt = Date.now();
   const input = attempt.inputSnapshot as OptimizationRequest;
-  const limits = deps.providerRuntime ?? { timeoutMs: 15000, maxRetries: 2, maxStops: 200 };
+  const limits = deps.providerRuntime ?? {
+    timeoutMs: 15000,
+    maxRetries: 2,
+    maxRetryAfterMs: 5000,
+    maxStops: 200
+  };
   if (input.stops.length > limits.maxStops) {
     const rejected = await deps.rpc.rpc("route_optimization_fail", {
       p_actor_id: actor,
@@ -325,7 +331,8 @@ async function completeOptimization(
       routing: deps.routing,
       optimizer: deps.optimizer,
       timeoutMs: limits.timeoutMs,
-      maxRetries: limits.maxRetries
+      maxRetries: limits.maxRetries,
+      maxRetryAfterMs: limits.maxRetryAfterMs
     },
     input
   );

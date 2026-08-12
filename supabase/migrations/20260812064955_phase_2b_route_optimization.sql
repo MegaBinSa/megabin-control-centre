@@ -12,6 +12,7 @@ insert into app_private.configuration_definitions(configuration_key,description,
  ('routes.provider-timeout-ms','Bounded provider request timeout','number',true,'15000'),
  ('routes.provider-max-stops','Maximum stops accepted by one optimization request','number',true,'200'),
  ('routes.provider-max-retries','Maximum transient provider retries','number',true,'2'),
+ ('routes.provider-max-retry-delay-ms','Maximum accepted provider retry-after delay','number',true,'5000'),
  ('routes.provider-fallback','Safe fallback policy after provider failure','string',true,'"retain-source"') on conflict do nothing;
 
 alter table app_private.route_versions drop constraint route_versions_generation_method_check;

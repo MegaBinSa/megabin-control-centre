@@ -86,6 +86,9 @@ export default {
       providerRuntime: {
         timeoutMs: Number(providerConfiguration["routes.provider-timeout-ms"] ?? 15000),
         maxRetries: Number(providerConfiguration["routes.provider-max-retries"] ?? 2),
+        maxRetryAfterMs: Number(
+          providerConfiguration["routes.provider-max-retry-delay-ms"] ?? 5000
+        ),
         maxStops: Number(providerConfiguration["routes.provider-max-stops"] ?? 200)
       },
       defer: (work) => EdgeRuntime.waitUntil(work)

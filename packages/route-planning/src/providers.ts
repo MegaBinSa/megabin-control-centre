@@ -89,12 +89,15 @@ export interface FakeProviderOptions {
   readonly failure?: IntegrationErrorClassification;
   readonly health?: HealthCheckResult["status"];
   readonly distanceFactor?: number;
+  readonly retryAfterMs?: number;
 }
-const failure = <T>(classification: IntegrationErrorClassification): AdapterResult<T> => ({
-  ok: false,
-  classification,
-  safeMessage: "Synthetic provider failure."
-});
+const failure = <T>(
+  classification: IntegrationErrorClassification,
+  retryAfterMs?: number
+): AdapterResult<T> =>
+  retryAfterMs === undefined
+    ? { ok: false, classification, safeMessage: "Synthetic provider failure." }
+    : { ok: false, classification, safeMessage: "Synthetic provider failure.", retryAfterMs };
 const leg = (a: GeoPoint, b: GeoPoint, factor: number): TravelEstimate => {
   const dy = (b.latitude - a.latitude) * 111_320,
     dx = (b.longitude - a.longitude) * 100_000,
@@ -120,7 +123,7 @@ export class FakeRoutingProvider implements RoutingProvider {
     };
   }
   async matrix(points: readonly GeoPoint[]): Promise<AdapterResult<TravelMatrix>> {
-    if (this.options.failure) return failure(this.options.failure);
+    if (this.options.failure) return failure(this.options.failure, this.options.retryAfterMs);
     return {
       ok: true,
       value: {
@@ -133,7 +136,7 @@ export class FakeRoutingProvider implements RoutingProvider {
     };
   }
   async route(request: RoutingRequest): Promise<AdapterResult<RoutingResult>> {
-    if (this.options.failure) return failure(this.options.failure);
+    if (this.options.failure) return failure(this.options.failure, this.options.retryAfterMs);
     const legs = request.points
       .slice(1)
       .map((p, i) => leg(request.points[i]!, p, this.options.distanceFactor ?? 1.25));
@@ -168,7 +171,7 @@ export class FakeOptimizationProvider implements OptimizationProvider {
       : this.routing.health();
   }
   async optimize(request: OptimizationRequest): Promise<AdapterResult<OptimizationResult>> {
-    if (this.options.failure) return failure(this.options.failure);
+    if (this.options.failure) return failure(this.options.failure, this.options.retryAfterMs);
     const remaining = new Map(
       request.vehicles.map((v) => [
         v.routeId,
