@@ -127,6 +127,9 @@ jobs:
       - name: Link the dedicated staging project
         run: pnpm exec supabase link --project-ref "$SUPABASE_PROJECT_REF" --password "$SUPABASE_DB_PASSWORD"
 
+      - name: Ensure hosted Data API exposes application API schema
+        run: node scripts/ensure-supabase-data-api-schema.mjs
+
       - name: Inventory and preview migrations
         run: |
           pnpm exec supabase migration list --linked

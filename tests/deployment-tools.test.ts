@@ -4,6 +4,7 @@ import { dirname, relative, resolve } from "node:path";
 import { describe, expect, it, vi } from "vitest";
 
 import { validateEnvironment } from "../scripts/environment-contract.mjs";
+import { ensureSupabaseDataApiSchema } from "../scripts/ensure-supabase-data-api-schema.mjs";
 import { inspectSql } from "../scripts/migration-safety.mjs";
 import { assertStagingReset } from "../scripts/staging-reset.mjs";
 import { runSmoke } from "../scripts/staging-smoke.mjs";
@@ -95,6 +96,42 @@ describe("staging environment contract", () => {
 });
 
 describe("deployment safety tools", () => {
+  it("idempotently exposes the application API schema without replacing existing schemas", async () => {
+    const fetchMock = vi
+      .fn()
+      .mockResolvedValueOnce(Response.json({ db_schema: "public,graphql_public" }))
+      .mockResolvedValueOnce(Response.json({ db_schema: "public,graphql_public,api" }))
+      .mockResolvedValueOnce(Response.json({ db_schema: "public,graphql_public,api" }));
+
+    await expect(
+      ensureSupabaseDataApiSchema(staging, fetchMock as unknown as typeof fetch)
+    ).resolves.toEqual({ changed: true, schemas: ["public", "graphql_public", "api"] });
+    expect(fetchMock).toHaveBeenCalledTimes(3);
+    expect(fetchMock.mock.calls[1]?.[1]).toMatchObject({
+      method: "PATCH",
+      body: JSON.stringify({ db_schema: "public,graphql_public,api" })
+    });
+  });
+
+  it("leaves an already compliant hosted Data API contract unchanged", async () => {
+    const fetchMock = vi.fn(async () => Response.json({ db_schema: "public,api" }));
+    await expect(
+      ensureSupabaseDataApiSchema(staging, fetchMock as unknown as typeof fetch)
+    ).resolves.toEqual({ changed: false, schemas: ["public", "api"] });
+    expect(fetchMock).toHaveBeenCalledTimes(2);
+    expect(fetchMock.mock.calls.some((call) => call[1]?.method === "PATCH")).toBe(false);
+  });
+
+  it("reconciles the hosted Data API contract before migrations and smoke checks", () => {
+    const workflow = readFileSync(".github/workflows/deploy-staging.yml", "utf8");
+    const contract = workflow.indexOf("node scripts/ensure-supabase-data-api-schema.mjs");
+    const migrations = workflow.indexOf("supabase db push --linked --dry-run");
+    const smoke = workflow.indexOf("pnpm smoke:staging");
+    expect(contract).toBeGreaterThan(-1);
+    expect(migrations).toBeGreaterThan(contract);
+    expect(smoke).toBeGreaterThan(migrations);
+  });
+
   it("uses the repository-pinned Wrangler without workspace mutation fallback", () => {
     const workflow = readFileSync(".github/workflows/deploy-staging.yml", "utf8");
     const packageJson = JSON.parse(readFileSync("package.json", "utf8")) as {
@@ -205,19 +242,21 @@ describe("deployment safety tools", () => {
       const url = String(input);
       if (url.includes("/auth/v1/token")) return Response.json({ access_token: "synthetic" });
       if (init?.method === "OPTIONS") {
-        const origin = new Headers(init.headers).get("Origin");
         return new Response(null, {
-          status: origin?.includes("unapproved") ? 403 : 204,
-          headers: origin?.includes("unapproved")
-            ? {}
-            : { "Access-Control-Allow-Origin": origin ?? "" }
+          status: 204,
+          headers: { "Access-Control-Allow-Origin": "*" }
         });
       }
+      const origin = new Headers(init?.headers).get("Origin");
+      if (origin?.includes("unapproved")) return new Response(null, { status: 403 });
       if (url.endsWith("/health/live"))
-        return Response.json({
-          status: "healthy",
-          runtime: { environment: "staging", buildSha: "abc123", deploymentId: "synthetic-run" }
-        });
+        return Response.json(
+          {
+            status: "healthy",
+            runtime: { environment: "staging", buildId: "abc123", deploymentId: "synthetic-run" }
+          },
+          { headers: { "Access-Control-Allow-Origin": "*" } }
+        );
       if (url.includes("/master-data/clients") && !init?.headers)
         return new Response(null, { status: 401 });
       if (url.includes("website-onboarding")) return new Response(null, { status: 202 });
@@ -235,18 +274,20 @@ describe("deployment safety tools", () => {
       if (url.includes("/auth/v1/token")) return Response.json({ access_token: "synthetic" });
       if (url === staging.MEGABIN_DRIVER_ORIGIN) return new Response(null, { status: 503 });
       if (init?.method === "OPTIONS") {
-        const origin = new Headers(init.headers).get("Origin");
         return new Response(null, {
-          status: origin?.includes("unapproved") ? 403 : 204,
-          headers: origin?.includes("unapproved")
-            ? {}
-            : { "Access-Control-Allow-Origin": origin ?? "" }
+          status: 204,
+          headers: { "Access-Control-Allow-Origin": "*" }
         });
       }
+      const origin = new Headers(init?.headers).get("Origin");
+      if (origin?.includes("unapproved")) return new Response(null, { status: 403 });
       if (url.endsWith("/health/live"))
-        return Response.json({
-          runtime: { environment: "staging", buildSha: "abc123", deploymentId: "synthetic-run" }
-        });
+        return Response.json(
+          {
+            runtime: { environment: "staging", buildId: "abc123", deploymentId: "synthetic-run" }
+          },
+          { headers: { "Access-Control-Allow-Origin": "*" } }
+        );
       if (url.includes("/master-data/clients") && !init?.headers)
         return new Response(null, { status: 401 });
       if (url.includes("website-onboarding")) return new Response(null, { status: 202 });
