@@ -55,3 +55,10 @@ Handoff creates the planned assignment and moves directly to `Available`. Driver
 ## Financial Eligibility
 
 Decisions are immutable versions: `Eligible | Warning | Hold Recommended | Held | Manual Review | Unknown`. Material change supersedes the current decision. Holds use `Proposed -> Active -> Released | Cancelled | Superseded`; released holds remain historical. Recommendation and explicit hold are distinct.
+
+## Communications
+
+- Intent: `Created -> Eligibility Pending -> Ready -> Sending -> Delivered | Partially Delivered | Failed | Suppressed`; unsent work may become `Cancelled`, and completed history may later be `Archived`.
+- Attempt: `Pending -> Sending -> Accepted -> Sent -> Delivered`; technical failures are `Failed Temporary` or `Failed Permanent`, while provider/template rejection is `Rejected`. Delivery acknowledgement is monotonic.
+- Template: `Draft -> Approved -> Active -> Retired`.
+- Inbound: `New -> Recognized | Needs Review -> Processed | Ignored`. Command recognition is not operational execution.

@@ -21,6 +21,7 @@ import { websiteIntakeOpenApiPaths } from "./website-intake-http.js";
 import { clientMigrationOpenApiPaths } from "./client-migration-http.js";
 import { accountingOpenApiPaths } from "./accounting-http.js";
 import { financialEligibilityOpenApiPaths } from "./financial-eligibility-http.js";
+import { communicationsOpenApiPaths } from "./communications-http.js";
 
 interface ProofBody {
   readonly value: string;
@@ -251,6 +252,7 @@ export function createOpenApiDocument(): Readonly<Record<string, unknown>> {
       ...clientMigrationOpenApiPaths,
       ...accountingOpenApiPaths,
       ...financialEligibilityOpenApiPaths,
+      ...communicationsOpenApiPaths,
       ...masterDataOpenApiPaths(),
       "/api/v1/platform-proof": { post: { operationId: "executePlatformProof" } },
       "/api/v1/health/live": { get: { operationId: "getLiveness" } },

@@ -176,3 +176,15 @@ Events exclude balances, invoices, payments, contacts, and provider payloads.
 | `FinancialEligibility.OverrideChanged` | A manual override changes | service, status, override version |
 
 Events exclude balances, invoices, payments and free-text reasons.
+
+## Phase 4E accepted Communications events
+
+| Event v1 | Trigger | Concise payload |
+|---|---|---|
+| `Communications.IntentCreated` | An idempotent approved intent commits | intent, type and Client IDs |
+| `Communications.Delivered` | An attempt reaches delivered | intent ID and channel |
+| `Communications.Failed` | All eligible delivery paths fail | intent ID and safe classification |
+| `Communications.InboundMessageReceived` | Authenticated inbound normalization commits | inbound ID and match class |
+| `Communications.InboundCommandRecognized` | A matched message normalizes to a command | inbound ID, command and optional Service ID |
+
+Events exclude destinations, contact identity, rendered/inbound content, provider payloads and financial data.

@@ -1,6 +1,10 @@
 import "@supabase/functions-js/edge-runtime.d.ts";
 import { withSupabase } from "@supabase/server";
-import { FakeIntegrationAdapter, FakeZohoBooksAdapter } from "@megabin/integrations";
+import {
+  FakeIntegrationAdapter,
+  FakeMessagingAdapter,
+  FakeZohoBooksAdapter
+} from "@megabin/integrations";
 import { FakeOptimizationProvider, FakeRoutingProvider } from "@megabin/route-planning";
 import type { ActorReference } from "@megabin/domain-types";
 import {
@@ -16,6 +20,7 @@ import {
   createClientMigrationHandler,
   createAccountingHandler,
   createFinancialEligibilityHandler,
+  createCommunicationsHandler,
   MemoryJobStateStore,
   SupabaseRuntimeDatabase,
   type RuntimeRpcClient
@@ -109,6 +114,25 @@ export default {
       defer: (work) => EdgeRuntime.waitUntil(work)
     })(request);
     if (financialEligibilityResponse) return financialEligibilityResponse;
+    const communicationsResponse = await createCommunicationsHandler({
+      rpc,
+      actorId,
+      id: () => crypto.randomUUID(),
+      environment: runtimeEnvironment,
+      mode: (Deno.env.get("MEGABIN_COMMUNICATIONS_MODE") ?? "capture") as
+        | "capture"
+        | "test"
+        | "live",
+      provider: new FakeMessagingAdapter(),
+      testRecipientAllowlist: (Deno.env.get("MEGABIN_COMMUNICATIONS_TEST_RECIPIENTS") ?? "")
+        .split(",")
+        .map((value) => value.trim())
+        .filter(Boolean),
+      webhookSecret: Deno.env.get("MEGABIN_COMMUNICATIONS_WEBHOOK_SECRET"),
+      maxRetries: Number(Deno.env.get("MEGABIN_COMMUNICATIONS_MAX_RETRIES") ?? 2),
+      defer: (work) => EdgeRuntime.waitUntil(work)
+    })(request);
+    if (communicationsResponse) return communicationsResponse;
     const liveOperations = createLiveOperationsHandler({
       rpc,
       actorId,

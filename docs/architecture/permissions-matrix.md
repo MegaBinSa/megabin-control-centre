@@ -172,3 +172,15 @@ Permissions are `accounting.read`, `accounting.sensitive.read`, `accounting.sync
 | System Admin/Developer | No by default | No | No | No |
 
 Permissions are `financial_eligibility.read`, `.review`, `.hold`, `.release`, `.override`, and `.reevaluate`. Access is region-scoped and technical roles receive no implicit business authority.
+
+## Phase 4E Communications permissions
+
+| Role | Read/send | Templates read/manage | Inbound read/review | Integration manage |
+|---|---|---|---|---|
+| Director/Admin | Yes | Yes | Yes | Yes |
+| Operations Manager | Yes | Read only | Yes | No |
+| Office/Admin | Yes | Read only | Yes | No |
+| Driver/Team | No | No | No | No |
+| System Admin/Developer | No by default | No by default | No | No |
+
+Permissions are `communications.read`, `.send`, `.templates.read`, `.templates.manage`, `.inbound.read`, `.inbound.review`, and `.integration.manage`. Content and history reads are region-scoped. Technical access grants no automatic message-content visibility.
