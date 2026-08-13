@@ -108,6 +108,11 @@ jobs:
           node-version-file: .node-version
           cache: pnpm
 
+      - name: Set up Deno
+        uses: denoland/setup-deno@v2
+        with:
+          deno-version: v2.x
+
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
@@ -140,6 +145,11 @@ jobs:
 
       - name: Verify staging persona authorization boundaries
         run: pnpm exec supabase db query --linked --file supabase/staging/verify-personas.sql
+
+      - name: Verify Edge Function deployment bundles
+        run: |
+          deno bundle --config supabase/functions/platform-runtime/deno.json supabase/functions/platform-runtime/index.ts --output "$RUNNER_TEMP/platform-runtime.bundle.js"
+          deno bundle --config supabase/functions/website-onboarding/deno.json supabase/functions/website-onboarding/index.ts --output "$RUNNER_TEMP/website-onboarding.bundle.js"
 
       - name: Inject Edge Function staging secrets
         run: >-

@@ -52,6 +52,11 @@ jobs:
           deno check --config supabase/functions/platform-runtime/deno.json supabase/functions/platform-runtime/index.ts
           deno check --config supabase/functions/website-onboarding/deno.json supabase/functions/website-onboarding/index.ts
 
+      - name: Bundle Edge Functions for deployment
+        run: |
+          deno bundle --config supabase/functions/platform-runtime/deno.json supabase/functions/platform-runtime/index.ts --output "$RUNNER_TEMP/platform-runtime.bundle.js"
+          deno bundle --config supabase/functions/website-onboarding/deno.json supabase/functions/website-onboarding/index.ts --output "$RUNNER_TEMP/website-onboarding.bundle.js"
+
   database:
     runs-on: ubuntu-latest
     steps:

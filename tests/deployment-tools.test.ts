@@ -1,4 +1,5 @@
-import { readFileSync } from "node:fs";
+import { readFileSync, readdirSync } from "node:fs";
+import { dirname, relative, resolve } from "node:path";
 
 import { describe, expect, it, vi } from "vitest";
 
@@ -94,6 +95,45 @@ describe("staging environment contract", () => {
 });
 
 describe("deployment safety tools", () => {
+  it("maps NodeNext JavaScript source specifiers explicitly for both Edge bundlers", () => {
+    const sourceRoots = [
+      "packages/domain-types/src",
+      "packages/integrations/src",
+      "packages/route-planning/src",
+      "packages/runtime/src"
+    ];
+    const configurations = [
+      "supabase/functions/platform-runtime/deno.json",
+      "supabase/functions/website-onboarding/deno.json"
+    ];
+
+    for (const configuration of configurations) {
+      const deno = JSON.parse(readFileSync(configuration, "utf8")) as {
+        readonly imports: Readonly<Record<string, string>>;
+        readonly unstable?: readonly string[];
+      };
+      expect(deno.unstable).toBeUndefined();
+
+      for (const root of sourceRoots) {
+        for (const name of readdirSync(root).filter(
+          (entry) => entry.endsWith(".ts") && !entry.endsWith(".test.ts")
+        )) {
+          const source = resolve(root, name);
+          const text = readFileSync(source, "utf8");
+          for (const match of text.matchAll(/["'](\.\/[^"']+\.js)["']/g)) {
+            const specifier = match[1];
+            if (!specifier) throw new Error(`Unable to read module specifier in ${source}.`);
+            const javascript = resolve(dirname(source), specifier);
+            const key = relative(dirname(resolve(configuration)), javascript).replaceAll("\\", "/");
+            expect(deno.imports[key], `${configuration} must map ${key}`).toBe(
+              key.replace(/\.js$/, ".ts")
+            );
+          }
+        }
+      }
+    }
+  });
+
   it("lints every MegaBin-owned schema without linting platform-managed extensions", () => {
     const workflow = readFileSync(".github/workflows/deploy-staging.yml", "utf8");
     const scopedLint =
@@ -111,11 +151,15 @@ describe("deployment safety tools", () => {
       "supabase db lint --linked --schema app_private,api,public --level warning --fail-on error"
     );
     const personas = workflow.indexOf("supabase/staging/provision-personas.sql");
+    const bundle = workflow.indexOf("deno bundle --config");
+    const deploy = workflow.indexOf("supabase functions deploy platform-runtime");
 
     expect(preview).toBeGreaterThan(-1);
     expect(apply).toBeGreaterThan(preview);
     expect(verify).toBeGreaterThan(apply);
     expect(personas).toBeGreaterThan(verify);
+    expect(bundle).toBeGreaterThan(personas);
+    expect(deploy).toBeGreaterThan(bundle);
   });
 
   it("flags destructive migration operations", () => {
