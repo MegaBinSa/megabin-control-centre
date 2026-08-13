@@ -16,13 +16,13 @@
     },
     {
       "code": "office",
-      "emailPattern": "office+staging@example.invalid",
+      "emailPattern": "staging-office@megabin.local",
       "role": "Office/Admin",
       "mfaRequired": true
     },
     {
       "code": "driver",
-      "emailPattern": "driver+staging@example.invalid",
+      "emailPattern": "staging-driver@megabin.local",
       "role": "Driver/Team",
       "mfaRequired": false
     },

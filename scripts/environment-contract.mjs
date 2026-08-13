@@ -35,7 +35,12 @@ const deploymentRequired = [
   "STAGING_OFFICE_EMAIL",
   "STAGING_OFFICE_PASSWORD",
   "STAGING_DRIVER_EMAIL",
-  "STAGING_DRIVER_PASSWORD"
+  "STAGING_DRIVER_PASSWORD",
+  "CLOUDFLARE_ACCOUNT_ID",
+  "CLOUDFLARE_OFFICE_PROJECT",
+  "CLOUDFLARE_DRIVER_PROJECT",
+  "CLOUDFLARE_API_TOKEN",
+  "FRONTEND_DEPLOYMENT_CONFIGURED"
 ];
 const secretNames = new Set([
   "SUPABASE_ACCESS_TOKEN",
@@ -43,7 +48,8 @@ const secretNames = new Set([
   "MEGABIN_WEBSITE_ONBOARDING_SECRET",
   "MEGABIN_COMMUNICATIONS_WEBHOOK_SECRET",
   "STAGING_OFFICE_PASSWORD",
-  "STAGING_DRIVER_PASSWORD"
+  "STAGING_DRIVER_PASSWORD",
+  "CLOUDFLARE_API_TOKEN"
 ]);
 
 function validHttps(value) {
@@ -102,6 +108,10 @@ export function validateEnvironment(target, values, options = {}) {
       errors.push(`${key} must be present in MEGABIN_ALLOWED_ORIGINS.`);
 
   if (target === "staging") {
+    if (values.STAGING_OFFICE_EMAIL !== "staging-office@megabin.local")
+      errors.push("Staging Office identity must be the approved synthetic persona.");
+    if (values.STAGING_DRIVER_EMAIL !== "staging-driver@megabin.local")
+      errors.push("Staging Driver identity must be the approved synthetic persona.");
     if (values.MEGABIN_COMMUNICATIONS_MODE === "live")
       errors.push("Staging communications cannot use live mode.");
     if (!new Set(["capture", "test"]).has(values.MEGABIN_COMMUNICATIONS_MODE))
@@ -117,6 +127,18 @@ export function validateEnvironment(target, values, options = {}) {
       errors.push("Staging optimization must remain fake-optimizer in Phase 5B.");
     if (values.MEGABIN_ACCOUNTING_PROVIDER !== "zoho-books-fake")
       errors.push("Staging accounting must remain zoho-books-fake in Phase 5B.");
+    if (options.deployment && values.FRONTEND_DEPLOYMENT_CONFIGURED !== "true")
+      errors.push("The implemented Staging frontend deployment integration must be enabled.");
+    if (
+      options.deployment &&
+      !/^https:\/\/[^/]+\.pages\.dev$/.test(values.MEGABIN_OFFICE_ORIGIN ?? "")
+    )
+      errors.push("Staging Office origin must be the approved Cloudflare Pages HTTPS origin.");
+    if (
+      options.deployment &&
+      !/^https:\/\/[^/]+\.pages\.dev$/.test(values.MEGABIN_DRIVER_ORIGIN ?? "")
+    )
+      errors.push("Staging Driver origin must be the approved Cloudflare Pages HTTPS origin.");
   }
   for (const key of [
     "MEGABIN_AUTO_FINANCIAL_HOLD",

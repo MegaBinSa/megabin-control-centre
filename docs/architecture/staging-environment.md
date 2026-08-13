@@ -1,6 +1,6 @@
 # Staging Environment Architecture
 
-**Status:** Phase 5B repository contract; external resources not provisioned
+**Status:** Phase 5C resources configured; first controlled deployment pending merge
 
 Local, Staging and Production are separate security and data boundaries. Staging requires its own Supabase project, Auth tenant, Functions, database, secrets, integration registrations and separate HTTPS Office/Driver origins. Production identifiers are forbidden in Staging. The environment validator binds the declared environment, project reference, Supabase URLs, frontend URLs, CORS origins and safety modes and prints names/status only.
 
@@ -8,15 +8,14 @@ Staging uses synthetic data, fake routing/optimization/accounting, communication
 
 The shared Staging target is deployed only from an explicitly selected commit already contained in `main`, through `workflow_dispatch` and the GitHub `staging` Environment. It is never automatically replaced by feature branches.
 
-## Required external resources
+## Provisioned external resources
 
-- Dedicated Supabase Staging project and approved plan/region
-- GitHub `staging` Environment, secrets and variables listed in the configuration guide
-- Separate HTTPS Office and Driver hosts with an artifact deployment integration
-- Named dashboard, deployment and alert access groups
-- Alert destination and backup/restore capability selected for the Staging plan
+- Dedicated Supabase Staging project `xniweqdmswzljcgkfglx`
+- Protected GitHub `staging` Environment with named Supabase, synthetic-persona, Cloudflare and integration configuration
+- Separate Cloudflare Pages projects at `megabin-office-staging.pages.dev` and `megabin-driver-staging.pages.dev`
+- Two pre-created synthetic Auth identities; application authorization is provisioned only by the database-owned Phase 5C transaction
 
-These resources were not created in Phase 5B because Supabase authentication, project/organization/billing decisions and hosting approval were unavailable.
+No production infrastructure or live provider configuration is part of this environment. External alert routing and an isolated restore target/approved backup posture remain open operational dependencies.
 
 ## Scheduled processes
 

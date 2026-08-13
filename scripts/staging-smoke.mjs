@@ -10,15 +10,44 @@ export async function runSmoke(values, fetchImpl = fetch) {
       ? expected.includes(response.status)
       : response.status === expected;
     checks.push({ name, passed, status: response.status });
+    return response;
   }
   await check("office_frontend", values.MEGABIN_OFFICE_ORIGIN);
   await check("driver_frontend", values.MEGABIN_DRIVER_ORIGIN);
-  await check(
+  const liveness = await check(
     "runtime_liveness",
     `${values.VITE_MASTER_DATA_API_URL}/api/v1/health/live`,
     200,
     officeToken ? { headers: { Authorization: `Bearer ${officeToken}` } } : undefined
   );
+  if (liveness.ok && values.VITE_BUILD_SHA && values.VITE_DEPLOYMENT_ID) {
+    const body = await liveness.json();
+    const runtime = body.runtime ?? {};
+    checks.push({
+      name: "release_identity",
+      passed:
+        runtime.environment === "staging" &&
+        runtime.buildSha === values.VITE_BUILD_SHA &&
+        runtime.deploymentId === values.VITE_DEPLOYMENT_ID,
+      status: liveness.status
+    });
+  }
+  const allowedPreflight = await check(
+    "allowed_cors_preflight",
+    `${values.VITE_MASTER_DATA_API_URL}/api/v1/health/live`,
+    204,
+    { method: "OPTIONS", headers: { Origin: values.MEGABIN_OFFICE_ORIGIN } }
+  );
+  checks.push({
+    name: "allowed_cors_header",
+    passed:
+      allowedPreflight.headers.get("access-control-allow-origin") === values.MEGABIN_OFFICE_ORIGIN,
+    status: allowedPreflight.status
+  });
+  await check("unknown_cors_denial", `${values.VITE_MASTER_DATA_API_URL}/api/v1/health/live`, 403, {
+    method: "OPTIONS",
+    headers: { Origin: "https://unapproved.example.invalid" }
+  });
   await check(
     "anonymous_office_denial",
     `${values.VITE_MASTER_DATA_API_URL}/api/v1/master-data/clients`,
@@ -32,6 +61,24 @@ export async function runSmoke(values, fetchImpl = fetch) {
       {
         headers: { Authorization: `Bearer ${officeToken}` }
       }
+    );
+    await check(
+      "fake_routing_provider_health",
+      `${values.VITE_MASTER_DATA_API_URL}/api/v1/route-providers/health?serviceRegionId=51000000-0000-0000-0000-000000000001`,
+      200,
+      { headers: { Authorization: `Bearer ${officeToken}` } }
+    );
+    await check(
+      "fake_accounting_provider_health",
+      `${values.VITE_MASTER_DATA_API_URL}/api/v1/accounting/health`,
+      200,
+      { headers: { Authorization: `Bearer ${officeToken}` } }
+    );
+    await check(
+      "capture_communications_health",
+      `${values.VITE_MASTER_DATA_API_URL}/api/v1/communications/provider-health`,
+      200,
+      { headers: { Authorization: `Bearer ${officeToken}` } }
     );
   }
   if (values.STAGING_DRIVER_EMAIL && values.STAGING_DRIVER_PASSWORD) {
@@ -48,6 +95,12 @@ export async function runSmoke(values, fetchImpl = fetch) {
       {
         headers: { Authorization: `Bearer ${driverToken}` }
       }
+    );
+    await check(
+      "driver_financial_denial",
+      `${values.VITE_DRIVER_API_URL}/api/v1/accounting/status`,
+      403,
+      { headers: { Authorization: `Bearer ${driverToken}` } }
     );
   }
   if (values.MEGABIN_WEBSITE_ONBOARDING_URL) {

@@ -3,15 +3,15 @@
 **Status:** Phase 5A inventory; values are not credentials
 **Last reviewed:** 2026-08-13
 
-Phase 5B implements name/status validation and example inventories. No real Staging values are configured; the GitHub `staging` Environment and Supabase/hosting stores still require human provisioning.
+Phase 5C has configured the isolated Supabase project, protected GitHub Staging names/secrets, exact Cloudflare Pages targets and two synthetic Auth identities. Values remain outside the repository. Deployment evidence is recorded only after the reviewed Phase 5C merge SHA completes the protected workflow.
 
 `Current posture` describes repository defaults or absence. Actual secret values must never be recorded here.
 
 | ID/key | Module | Current posture | Production value/decision required | Storage location | Owner type | Blocks |
 |---|---|---|---|---|---|---|
 | CFG-ENV / `MEGABIN_ENVIRONMENT` | Runtime | Defaults `local` | Strict `staging`/`production`, fail closed on invalid combinations | Edge Function secret/config | Technical | Staging |
-| CFG-SUP-URL / `VITE_SUPABASE_URL` | Both frontends | Local example | Environment project URL | Host environment variable | Technical | Staging |
-| CFG-SUP-KEY / `VITE_SUPABASE_PUBLISHABLE_KEY` | Both frontends | Placeholder local public key | Environment publishable key; never service role | Host environment variable | Technical | Staging |
+| CFG-SUP-URL / `VITE_SUPABASE_URL` | Both frontends | Isolated Staging project URL configured in protected environment | Separate production project URL later | GitHub Environment/build injection | Technical | Production |
+| CFG-SUP-KEY / `VITE_SUPABASE_PUBLISHABLE_KEY` | Both frontends | Staging publishable key configured; privileged-key validation enforced | Separate production publishable key; never service role | GitHub Environment/build injection | Technical | Production |
 | CFG-OFF-API / `VITE_MASTER_DATA_API_URL` | Office Web | Local Function URL | Staging/production platform-runtime URL | Host environment variable | Technical | Staging |
 | CFG-DRV-API / `VITE_DRIVER_API_URL` | Driver PWA | Used by code, absent from `.env.example` | Staging/production runtime URL | Host environment variable | Technical | Staging |
 | CFG-SVC-ROLE | Edge Functions | Supabase-managed runtime use | Project-specific service-role credential, inaccessible to browsers; rotation procedure | Supabase secret/runtime | Technical/Security | Staging |
@@ -31,7 +31,7 @@ Phase 5B implements name/status validation and example inventories. No real Stag
 | CFG-AUTH | Supabase Auth | Local sign-up, unconfirmed email, 6-char password, MFA off | Invite policy, redirects, SMTP, password/session/MFA and bootstrap settings | Supabase project config | Business/Technical/Security | Internal UAT |
 | CFG-DB-NET | PostgreSQL | Local open network, SSL/pooler production posture absent | Network/SSL/pooling/connection limits and approved admin access | Supabase project config | Technical/Security | Production |
 | CFG-BACKUP | PostgreSQL | No repository environment choice | Plan, daily retention/PITR, RPO/RTO and restore schedule | Supabase/org operations | Business/Technical | Pilot/Production |
-| CFG-DOMAIN | Hosting/Auth | None | Office, Driver, Function/webhook domains and Auth redirect allowlist | DNS/host/Supabase | Business/Technical | Staging |
+| CFG-DOMAIN | Hosting/Auth | Separate Office and Driver Cloudflare Pages Staging origins configured | Production domains and Auth redirect allowlist later | Cloudflare/GitHub/Supabase | Business/Technical | Production |
 | CFG-OBS | Observability | Internal health only | Log/metric/error destination, sampling, retention, alert routes | Host/Supabase/monitoring config | Technical/Operations | Internal UAT |
 | CFG-JOBS | Background jobs | Manual/local foundations | Cadences, concurrency, timeouts, retries, owners and kill switches per job | Typed config/Cron | Operations/Technical | Production |
 | CFG-LIVE | Live intelligence | Typed synthetic defaults | Approved regional thresholds and grace windows | Configuration registry | Operations | Production |

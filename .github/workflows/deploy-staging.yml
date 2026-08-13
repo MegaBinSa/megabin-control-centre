@@ -67,6 +67,11 @@ jobs:
       MEGABIN_AUTO_FINANCIAL_HOLD: "false"
       MEGABIN_AUTO_FINANCIAL_RELEASE: "false"
       MEGABIN_AUTO_SKIP_REPLAN: "false"
+      CLOUDFLARE_ACCOUNT_ID: ${{ vars.CLOUDFLARE_ACCOUNT_ID }}
+      CLOUDFLARE_OFFICE_PROJECT: ${{ vars.CLOUDFLARE_OFFICE_PROJECT }}
+      CLOUDFLARE_DRIVER_PROJECT: ${{ vars.CLOUDFLARE_DRIVER_PROJECT }}
+      CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+      FRONTEND_DEPLOYMENT_CONFIGURED: "true"
     steps:
       - name: Check out requested release
         uses: actions/checkout@v4
@@ -123,12 +128,18 @@ jobs:
           pnpm exec supabase db push --linked --dry-run
 
       - name: Apply migrations
-        run: pnpm exec supabase db push --linked
+        run: pnpm exec supabase db push --linked --include-seed
 
       - name: Verify database after migration
         run: |
           pnpm exec supabase migration list --linked
           pnpm exec supabase db lint --linked --level warning --fail-on error
+
+      - name: Provision bounded synthetic staging personas
+        run: pnpm exec supabase db query --linked --file supabase/staging/provision-personas.sql
+
+      - name: Verify staging persona authorization boundaries
+        run: pnpm exec supabase db query --linked --file supabase/staging/verify-personas.sql
 
       - name: Inject Edge Function staging secrets
         run: >-
@@ -143,6 +154,12 @@ jobs:
           MEGABIN_COMMUNICATIONS_MODE="$MEGABIN_COMMUNICATIONS_MODE"
           MEGABIN_COMMUNICATIONS_TEST_RECIPIENTS="$MEGABIN_COMMUNICATIONS_TEST_RECIPIENTS"
           MEGABIN_COMMUNICATIONS_WEBHOOK_SECRET="$MEGABIN_COMMUNICATIONS_WEBHOOK_SECRET"
+          MEGABIN_ROUTING_PROVIDER="$MEGABIN_ROUTING_PROVIDER"
+          MEGABIN_OPTIMIZATION_PROVIDER="$MEGABIN_OPTIMIZATION_PROVIDER"
+          MEGABIN_ACCOUNTING_PROVIDER="$MEGABIN_ACCOUNTING_PROVIDER"
+          MEGABIN_AUTO_FINANCIAL_HOLD="$MEGABIN_AUTO_FINANCIAL_HOLD"
+          MEGABIN_AUTO_FINANCIAL_RELEASE="$MEGABIN_AUTO_FINANCIAL_RELEASE"
+          MEGABIN_AUTO_SKIP_REPLAN="$MEGABIN_AUTO_SKIP_REPLAN"
 
       - name: Deploy tracked Edge Functions
         run: |
@@ -166,11 +183,30 @@ jobs:
           path: apps/driver-pwa/dist
           if-no-files-found: error
 
-      - name: Require configured frontend deployment integration
-        if: vars.FRONTEND_DEPLOYMENT_CONFIGURED != 'true'
-        run: |
-          echo "Staging frontend host integration is not configured. Artifacts were built but not deployed."
-          exit 1
+      - name: Require implemented frontend deployment integration
+        run: test "$FRONTEND_DEPLOYMENT_CONFIGURED" = "true"
+
+      - name: Deploy Office Web to Cloudflare Pages
+        uses: cloudflare/wrangler-action@9acf94ace14e7dc412b076f2c5c20b8ce93c79cd # v3
+        with:
+          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          accountId: ${{ vars.CLOUDFLARE_ACCOUNT_ID }}
+          command: >-
+            pages deploy apps/office-web/dist
+            --project-name=${{ vars.CLOUDFLARE_OFFICE_PROJECT }}
+            --branch=main
+            --commit-hash=${{ inputs.source_sha }}
+
+      - name: Deploy Driver PWA to Cloudflare Pages
+        uses: cloudflare/wrangler-action@9acf94ace14e7dc412b076f2c5c20b8ce93c79cd # v3
+        with:
+          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          accountId: ${{ vars.CLOUDFLARE_ACCOUNT_ID }}
+          command: >-
+            pages deploy apps/driver-pwa/dist
+            --project-name=${{ vars.CLOUDFLARE_DRIVER_PROJECT }}
+            --branch=main
+            --commit-hash=${{ inputs.source_sha }}
 
       - name: Run non-destructive remote smoke checks
         run: pnpm smoke:staging
@@ -183,3 +219,4 @@ jobs:
           echo "- Project: $SUPABASE_PROJECT_REF" >> "$GITHUB_STEP_SUMMARY"
           echo "- Deployment: $MEGABIN_DEPLOYMENT_ID" >> "$GITHUB_STEP_SUMMARY"
           echo "- Functions: platform-runtime, website-onboarding" >> "$GITHUB_STEP_SUMMARY"
+          echo "- Frontends: $MEGABIN_OFFICE_ORIGIN, $MEGABIN_DRIVER_ORIGIN" >> "$GITHUB_STEP_SUMMARY"

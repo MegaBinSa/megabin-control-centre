@@ -19,10 +19,10 @@ const staging = {
   VITE_BUILD_SHA: "abc123",
   VITE_BUILD_TIMESTAMP: "2026-08-13T00:00:00Z",
   VITE_DEPLOYMENT_ID: "synthetic-run",
-  MEGABIN_OFFICE_ORIGIN: "https://office.staging.example.test",
-  MEGABIN_DRIVER_ORIGIN: "https://driver.staging.example.test",
+  MEGABIN_OFFICE_ORIGIN: "https://megabin-office-staging.pages.dev",
+  MEGABIN_DRIVER_ORIGIN: "https://megabin-driver-staging.pages.dev",
   MEGABIN_ALLOWED_ORIGINS:
-    "https://office.staging.example.test,https://driver.staging.example.test",
+    "https://megabin-office-staging.pages.dev,https://megabin-driver-staging.pages.dev",
   MEGABIN_WEBSITE_ONBOARDING_INTEGRATION_KEY: "website-staging",
   MEGABIN_WEBSITE_ONBOARDING_SECRET: "synthetic-secret",
   MEGABIN_WEBSITE_ONBOARDING_URL:
@@ -35,12 +35,27 @@ const staging = {
   MEGABIN_ACCOUNTING_PROVIDER: "zoho-books-fake",
   MEGABIN_AUTO_FINANCIAL_HOLD: "false",
   MEGABIN_AUTO_FINANCIAL_RELEASE: "false",
-  MEGABIN_AUTO_SKIP_REPLAN: "false"
+  MEGABIN_AUTO_SKIP_REPLAN: "false",
+  STAGING_OFFICE_EMAIL: "staging-office@megabin.local",
+  STAGING_OFFICE_PASSWORD: "synthetic-password",
+  STAGING_DRIVER_EMAIL: "staging-driver@megabin.local",
+  STAGING_DRIVER_PASSWORD: "synthetic-password",
+  SUPABASE_ACCESS_TOKEN: "synthetic-token",
+  SUPABASE_DB_PASSWORD: "synthetic-password",
+  CLOUDFLARE_ACCOUNT_ID: "synthetic-account",
+  CLOUDFLARE_OFFICE_PROJECT: "megabin-office-staging",
+  CLOUDFLARE_DRIVER_PROJECT: "megabin-driver-staging",
+  CLOUDFLARE_API_TOKEN: "synthetic-token",
+  FRONTEND_DEPLOYMENT_CONFIGURED: "true"
 };
 
 describe("staging environment contract", () => {
   it("accepts safe synthetic staging configuration", () => {
     expect(validateEnvironment("staging", staging)).toEqual({ ok: true, errors: [] });
+    expect(validateEnvironment("staging", staging, { deployment: true })).toEqual({
+      ok: true,
+      errors: []
+    });
   });
 
   it("fails closed for missing configuration and unsafe live capabilities", () => {
@@ -98,25 +113,59 @@ describe("deployment safety tools", () => {
   });
 
   it("runs non-destructive remote smoke checks", async () => {
-    const fetchMock = vi
-      .fn()
-      .mockResolvedValueOnce({ status: 200 })
-      .mockResolvedValueOnce({ status: 200 })
-      .mockResolvedValueOnce({ status: 200 })
-      .mockResolvedValueOnce({ status: 401 })
-      .mockResolvedValueOnce({ status: 202 });
+    const fetchMock = vi.fn(async (input: string | URL | Request, init?: RequestInit) => {
+      const url = String(input);
+      if (url.includes("/auth/v1/token")) return Response.json({ access_token: "synthetic" });
+      if (init?.method === "OPTIONS") {
+        const origin = new Headers(init.headers).get("Origin");
+        return new Response(null, {
+          status: origin?.includes("unapproved") ? 403 : 204,
+          headers: origin?.includes("unapproved")
+            ? {}
+            : { "Access-Control-Allow-Origin": origin ?? "" }
+        });
+      }
+      if (url.endsWith("/health/live"))
+        return Response.json({
+          status: "healthy",
+          runtime: { environment: "staging", buildSha: "abc123", deploymentId: "synthetic-run" }
+        });
+      if (url.includes("/master-data/clients") && !init?.headers)
+        return new Response(null, { status: 401 });
+      if (url.includes("website-onboarding")) return new Response(null, { status: 202 });
+      if (url.includes("/accounting/status") && init?.headers)
+        return new Response(null, { status: 403 });
+      return Response.json({ ok: true });
+    });
     const checks = await runSmoke(staging, fetchMock as unknown as typeof fetch);
     expect(checks.every((check) => check.passed)).toBe(true);
   });
 
   it("reports a failed remote smoke invariant", async () => {
-    const fetchMock = vi
-      .fn()
-      .mockResolvedValueOnce({ status: 200 })
-      .mockResolvedValueOnce({ status: 503 })
-      .mockResolvedValueOnce({ status: 200 })
-      .mockResolvedValueOnce({ status: 401 })
-      .mockResolvedValueOnce({ status: 202 });
+    const fetchMock = vi.fn(async (input: string | URL | Request, init?: RequestInit) => {
+      const url = String(input);
+      if (url.includes("/auth/v1/token")) return Response.json({ access_token: "synthetic" });
+      if (url === staging.MEGABIN_DRIVER_ORIGIN) return new Response(null, { status: 503 });
+      if (init?.method === "OPTIONS") {
+        const origin = new Headers(init.headers).get("Origin");
+        return new Response(null, {
+          status: origin?.includes("unapproved") ? 403 : 204,
+          headers: origin?.includes("unapproved")
+            ? {}
+            : { "Access-Control-Allow-Origin": origin ?? "" }
+        });
+      }
+      if (url.endsWith("/health/live"))
+        return Response.json({
+          runtime: { environment: "staging", buildSha: "abc123", deploymentId: "synthetic-run" }
+        });
+      if (url.includes("/master-data/clients") && !init?.headers)
+        return new Response(null, { status: 401 });
+      if (url.includes("website-onboarding")) return new Response(null, { status: 202 });
+      if (url.includes("/accounting/status") && init?.headers)
+        return new Response(null, { status: 403 });
+      return Response.json({ ok: true });
+    });
     const checks = await runSmoke(staging, fetchMock as unknown as typeof fetch);
     expect(checks.find((check) => check.name === "driver_frontend")?.passed).toBe(false);
   });
