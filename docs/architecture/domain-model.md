@@ -80,3 +80,5 @@ Geography uses PostGIS SRID 4326 geography points for service addresses and depo
 Daily Roster sits between permanent master data and future Routes. Operational Day has an immutable UUID and is unique by service region/date. Entries snapshot expected defaults and preserve actual day-specific assignments plus append-only change history. Availability windows remain owned by Workforce and Vehicles; roster generation consumes them without changing master records.
 
 Client and service lifecycle states are independent. Archival is a timestamped lifecycle transition and does not cascade-delete services or historical configuration. No billing Account entity exists.
+
+Phase 4C preserves that decision. An external accounting customer maps to a Client through reconciliation and an external reference. Immutable provider facts derive a Client Accounting Snapshot and Operational Account Status; neither becomes a Client/Service lifecycle field, and the advisory financial eligibility projection makes no hold or route decision.

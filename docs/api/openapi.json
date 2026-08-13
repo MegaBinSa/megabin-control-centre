@@ -1308,6 +1308,47 @@
         "operationId": "retryClientMigrationRow"
       }
     },
+    "/api/v1/accounting/health": {
+      "get": {
+        "operationId": "getAccountingHealth"
+      }
+    },
+    "/api/v1/accounting/sync-runs": {
+      "get": {
+        "operationId": "listAccountingSyncRuns"
+      },
+      "post": {
+        "operationId": "startAccountingSync"
+      }
+    },
+    "/api/v1/accounting/reconciliation": {
+      "get": {
+        "operationId": "listAccountingReconciliation"
+      }
+    },
+    "/api/v1/accounting/reconciliation/{provider}/{customerId}": {
+      "post": {
+        "operationId": "resolveAccountingCustomer"
+      }
+    },
+    "/api/v1/accounting/status": {
+      "get": {
+        "operationId": "listAccountStatuses"
+      }
+    },
+    "/api/v1/accounting/clients/{clientId}": {
+      "get": {
+        "operationId": "getClientAccounting"
+      }
+    },
+    "/api/v1/accounting/clients/{clientId}/exception": {
+      "put": {
+        "operationId": "setAccountException"
+      },
+      "delete": {
+        "operationId": "removeAccountException"
+      }
+    },
     "/api/v1/master-data/clients": {
       "get": {
         "operationId": "list-clients",

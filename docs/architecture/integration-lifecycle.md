@@ -27,3 +27,5 @@ Phase 2B adds independent fake routing and optimization adapters. They are deter
 ## Health and failure
 
 Health is `healthy`, `degraded`, `unhealthy`, `disabled`, or `unknown`. Failures are classified as retryable, rate limited, authentication, invalid request, or permanent. Health summaries and failure metadata must be safe to expose to technical operators and must not include provider credentials or unredacted payloads.
+
+Accounting extends health with `authentication_required`. Its sync runs are durable and asynchronous. The fake Zoho Books adapter is the local/CI default; live Zoho configuration and credentials remain disabled pending production approval.

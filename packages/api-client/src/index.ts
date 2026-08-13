@@ -16,6 +16,11 @@ export type ApiErrorCode =
   | "published_route_version_required"
   | "not_found"
   | "rate_limited"
+  | "reconciliation_conflict"
+  | "stale_accounting_data"
+  | "provider_authentication"
+  | "sync_running"
+  | "sync_failed"
   | "internal_error";
 
 export interface ApiError {
@@ -497,6 +502,51 @@ export class MasterDataApiClient {
   }
   clientMigrationReport<T>(batchId: string): Promise<T> {
     return this.request(`/client-migrations/${batchId}/report`);
+  }
+  accountingHealth<T>(): Promise<T> {
+    return this.request("/accounting/health");
+  }
+  accountingSyncRuns<T>(): Promise<T> {
+    return this.request("/accounting/sync-runs");
+  }
+  startAccountingSync<T>(
+    syncMode: "initial_full" | "incremental" | "manual_refresh" | "scheduled"
+  ): Promise<T> {
+    return this.request(
+      "/accounting/sync-runs",
+      { method: "POST", body: JSON.stringify({ syncMode }) },
+      true
+    );
+  }
+  accountingReconciliation<T>(): Promise<T> {
+    return this.request("/accounting/reconciliation");
+  }
+  reconcileAccountingCustomer<T>(provider: string, customerId: string, body: unknown): Promise<T> {
+    return this.request(
+      `/accounting/reconciliation/${encodeURIComponent(provider)}/${encodeURIComponent(customerId)}`,
+      { method: "POST", body: JSON.stringify(body) },
+      true
+    );
+  }
+  accountStatuses<T>(): Promise<T> {
+    return this.request("/accounting/status");
+  }
+  clientAccounting<T>(clientId: string): Promise<T> {
+    return this.request(`/accounting/clients/${clientId}`);
+  }
+  setAccountException<T>(clientId: string, body: unknown): Promise<T> {
+    return this.request(
+      `/accounting/clients/${clientId}/exception`,
+      { method: "PUT", body: JSON.stringify(body) },
+      true
+    );
+  }
+  removeAccountException<T>(clientId: string, reason: string): Promise<T> {
+    return this.request(
+      `/accounting/clients/${clientId}/exception`,
+      { method: "DELETE", body: JSON.stringify({ reason }) },
+      true
+    );
   }
   createClientMigration<T>(body: unknown): Promise<T> {
     return this.request("/client-migrations", { method: "POST", body: JSON.stringify(body) }, true);

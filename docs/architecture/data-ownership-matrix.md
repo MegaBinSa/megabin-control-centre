@@ -38,6 +38,8 @@ WordPress remains local-save-first and does not depend on synchronous Control Ce
 Phase 4A preserves the immutable source payload and versioned normalized interpretation in Website Intake. Candidate matches, duplicate classifications, and suggestions are derived operational state. Integration registration, safe activity metadata, and external references are provider metadata. None of these replace the authoritative Client, Address, Service, or configuration records created at activation.
 
 Phase 4B treats spreadsheet/export rows as inbound source evidence only. Client Migration owns batch metadata, immutable snapshots, mappings, reconciliation decisions, dry-run reports, outcomes, and provenance. The owning master-data modules remain authoritative and receive approved writes only through their application APIs. Billing/reference fields remain source context pending an approved accounting model.
+
+Phase 4C keeps the accounting provider authoritative for financial facts. Accounting owns sync runs, immutable normalized provider facts, customer reconciliation, Client financial snapshots, status exceptions, and the advisory eligibility projection. Clients remain Control Centre master data; provider customer IDs are external references, not primary keys. No billing Account is introduced. Accounting cannot modify Services, configurations, rosters, routes, or operations.
 ## Phase 1A ownership additions
 
 | Data | Authoritative owner | Permitted inbound source | Notes |

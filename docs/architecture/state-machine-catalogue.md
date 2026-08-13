@@ -46,3 +46,8 @@ Handoff creates the planned assignment and moves directly to `Available`. Driver
 ## Client Migration Batch
 
 `Created -> Uploaded -> Validating -> Needs Review -> Dry Run Complete -> Approved -> Activating -> Completed | Completed With Exceptions`. Approval freezes source identity, mapping/processing versions, counts, and reviewed plans. `Failed`, `Cancelled`, and `Archived` are reserved terminal/control states. Row outcomes are independently `Activated | Failed | Skipped | Conflict`; only technical `Failed` outcomes are retryable.
+
+## Accounting
+
+- Connection: `Configured -> Active <-> Degraded | Unhealthy | Authentication Required -> Disabled`. Health never changes Client or Service lifecycle.
+- Sync Run: `Pending -> Running -> Succeeded | Partial | Failed | Cancelled`. Failed runs preserve the last valid snapshot.
