@@ -15,7 +15,8 @@ export const unassignedReasonCodes = [
   "working_window_exceeded",
   "invalid_service_configuration",
   "unsupported_cadence",
-  "roster_assignment_unavailable"
+  "roster_assignment_unavailable",
+  "financial_hold"
 ] as const;
 export type UnassignedReasonCode = (typeof unassignedReasonCodes)[number];
 export interface PlannedStop {

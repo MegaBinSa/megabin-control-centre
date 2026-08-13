@@ -165,3 +165,14 @@ Events exclude source rows, names, contact details, addresses, reasons, and bill
 | `Accounting.ExceptionChanged` | A manual exception changes | Client ID and operational status |
 
 Events exclude balances, invoices, payments, contacts, and provider payloads.
+
+## Phase 4D accepted Financial Eligibility events
+
+| Event v1 | Trigger | Concise payload |
+|---|---|---|
+| `FinancialEligibility.DecisionChanged` | A materially different decision commits | service, decision, status, reason, version |
+| `FinancialEligibility.HoldActivated` | An authorized hold becomes active | service, decision, hold IDs |
+| `FinancialEligibility.HoldReleased` | An authorized hold is released | service and decision IDs |
+| `FinancialEligibility.OverrideChanged` | A manual override changes | service, status, override version |
+
+Events exclude balances, invoices, payments and free-text reasons.

@@ -160,3 +160,15 @@ Permissions are `client_migration.read`, `.create`, `.review`, `.approve`, `.act
 | System Admin/Developer | No by default | No | No | No | No | No |
 
 Permissions are `accounting.read`, `accounting.sensitive.read`, `accounting.sync`, `accounting.reconcile`, `accounting.exception.manage`, and `accounting.integration.manage`. Financial reads are region-scoped. Technical access never grants financial visibility.
+
+## Phase 4D Financial Eligibility permissions
+
+| Role | Read/review | Hold/release | Override | Reevaluate |
+|---|---|---|---|---|
+| Director/Admin | Yes | Yes | Yes | Yes |
+| Operations Manager | Yes | Yes | Yes | Yes |
+| Office/Admin | Yes | Yes | No by default | Yes |
+| Driver/Team | No | No | No | No |
+| System Admin/Developer | No by default | No | No | No |
+
+Permissions are `financial_eligibility.read`, `.review`, `.hold`, `.release`, `.override`, and `.reevaluate`. Access is region-scoped and technical roles receive no implicit business authority.

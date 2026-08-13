@@ -51,3 +51,7 @@ Handoff creates the planned assignment and moves directly to `Available`. Driver
 
 - Connection: `Configured -> Active <-> Degraded | Unhealthy | Authentication Required -> Disabled`. Health never changes Client or Service lifecycle.
 - Sync Run: `Pending -> Running -> Succeeded | Partial | Failed | Cancelled`. Failed runs preserve the last valid snapshot.
+
+## Financial Eligibility
+
+Decisions are immutable versions: `Eligible | Warning | Hold Recommended | Held | Manual Review | Unknown`. Material change supersedes the current decision. Holds use `Proposed -> Active -> Released | Cancelled | Superseded`; released holds remain historical. Recommendation and explicit hold are distinct.

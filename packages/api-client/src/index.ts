@@ -21,6 +21,7 @@ export type ApiErrorCode =
   | "provider_authentication"
   | "sync_running"
   | "sync_failed"
+  | "stale_financial_decision"
   | "internal_error";
 
 export interface ApiError {
@@ -611,5 +612,60 @@ export class MasterDataApiClient {
         status: response.status
       });
     return result.data;
+  }
+  financialEligibilityDecisions<T>(query = ""): Promise<T> {
+    return this.request(`/financial-eligibility/decisions${query ? `?${query}` : ""}`);
+  }
+  financialEligibility<T>(serviceId: string): Promise<T> {
+    return this.request(`/financial-eligibility/services/${serviceId}`);
+  }
+  simulateFinancialEligibility<T>(serviceId: string): Promise<T> {
+    return this.request(
+      `/financial-eligibility/services/${serviceId}/simulate`,
+      { method: "POST" },
+      true
+    );
+  }
+  holdFinancialService<T>(serviceId: string, body: unknown): Promise<T> {
+    return this.request(
+      `/financial-eligibility/services/${serviceId}/hold`,
+      { method: "POST", body: JSON.stringify(body) },
+      true
+    );
+  }
+  releaseFinancialService<T>(serviceId: string, body: unknown): Promise<T> {
+    return this.request(
+      `/financial-eligibility/services/${serviceId}/release`,
+      { method: "POST", body: JSON.stringify(body) },
+      true
+    );
+  }
+  setFinancialEligibilityOverride<T>(serviceId: string, body: unknown): Promise<T> {
+    return this.request(
+      `/financial-eligibility/services/${serviceId}/override`,
+      { method: "PUT", body: JSON.stringify(body) },
+      true
+    );
+  }
+  clearFinancialEligibilityOverride<T>(serviceId: string, body: unknown): Promise<T> {
+    return this.request(
+      `/financial-eligibility/services/${serviceId}/override`,
+      { method: "DELETE", body: JSON.stringify(body) },
+      true
+    );
+  }
+  reevaluateFinancialEligibility<T>(serviceId: string): Promise<T> {
+    return this.request(
+      `/financial-eligibility/services/${serviceId}/reevaluate`,
+      { method: "POST" },
+      true
+    );
+  }
+  startFinancialEligibilityBatch<T>(body: unknown): Promise<T> {
+    return this.request(
+      "/financial-eligibility/reevaluations",
+      { method: "POST", body: JSON.stringify(body) },
+      true
+    );
   }
 }
