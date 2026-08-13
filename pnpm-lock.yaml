@@ -163,8 +163,8 @@ importers:
         specifier: workspace:*
         version: link:../validation
       zod:
-        specifier: 4.1.11
-        version: 4.1.11
+        specifier: 4.4.3
+        version: 4.4.3
 
   packages/testing: {}
 
@@ -173,8 +173,8 @@ importers:
   packages/validation:
     dependencies:
       zod:
-        specifier: 4.1.11
-        version: 4.1.11
+        specifier: 4.4.3
+        version: 4.4.3
 
 packages:
 
@@ -2063,8 +2063,8 @@ packages:
   youch@4.1.0-beta.10:
     resolution: {integrity: sha512-rLfVLB4FgQneDr0dv1oddCVZmKjcJ6yX6mS4pU82Mq/Dt9a3cLZQ62pDBL4AUO+uVrCvtWz3ZFUL2HFAFJ/BXQ==}
 
-  zod@4.1.11:
-    resolution: {integrity: sha512-WPsqwxITS2tzx1bzhIKsEs19ABD5vmCVa4xBo2tq/SrV4RNZtfws1EnCWQXM6yh8bD08a1idvkB5MZSBiZsjwg==}
+  zod@4.4.3:
+    resolution: {integrity: sha512-ytENFjIJFl2UwYglde2jchW2Hwm4GJFLDiSXWdTrJQBIN9Fcyp7n4DhxJEiWNAJMV1/BqWfW/kkg71UDcHJyTQ==}
 
 snapshots:
 
@@ -3663,4 +3663,4 @@ snapshots:
       cookie: 1.1.1
       youch-core: 0.3.3
 
-  zod@4.1.11: {}
+  zod@4.4.3: {}
