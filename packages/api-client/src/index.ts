@@ -22,6 +22,9 @@ export type ApiErrorCode =
   | "sync_running"
   | "sync_failed"
   | "stale_financial_decision"
+  | "communication_suppressed"
+  | "invalid_destination"
+  | "provider_callback_rejected"
   | "internal_error";
 
 export interface ApiError {
@@ -615,6 +618,53 @@ export class MasterDataApiClient {
   }
   financialEligibilityDecisions<T>(query = ""): Promise<T> {
     return this.request(`/financial-eligibility/decisions${query ? `?${query}` : ""}`);
+  }
+  communicationIntents<T>(query = ""): Promise<T> {
+    return this.request(`/communications/intents${query ? `?${query}` : ""}`);
+  }
+  createCommunicationIntent<T>(body: unknown): Promise<T> {
+    return this.request(
+      "/communications/intents",
+      { method: "POST", body: JSON.stringify(body) },
+      true
+    );
+  }
+  communicationTestSend<T>(body: unknown): Promise<T> {
+    return this.request(
+      "/communications/test-send",
+      { method: "POST", body: JSON.stringify(body) },
+      true
+    );
+  }
+  cancelCommunicationIntent<T>(intentId: string, body: unknown): Promise<T> {
+    return this.request(
+      `/communications/intents/${intentId}/cancel`,
+      { method: "POST", body: JSON.stringify(body) },
+      true
+    );
+  }
+  communicationTemplates<T>(): Promise<T> {
+    return this.request("/communications/templates");
+  }
+  transitionCommunicationTemplate<T>(templateId: string, body: unknown): Promise<T> {
+    return this.request(
+      `/communications/templates/${templateId}/status`,
+      { method: "PUT", body: JSON.stringify(body) },
+      true
+    );
+  }
+  communicationProviderHealth<T>(): Promise<T> {
+    return this.request("/communications/provider-health");
+  }
+  inboundMessages<T>(): Promise<T> {
+    return this.request("/communications/inbound");
+  }
+  reviewInboundMessage<T>(inboundMessageId: string, body: unknown): Promise<T> {
+    return this.request(
+      `/communications/inbound/${inboundMessageId}/review`,
+      { method: "POST", body: JSON.stringify(body) },
+      true
+    );
   }
   financialEligibility<T>(serviceId: string): Promise<T> {
     return this.request(`/financial-eligibility/services/${serviceId}`);

@@ -1587,6 +1587,69 @@
         }
       }
     },
+    "/api/v1/communications/intents": {
+      "get": {
+        "operationId": "listCommunicationIntents"
+      },
+      "post": {
+        "operationId": "createCommunicationIntent"
+      }
+    },
+    "/api/v1/communications/test-send": {
+      "post": {
+        "operationId": "requestCommunicationTestSend"
+      }
+    },
+    "/api/v1/communications/intents/{intentId}/cancel": {
+      "post": {
+        "operationId": "cancelCommunicationIntent"
+      }
+    },
+    "/api/v1/communications/templates": {
+      "get": {
+        "operationId": "listCommunicationTemplates"
+      }
+    },
+    "/api/v1/communications/templates/{templateId}/status": {
+      "put": {
+        "operationId": "transitionCommunicationTemplate"
+      }
+    },
+    "/api/v1/communications/provider-health": {
+      "get": {
+        "operationId": "getCommunicationsProviderHealth"
+      }
+    },
+    "/api/v1/communications/inbound": {
+      "get": {
+        "operationId": "listInboundMessages"
+      }
+    },
+    "/api/v1/communications/inbound/{inboundMessageId}/review": {
+      "post": {
+        "operationId": "reviewInboundMessage"
+      }
+    },
+    "/api/v1/integrations/communications/delivery": {
+      "post": {
+        "operationId": "receiveCommunicationDeliveryCallback",
+        "security": [
+          {
+            "integrationSecret": []
+          }
+        ]
+      }
+    },
+    "/api/v1/integrations/communications/inbound": {
+      "post": {
+        "operationId": "receiveInboundCommunication",
+        "security": [
+          {
+            "integrationSecret": []
+          }
+        ]
+      }
+    },
     "/api/v1/master-data/clients": {
       "get": {
         "operationId": "list-clients",

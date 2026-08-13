@@ -1415,3 +1415,94 @@ test("Office previews, holds, releases, and reevaluates service financial eligib
   await page.getByRole("button", { name: "Reevaluate", exact: true }).click();
   await expect(page.getByText("Service reevaluated.")).toBeVisible();
 });
+
+test("Office requests a safe test communication and reviews delivery and inbound SKIP", async ({
+  page
+}) => {
+  await syntheticSession(page, [
+    "master_data.read",
+    "communications.read",
+    "communications.send",
+    "communications.inbound.read"
+  ]);
+  const clientId = "57000000-0000-0000-0000-000000000001";
+  let queued = false;
+  await page.route("**/api/v1/communications/intents", (route) =>
+    route.request().method() === "POST"
+      ? route.fulfill({ status: 202, json: { ok: true, data: { intentId: "intent-2" } } })
+      : route.fulfill({
+          json: {
+            ok: true,
+            data: {
+              items: queued
+                ? [
+                    {
+                      intentId: "intent-2",
+                      clientId,
+                      clientName: "Synthetic Client One",
+                      communicationType: "test_message",
+                      status: "delivered",
+                      requestedAt: "2026-08-13T10:00:00Z",
+                      templateKey: "test_message",
+                      templateVersion: 1,
+                      attempts: [
+                        {
+                          channel: "whatsapp",
+                          provider: "fake-communications",
+                          status: "delivered"
+                        }
+                      ]
+                    }
+                  ]
+                : []
+            }
+          }
+        })
+  );
+  await page.route("**/api/v1/communications/test-send", async (route) => {
+    expect(route.request().postDataJSON()).toMatchObject({
+      communicationType: "test_message",
+      clientId,
+      templateKey: "test_message",
+      variables: { clientName: "Synthetic Client One" }
+    });
+    queued = true;
+    await route.fulfill({ status: 202, json: { ok: true, data: { intentId: "intent-2" } } });
+  });
+  await page.route("**/api/v1/communications/inbound", (route) =>
+    route.fulfill({
+      json: {
+        ok: true,
+        data: {
+          items: [
+            {
+              inboundMessageId: "inbound-1",
+              channel: "whatsapp",
+              receivedAt: "2026-08-13T10:02:00Z",
+              matchClassification: "matched",
+              recognizedCommand: "skip",
+              status: "recognized"
+            }
+          ]
+        }
+      }
+    })
+  );
+  await page.route("**/api/v1/communications/provider-health", (route) =>
+    route.fulfill({
+      json: {
+        ok: true,
+        data: { adapter: { status: "healthy", summary: "Deterministic fake provider." } }
+      }
+    })
+  );
+  await page.getByRole("button", { name: "Communications" }).click();
+  await expect(page.getByRole("heading", { name: "Client Communications" })).toBeVisible();
+  await expect(page.getByText("skip", { exact: true })).toBeVisible();
+  await page.getByRole("button", { name: "Send approved test message" }).click();
+  await page.getByLabel("Client ID").fill(clientId);
+  await page.getByLabel("Client display name").fill("Synthetic Client One");
+  await page.getByRole("button", { name: "Queue test" }).click();
+  await expect(page.getByText(/Test communication queued/)).toBeVisible();
+  await expect(page.getByText("whatsapp: delivered")).toBeVisible();
+});

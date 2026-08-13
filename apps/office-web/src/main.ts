@@ -11,6 +11,7 @@ import { renderWebsiteIntakeWorkspace } from "./website-intake.js";
 import { renderClientMigrationWorkspace } from "./client-migration.js";
 import { renderAccountingWorkspace } from "./accounting.js";
 import { renderFinancialEligibilityWorkspace } from "./financial-eligibility.js";
+import { renderCommunicationsWorkspace } from "./communications.js";
 
 const modules = [
   "Clients",
@@ -181,6 +182,13 @@ function render(): void {
         "beforeend",
         '<button id="financial-eligibility-workspace">Financial Eligibility</button>'
       );
+  if (identity.permissions.includes("communications.read"))
+    appRoot
+      .querySelector("nav")
+      ?.insertAdjacentHTML(
+        "beforeend",
+        '<button id="communications-workspace">Communications</button>'
+      );
   document.querySelectorAll<HTMLButtonElement>("[data-module]").forEach((button) =>
     button.addEventListener("click", () => {
       active = button.dataset.module as ModuleName;
@@ -266,6 +274,13 @@ function render(): void {
         render();
       }
     );
+  });
+  document.querySelector("#communications-workspace")?.addEventListener("click", () => {
+    void renderCommunicationsWorkspace(appRoot, api, identity?.permissions ?? [], async () => {
+      await auth.signOut();
+      identity = null;
+      render();
+    });
   });
   const dialog = document.querySelector<HTMLDialogElement>("#create-dialog");
   document.querySelector("#create")?.addEventListener("click", () => dialog?.showModal());

@@ -110,3 +110,4 @@ export async function executeWithAdapter<TRequest, TResult>(
 }
 
 export * from "./accounting.js";
+export * from "./communications.js";
