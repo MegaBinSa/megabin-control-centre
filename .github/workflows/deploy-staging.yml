@@ -133,7 +133,7 @@ jobs:
       - name: Verify database after migration
         run: |
           pnpm exec supabase migration list --linked
-          pnpm exec supabase db lint --linked --level warning --fail-on error
+          pnpm exec supabase db lint --linked --schema app_private,api,public --level warning --fail-on error
 
       - name: Provision bounded synthetic staging personas
         run: pnpm exec supabase db query --linked --file supabase/staging/provision-personas.sql

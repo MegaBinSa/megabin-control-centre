@@ -1,3 +1,5 @@
+import { readFileSync } from "node:fs";
+
 import { describe, expect, it, vi } from "vitest";
 
 import { validateEnvironment } from "../scripts/environment-contract.mjs";
@@ -92,6 +94,30 @@ describe("staging environment contract", () => {
 });
 
 describe("deployment safety tools", () => {
+  it("lints every MegaBin-owned schema without linting platform-managed extensions", () => {
+    const workflow = readFileSync(".github/workflows/deploy-staging.yml", "utf8");
+    const scopedLint =
+      "supabase db lint --linked --schema app_private,api,public --level warning --fail-on error";
+
+    expect(workflow).toContain(scopedLint);
+    expect(workflow).not.toMatch(/supabase db lint --linked --level/);
+  });
+
+  it("keeps partial staging deployments safely resumable", () => {
+    const workflow = readFileSync(".github/workflows/deploy-staging.yml", "utf8");
+    const preview = workflow.indexOf("supabase db push --linked --dry-run");
+    const apply = workflow.indexOf("supabase db push --linked --include-seed");
+    const verify = workflow.indexOf(
+      "supabase db lint --linked --schema app_private,api,public --level warning --fail-on error"
+    );
+    const personas = workflow.indexOf("supabase/staging/provision-personas.sql");
+
+    expect(preview).toBeGreaterThan(-1);
+    expect(apply).toBeGreaterThan(preview);
+    expect(verify).toBeGreaterThan(apply);
+    expect(personas).toBeGreaterThan(verify);
+  });
+
   it("flags destructive migration operations", () => {
     expect(inspectSql("drop table app_private.clients;")).toEqual([
       { file: "migration.sql", kind: "drop_table" }
