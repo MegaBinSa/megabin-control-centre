@@ -82,17 +82,27 @@ export async function runSmoke(values, fetchImpl = fetch) {
       { headers: { Authorization: `Bearer ${officeToken}` } }
     );
     await check(
-      "fake_accounting_provider_health",
+      "regional_office_accounting_provider_health_denial",
       `${values.VITE_MASTER_DATA_API_URL}/api/v1/accounting/health`,
-      200,
+      403,
       { headers: { Authorization: `Bearer ${officeToken}` } }
     );
     await check(
-      "capture_communications_health",
+      "regional_office_communications_provider_health_denial",
       `${values.VITE_MASTER_DATA_API_URL}/api/v1/communications/provider-health`,
-      200,
+      403,
       { headers: { Authorization: `Bearer ${officeToken}` } }
     );
+    checks.push({
+      name: "fake_accounting_provider_configuration",
+      passed: values.MEGABIN_ACCOUNTING_PROVIDER === "zoho-books-fake",
+      status: 0
+    });
+    checks.push({
+      name: "capture_communications_configuration",
+      passed: values.MEGABIN_COMMUNICATIONS_MODE === "capture",
+      status: 0
+    });
   }
   if (values.STAGING_DRIVER_EMAIL && values.STAGING_DRIVER_PASSWORD) {
     const driverToken = await signIn(

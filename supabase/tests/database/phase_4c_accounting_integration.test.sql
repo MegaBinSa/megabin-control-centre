@@ -1,5 +1,5 @@
 begin;
-select plan(50);
+select plan(51);
 select has_table('app_private','accounting_connections','accounting connection exists');
 select has_table('app_private','accounting_sync_runs','durable sync runs exist');
 select has_table('app_private','accounting_customer_facts','immutable customer facts exist');
@@ -57,6 +57,7 @@ select lives_ok(format($f$select api.accounting_fail_sync(%L,'provider_unavailab
 select is((select total_outstanding_minor from app_private.client_accounting_snapshots),60000::bigint,'failed sync preserves last valid snapshot');
 select is((select lifecycle_status from app_private.accounting_connections),'degraded','outage degrades provider health only');
 select throws_ok($$select api.accounting_client_detail('77000000-0000-4000-8000-000000000002','57000000-0000-0000-0000-000000000001')$$,'42501',null,'Driver financial access denied');
+select throws_ok($$select api.accounting_status_list('77000000-0000-4000-8000-000000000002','{}')$$,'42501','permission_denied','Driver cannot enumerate the accounting status projection');
 select throws_ok($$select api.accounting_client_detail('77000000-0000-4000-8000-000000000003','57000000-0000-0000-0000-000000000001')$$,'42501',null,'cross-region financial access denied');
 select throws_ok('set local role authenticated;select * from app_private.accounting_invoice_facts','42501',null,'direct authenticated access denied');
 select ok((select count(*)>=4 from app_private.business_audit_facts where module_key='accounting'),'human accounting actions audited');

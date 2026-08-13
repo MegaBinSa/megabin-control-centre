@@ -108,6 +108,10 @@ export function validateEnvironment(target, values, options = {}) {
       errors.push(`${key} must be present in MEGABIN_ALLOWED_ORIGINS.`);
 
   if (target === "staging") {
+    if (values.MEGABIN_WEBSITE_ONBOARDING_INTEGRATION_KEY !== "megabin-website-onboarding-staging")
+      errors.push(
+        "Staging website onboarding must use the enabled synthetic integration identity."
+      );
     if (values.STAGING_OFFICE_EMAIL !== "staging-office@megabin.local")
       errors.push("Staging Office identity must be the approved synthetic persona.");
     if (values.STAGING_DRIVER_EMAIL !== "staging-driver@megabin.local")
