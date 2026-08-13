@@ -4,4 +4,10 @@ packages:
 
 allowBuilds:
   esbuild: true
+  sharp: true
   supabase: true
+  workerd: true
+
+minimumReleaseAgeExclude:
+  - miniflare@5.20260811.1-alpha
+  - wrangler@4.123.0

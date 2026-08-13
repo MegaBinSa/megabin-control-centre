@@ -196,11 +196,15 @@ jobs:
       - name: Require implemented frontend deployment integration
         run: test "$FRONTEND_DEPLOYMENT_CONFIGURED" = "true"
 
+      - name: Require pinned Wrangler deployment tool
+        run: test "$(pnpm exec wrangler --version)" = "4.123.0"
+
       - name: Deploy Office Web to Cloudflare Pages
         uses: cloudflare/wrangler-action@9acf94ace14e7dc412b076f2c5c20b8ce93c79cd # v3
         with:
           apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           accountId: ${{ vars.CLOUDFLARE_ACCOUNT_ID }}
+          packageManager: pnpm
           command: >-
             pages deploy apps/office-web/dist
             --project-name=${{ vars.CLOUDFLARE_OFFICE_PROJECT }}
@@ -212,6 +216,7 @@ jobs:
         with:
           apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           accountId: ${{ vars.CLOUDFLARE_ACCOUNT_ID }}
+          packageManager: pnpm
           command: >-
             pages deploy apps/driver-pwa/dist
             --project-name=${{ vars.CLOUDFLARE_DRIVER_PROJECT }}
