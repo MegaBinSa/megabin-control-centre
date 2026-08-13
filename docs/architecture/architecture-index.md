@@ -1,7 +1,7 @@
 # Architecture Index
 
 **Status:** Authoritative navigation and document classification  
-**Last reviewed:** 2026-08-11
+**Last reviewed:** 2026-08-13
 
 ## Authority order
 
@@ -76,12 +76,19 @@ Material changes to the architecture require an ADR. An ADR may clarify the blue
 | [Messaging provider contract](messaging-provider-contract.md) | Provider-neutral adapter and secure webhook boundary |
 | [Office Communications workflow](../workflows/office-communications.md) | Test sends, delivery history, provider health, and inbound review |
 | [ADR index](../adr/README.md) | Accepted architecture decisions and their status |
+| [Production readiness assessment](../production/production-readiness-assessment.md) | Phase 5A launch-readiness assessment, scorecard, gaps, and critical path |
+| [Production gap register](../production/production-gap-register.md) | Stable production gap IDs, classifications, priorities, blockers, and actions |
+| [Business decision register](../production/business-decision-register.md) | Consolidated unresolved business and policy decisions |
+| [Provider decision register](../production/provider-decision-register.md) | Provider capabilities, selection criteria, blockers, and adapter posture |
+| [Production configuration register](../production/production-configuration-register.md) | Environment configuration and secret inventory without values |
+| [UAT and pilot plan](../production/uat-and-pilot-plan.md) | End-to-end UAT, field validation, and bounded pilot gates |
+| [Cutover readiness](../production/cutover-readiness.md) | Production gates, coexistence, cutover, rollback, and support outline |
 
 ## Supporting and migration context
 
 Files under [`docs/megabin-shared/`](../megabin-shared/README.md) describe the separate WordPress website, its current data, and existing integrations. They are evidence for future migration and integration work. They are not an approved Control Centre schema, API, module model, or runtime architecture.
 
-## Documents planned for later Phase 0 work
+## Planned documentation
 
-- Data-retention matrix
-- Development roadmap and operational runbooks
+- Approved production data-retention policy after business/privacy review
+- Deployment, recovery, incident, user-management, device-management, and operating runbooks
