@@ -133,7 +133,14 @@ export function createWebsiteIntakeHandler(dependencies: Dependencies) {
       if (result.error.code === "P0002") return fail("not_found", "Not found.", 404, correlationId);
       if (result.error.code === "40001")
         return fail("conflict", "The intake was changed by another reviewer.", 409, correlationId);
-      if (["23505", "28000"].includes(result.error.code ?? ""))
+      if (result.error.code === "28000")
+        return fail(
+          "authentication_required",
+          "Integration authentication failed.",
+          401,
+          correlationId
+        );
+      if (result.error.code === "23505")
         return fail(
           "conflict",
           "The submission identity conflicts with prior input.",
@@ -246,7 +253,14 @@ export function createWebsiteIntakeHandler(dependencies: Dependencies) {
           p_correlation_id: correlationId,
           p_payload: parsed.data
         });
-        if (received.error)
+        if (received.error) {
+          if (received.error.code === "28000")
+            return fail(
+              "authentication_required",
+              "Integration authentication failed.",
+              401,
+              correlationId
+            );
           return received.error.code === "23505"
             ? fail(
                 "conflict",
@@ -255,6 +269,7 @@ export function createWebsiteIntakeHandler(dependencies: Dependencies) {
                 correlationId
               )
             : fail("internal_error", "The request could not be completed.", 500, correlationId);
+        }
         const result = camel(received.data) as { submissionId?: string; duplicate?: boolean };
         if (!result.duplicate && result.submissionId && dependencies.defer)
           dependencies.defer(

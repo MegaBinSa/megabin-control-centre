@@ -108,6 +108,29 @@ describe("website intake HTTP boundary", () => {
     expect(response?.status).toBe(409);
   });
 
+  it("maps an unknown configured integration identity to authentication failure", async () => {
+    const { handler, rpc } = setup();
+    rpc.rpc.mockResolvedValue({
+      data: null,
+      error: { code: "28000", message: "integration_authentication_failed" }
+    });
+    const response = await handler(
+      new Request("https://local/api/v1/integrations/website/onboarding", {
+        method: "POST",
+        headers: {
+          "X-Integration-Key": "megabin-website-onboarding-local",
+          "X-Integration-Secret": "synthetic-secret",
+          "Idempotency-Key": "signup-100"
+        },
+        body: JSON.stringify(submission)
+      })
+    );
+    expect(response?.status).toBe(401);
+    expect(await response?.json()).toMatchObject({
+      error: { code: "authentication_required" }
+    });
+  });
+
   it("enforces Office authentication and stale-review conflicts", async () => {
     const anonymous = setup();
     expect(

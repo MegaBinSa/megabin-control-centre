@@ -27,7 +27,7 @@ const staging = {
   MEGABIN_DRIVER_ORIGIN: "https://megabin-driver-staging.pages.dev",
   MEGABIN_ALLOWED_ORIGINS:
     "https://megabin-office-staging.pages.dev,https://megabin-driver-staging.pages.dev",
-  MEGABIN_WEBSITE_ONBOARDING_INTEGRATION_KEY: "website-staging",
+  MEGABIN_WEBSITE_ONBOARDING_INTEGRATION_KEY: "megabin-website-onboarding-staging",
   MEGABIN_WEBSITE_ONBOARDING_SECRET: "synthetic-secret",
   MEGABIN_WEBSITE_ONBOARDING_URL:
     "https://abcdefghijklmnopqrst.supabase.co/functions/v1/website-onboarding",
@@ -73,6 +73,15 @@ describe("staging environment contract", () => {
     expect(result.errors.join(" ")).toContain("does not match SUPABASE_PROJECT_REF");
     expect(result.errors.join(" ")).toContain("cannot use live mode");
     expect(result.errors.join(" ")).toContain("must remain false");
+  });
+
+  it("rejects an unregistered staging website integration identity", () => {
+    const result = validateEnvironment("staging", {
+      ...staging,
+      MEGABIN_WEBSITE_ONBOARDING_INTEGRATION_KEY: "megabin-website-staging"
+    });
+    expect(result.ok).toBe(false);
+    expect(result.errors.join(" ")).toContain("enabled synthetic integration identity");
   });
 
   it("refuses production deployment mode", () => {
@@ -260,6 +269,8 @@ describe("deployment safety tools", () => {
       if (url.includes("/master-data/clients") && !init?.headers)
         return new Response(null, { status: 401 });
       if (url.includes("website-onboarding")) return new Response(null, { status: 202 });
+      if (url.includes("/accounting/health") || url.includes("/communications/provider-health"))
+        return new Response(null, { status: 403 });
       if (url.includes("/accounting/status") && init?.headers)
         return new Response(null, { status: 403 });
       return Response.json({ ok: true });
@@ -291,6 +302,8 @@ describe("deployment safety tools", () => {
       if (url.includes("/master-data/clients") && !init?.headers)
         return new Response(null, { status: 401 });
       if (url.includes("website-onboarding")) return new Response(null, { status: 202 });
+      if (url.includes("/accounting/health") || url.includes("/communications/provider-health"))
+        return new Response(null, { status: 403 });
       if (url.includes("/accounting/status") && init?.headers)
         return new Response(null, { status: 403 });
       return Response.json({ ok: true });
