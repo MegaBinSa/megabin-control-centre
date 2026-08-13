@@ -3,20 +3,20 @@
 **Status:** Phase 5A inventory; values are not credentials
 **Last reviewed:** 2026-08-13
 
-Phase 5C has configured the isolated Supabase project, protected GitHub Staging names/secrets, exact Cloudflare Pages targets and two synthetic Auth identities. Values remain outside the repository. Deployment evidence is recorded only after the reviewed Phase 5C merge SHA completes the protected workflow.
+Phase 5C configured and proved the isolated Supabase project, protected GitHub Staging names/secrets, exact Cloudflare Pages targets and two synthetic Auth identities. Values remain outside the repository. The evidence baseline is `main` at `4e471bd250a2757ca67bb0e843c2201d144ac122`, deployment run 31738092512.
 
 `Current posture` describes repository defaults or absence. Actual secret values must never be recorded here.
 
 | ID/key | Module | Current posture | Production value/decision required | Storage location | Owner type | Blocks |
 |---|---|---|---|---|---|---|
-| CFG-ENV / `MEGABIN_ENVIRONMENT` | Runtime | Defaults `local` | Strict `staging`/`production`, fail closed on invalid combinations | Edge Function secret/config | Technical | Staging |
+| CFG-ENV / `MEGABIN_ENVIRONMENT` | Runtime | Strict `staging` posture deployed and validated | Separate strict production posture | Edge Function secret/config | Technical | Production |
 | CFG-SUP-URL / `VITE_SUPABASE_URL` | Both frontends | Isolated Staging project URL configured in protected environment | Separate production project URL later | GitHub Environment/build injection | Technical | Production |
 | CFG-SUP-KEY / `VITE_SUPABASE_PUBLISHABLE_KEY` | Both frontends | Staging publishable key configured; privileged-key validation enforced | Separate production publishable key; never service role | GitHub Environment/build injection | Technical | Production |
-| CFG-OFF-API / `VITE_MASTER_DATA_API_URL` | Office Web | Local Function URL | Staging/production platform-runtime URL | Host environment variable | Technical | Staging |
-| CFG-DRV-API / `VITE_DRIVER_API_URL` | Driver PWA | Used by code, absent from `.env.example` | Staging/production runtime URL | Host environment variable | Technical | Staging |
-| CFG-SVC-ROLE | Edge Functions | Supabase-managed runtime use | Project-specific service-role credential, inaccessible to browsers; rotation procedure | Supabase secret/runtime | Technical/Security | Staging |
-| CFG-WEB-KEY / `MEGABIN_WEBSITE_ONBOARDING_INTEGRATION_KEY` | Website intake | Local identifier | Distinct staging/production integration identity | Supabase secret/config and website secret store | Website/Technical | Website staging |
-| CFG-WEB-SECRET / `MEGABIN_WEBSITE_ONBOARDING_SECRET` | Website intake | Placeholder | Strong environment-specific signing secret with rotation/overlap procedure | Secret managers at both ends | Website/Technical | Website staging |
+| CFG-OFF-API / `VITE_MASTER_DATA_API_URL` | Office Web | Staging platform-runtime URL configured and smoke-proven | Separate production platform-runtime URL | Protected build configuration | Technical | Production |
+| CFG-DRV-API / `VITE_DRIVER_API_URL` | Driver PWA | Staging platform-runtime URL configured and smoke-proven | Separate production platform-runtime URL | Protected build configuration | Technical | Production |
+| CFG-SVC-ROLE | Edge Functions | Staging runtime injection and browser isolation proven | Separate production credential plus rotation procedure | Supabase secret/runtime | Technical/Security | Production |
+| CFG-WEB-KEY / `MEGABIN_WEBSITE_ONBOARDING_INTEGRATION_KEY` | Website intake | Seeded Staging identity `megabin-website-onboarding-staging` proven | Distinct production integration identity | Supabase secret/config and website secret store | Website/Technical | Production website |
+| CFG-WEB-SECRET / `MEGABIN_WEBSITE_ONBOARDING_SECRET` | Website intake | Protected Staging signing and synthetic intake proven | Separate production signing secret with rotation/overlap procedure | Secret managers at both ends | Website/Technical | Production website |
 | CFG-ACC-ORG / `MEGABIN_ACCOUNTING_ORGANIZATION_ID` | Accounting | `local-synthetic` | Approved Zoho organization and data center | Secret/config registry | Finance/Technical | Financial staging |
 | CFG-ACC-PAGE / `MEGABIN_ACCOUNTING_PAGE_SIZE` | Accounting | 100 | Provider-limit-based bounded value | Typed runtime config | Technical | Financial staging |
 | CFG-ACC-RETRY / `MEGABIN_ACCOUNTING_MAX_RETRY_DELAY_MS` | Accounting | 5000 | Provider-compliant cap/backoff | Typed runtime config | Technical | Financial staging |
@@ -40,10 +40,10 @@ Phase 5C has configured the isolated Supabase project, protected GitHub Staging 
 | CFG-SKIP | Client SKIP | Conservative manual workflow | Timezone/cutoff/near-cutoff, SLA, Draft generation and acknowledgement timing | Configuration registry | Operations | SKIP pilot |
 | CFG-RET | Retention | Placeholder/disabled deletion | Approved periods, legal holds and deletion enablement per environment | Configuration registry | Business/Privacy | Production |
 | CFG-STORAGE | Evidence storage | No operational bucket/policy | Private bucket, file limits, malware/content policy, signed access and retention | Supabase Storage/project config | Operations/Privacy/Technical | Evidence feature |
-| CFG-CORS / `MEGABIN_ALLOWED_ORIGINS` | Edge Functions | Local origins plus explicit environment list | Exact separate Office/Driver HTTPS origins; wildcard rejected | Supabase Function secret/config | Technical | Staging |
-| CFG-BUILD / `VITE_BUILD_SHA`, `VITE_BUILD_TIMESTAMP`, `VITE_DEPLOYMENT_ID` | Frontends | Local fallbacks | Workflow-generated trace identity | Hosting build config | Technical | Staging |
-| CFG-BUILD-RUNTIME / `MEGABIN_BUILD_SHA`, `MEGABIN_BUILD_TIMESTAMP`, `MEGABIN_DEPLOYMENT_ID` | Runtime | Function deployment fallback | Workflow-generated trace identity | Supabase Function secrets | Technical | Staging |
-| CFG-SAFE-PROVIDERS | Routing/accounting/financial/SKIP | Fake providers and dangerous automation off | Preserve explicit fake/off values in Staging | GitHub/Supabase typed config | Technical/Operations | Staging |
+| CFG-CORS / `MEGABIN_ALLOWED_ORIGINS` | Edge Functions | Exact Staging Office/Driver origins and unknown-origin denial proven | Separate exact production origins; wildcard rejected | Supabase Function secret/config | Technical | Production |
+| CFG-BUILD / `VITE_BUILD_SHA`, `VITE_BUILD_TIMESTAMP`, `VITE_DEPLOYMENT_ID` | Frontends | Workflow-generated Staging identity proven | Preserve for production releases | Hosting build config | Technical | Production |
+| CFG-BUILD-RUNTIME / `MEGABIN_BUILD_SHA`, `MEGABIN_BUILD_TIMESTAMP`, `MEGABIN_DEPLOYMENT_ID` | Runtime | Workflow-generated Staging identity proven | Preserve for production releases | Supabase Function secrets | Technical | Production |
+| CFG-SAFE-PROVIDERS | Routing/accounting/financial/SKIP | Staging fake/capture/off posture smoke-proven | Explicit production provider and automation decisions | GitHub/Supabase typed config | Technical/Operations | Provider-specific pilot/Production |
 
 ## Secret rotation requirements
 

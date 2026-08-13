@@ -1,18 +1,18 @@
 # Production Readiness Assessment
 
-**Status:** Authoritative Phase 5A assessment
+**Status:** Authoritative assessment; updated with Phase 5C shared-staging evidence
 
-**Assessment baseline:** `main` at `b52e2f1c694e7cef6d6f80624ef5d000d1a98747` after Phase 4F
+**Assessment baseline:** Phase 5A repository assessment plus validated Staging deployment of `main` at `4e471bd250a2757ca67bb0e843c2201d144ac122`
 
 **Assessment date:** 2026-08-13
 
 ## Executive conclusion
 
-MegaBin Control Centre is a structurally mature pre-production platform, not a production-ready service. The modular monolith, immutable operational history, private-schema persistence, RLS/API boundary, provider adapters, idempotency conventions, offline action model, audit/outbox foundations, generated OpenAPI, and broad synthetic test suite are reusable launch foundations.
+MegaBin Control Centre is now a deployed shared-staging platform suitable for structured synthetic internal UAT. It is not ready for a controlled pilot or production. The modular monolith, immutable operational history, private-schema persistence, RLS/API boundary, provider adapters, idempotency conventions, offline action model, audit/outbox foundations, generated OpenAPI, broad synthetic tests and protected deployment path are reusable launch foundations.
 
-No shared staging or production deployment is represented in the repository. Production providers are intentionally unselected or inactive; real client migration has not been rehearsed; production authentication, monitoring, recovery, privacy, retention, user/device management, and support procedures are unresolved. Browser geolocation cannot meet the stated all-hours vehicle-visibility requirement. These are genuine launch gaps, not reasons to rebuild the core.
+Shared Staging is proven end to end by [deployment run 31738092512](https://github.com/MegaBinSa/megabin-control-centre/actions/runs/31738092512): protected main-only release, migrations, hosted Data API configuration, application-owned persona authorization, Edge Functions, both frontends, release/CORS/auth boundaries, fake/capture providers, synthetic website intake and remote smoke checks all passed. Production providers remain intentionally inactive; real client migration, real-device operation, business UAT, monitoring ownership, recovery, privacy, retention, routine user/device management and support procedures remain unresolved. Browser geolocation cannot meet the stated all-hours vehicle-visibility requirement.
 
-The next phase should establish a secure, reproducible staging platform and deployment path. Provider activation and real data should follow only after that boundary is observable, recoverable, and protected.
+The project has reached **Shared Development/Staging**, with the technical prerequisites to begin structured synthetic internal UAT. The next phase should make that environment operationally observable and recoverable before provider activation, real data or pilot preparation.
 
 ## Classification and stage definitions
 
@@ -33,9 +33,9 @@ Percentages are deliberately avoided because external configuration and real-wor
 | Domain | Status | Evidence and major blocker | Next action |
 |---|---|---|---|
 | Architecture/domain boundaries | Ready foundation | Modular monolith, ownership, API/write boundaries and ADRs are established | Preserve boundaries during deployment work |
-| Database/migrations/RLS | Ready foundation; hardening required | Replayable migrations and extensive RLS tests; no production project, restore exercise or production advisor baseline | Create staging project and deployment/recovery gates |
-| Office Web | Functionally test-ready | Broad workflows exist; no hosted environment, production auth bootstrap or real-user UAT | Deploy to staging and run role-based UAT |
-| Driver PWA | Functionally test-ready; field validation required | Installable/offline model exists; device/browser/background behavior is not proven | Real-device, poor-network and support rehearsal |
+| Database/migrations/RLS | Shared-staging validated; recovery required | Hosted migrations, Data API schema, personas and authorization boundaries passed; restore/PITR and production sizing remain unproven | Approve recovery objectives and execute isolated restore rehearsal |
+| Office Web | Hosted in Staging; UAT required | Traceable Cloudflare deployment and authenticated smoke access passed | Run role-based synthetic UAT and usability review |
+| Driver PWA | Hosted in Staging; field validation required | Traceable deployment and authenticated financial-isolation smoke checks passed; device/browser/background behavior is not proven | Real-device, poor-network and support rehearsal |
 | Route planning/operations | Functionally ready; provider/calibration required | Deterministic baseline and protected immutable versions exist; live routing provider and operational calibration absent | Provider decision and route accuracy trial |
 | Vehicle tracking | Pilot decision required | Ingestion, buffering and Office view exist; browser foreground geolocation cannot guarantee all-hours tracking | Select pilot/full-production tracking posture |
 | Live operations intelligence | Calibration required | Rules and review workflow exist; thresholds are synthetic defaults | Shadow-mode pilot calibration |
@@ -45,7 +45,7 @@ Percentages are deliberately avoided because external configuration and real-wor
 | Financial eligibility | Business policy required | Versioned decisions, holds and route exclusion exist; production thresholds/authorities remain conservative | Approve policy before enforcement |
 | Communications | Provider and policy required | Durable intents, fallback, templates and inbound foundation exist; only fake/capture mode is approved | Select providers, register identities/templates, staged test |
 | Client SKIP | UAT and policy required | One-occurrence exclusion and protected replanning exist; cutoff/SLA/ownership unresolved | Approve conservative pilot policy and rehearse |
-| CI/CD and hosting | Not ready | Quality/database CI only; no staging/production deployment or rollback | Phase 5B staging/deployment foundation |
+| CI/CD and hosting | Shared-staging validated | Protected main-only Supabase, Functions and Cloudflare deployment passed end to end; production and rollback remain unproven | Preserve gates; rehearse rollback and later design production approvals |
 | Monitoring/support/DR | Not ready | Internal health/diagnostics exist; alert destinations, on-call ownership and tested restore do not | Establish monitoring, runbooks, RPO/RTO and restore drill |
 | Security/privacy | Strong design; production approval required | Least-privilege architecture exists; MFA, scanning, privacy, retention and device policies incomplete | Security hardening and business/legal review |
 
@@ -62,9 +62,9 @@ Percentages are deliberately avoided because external configuration and real-wor
 
 ## Environment and Supabase readiness
 
-Local Supabase is reproducible, but its `config.toml` is explicitly development posture: open database network access, disabled pooler, weak local Auth defaults, unconfirmed email, optional SSL enforcement and no production secrets. Separate staging and production projects, URLs, keys, domains, webhook endpoints, secret stores, Auth redirects, SMTP, quotas and provider modes are absent by design.
+Local Supabase remains explicitly development posture. Shared Staging now uses an isolated Supabase project, protected environment-specific credentials, hosted Data API configuration, deployed Functions, separate HTTPS frontend origins, synthetic Auth users and fake/capture provider gates. Production remains absent by design and must use separate projects, credentials, domains, webhooks, secrets and provider modes.
 
-Before staging, create an isolated staging Supabase project and hosting environment, deploy migrations and Edge Functions through an approved pipeline, store secrets in environment-specific protected stores, add an initial-admin bootstrap process, and enforce non-production provider/capture gates. Before production, add production-only approvals, database connection/pooling sizing, advisor baselines, backup/PITR decisions, restore rehearsal, release/rollback traceability, and smoke tests. Storage is configured only as a platform capability; operational evidence-photo buckets and policy are not implemented.
+The protected Staging pipeline has proven migration preview/application/reconciliation, application-schema lint, deterministic seed, bounded persona provisioning, Function bundle/deployment, frontend deployment, release identity and remote smoke checks. Before operational UAT or pilot, select monitoring ownership/recipients and prove alert delivery; approve RPO/RTO and backup/PITR posture; provide an isolated restore target; and rehearse restore, deployment rollback and migration recovery. Production additionally requires its own approvals, sizing, advisor baseline and smoke evidence. Storage is configured only as a platform capability; operational evidence-photo buckets and policy are not implemented.
 
 Current Supabase guidance requires treating backups and stored objects separately and validating restores rather than equating backup availability with recovery. The chosen plan tier, retention, PITR option, compute requirements and outage during restore must be recorded during provisioning.
 
@@ -146,22 +146,23 @@ During pilot, existing spreadsheets and operational processes should remain a co
 
 ### To controlled pilot
 
-1. **Phase 5B – Staging Platform and Secure Deployment Foundation:** isolated staging, repeatable deploys/migrations, protected secrets, production-like Auth, monitoring baseline, rollback/restore and smoke gates.
-2. **Security/privacy and operating-policy closure:** approve roles, MFA, tracking/privacy, retention, support and incident ownership.
-3. **Provider and tracking decisions:** choose pilot routing and GPS posture; choose only the other providers included in pilot scope.
-4. **Integration/data rehearsal:** stage WordPress forwarding, profile migration data without committing PII, dry-run imports and validate provider sandboxes.
-5. **Performance, device and UAT evidence:** run load scenarios, Android/poor-network PWA trials, route accuracy tests and end-to-end role-based UAT.
-6. **Bounded pilot:** one region/team/vehicle, named users, limited clients, parallel fallback, daily reconciliation and explicit stop/rollback criteria.
+1. **Operational assurance and recovery:** assign monitoring/alert ownership, prove alert delivery, approve RPO/RTO and backup/PITR posture, provide an isolated restore target, and rehearse restore plus deployment/migration recovery.
+2. **Structured synthetic UAT:** run the complete business-loop catalogue on the validated Staging release, recording actor, role, evidence and defects.
+3. **Security/privacy and operating-policy closure:** approve roles, MFA, tracking/privacy, retention, support and incident ownership.
+4. **Provider and tracking decisions:** choose pilot routing and GPS posture; choose only the other providers included in pilot scope.
+5. **Integration/data rehearsal:** stage WordPress forwarding, profile migration data under approved privacy controls, dry-run imports and validate only selected provider sandboxes.
+6. **Performance and device evidence:** run scale scenarios, Android/poor-network PWA trials and route-accuracy tests.
+7. **Bounded pilot:** one region/team/vehicle, named users, limited clients, parallel fallback, daily reconciliation and explicit stop/rollback criteria.
 
 ### To full production
 
 Close every P0/P1 applicable to the agreed launch scope; activate and validate live providers; migrate/reconcile authoritative data; complete training and user/device provisioning; approve financial, communications, SKIP, tracking and retention policies; test backup restore and deployment rollback; establish support/on-call ownership; freeze legacy writes; execute signed cutover/smoke/reconciliation steps; and retain a time-bounded read-only legacy fallback.
 
-## Recommended Phase 5B
+## Recommended next phase
 
-**Staging Platform, Secure Deployment and Operational Baseline.** Provision isolated staging resources and hosted frontends; implement versioned deployment/migration/Edge Function workflows with environment protection and rollback; validate configuration at startup; establish protected secret injection and rotation records; harden Auth/MFA and bootstrap provisioning; add deployment smoke tests, security scanning, monitoring/alert routing, and staging backup/restore rehearsal; create the core deployment, user-management, incident and recovery runbooks.
+**Phase 5D – Operational Assurance, Recovery and Synthetic UAT Foundation.** Preserve the proven deployment path; select monitoring destinations and named operational recipients; prove alert acknowledgement/escalation; approve RPO/RTO and the Supabase backup/PITR posture; provision an isolated non-production restore target; execute and document restore, deployment rollback and migration-recovery rehearsals; then begin the structured synthetic UAT catalogue with evidence capture.
 
-Phase 5B should not connect production providers, import real client data, enable live messaging/holds, or launch a pilot. Its exit criterion is a reproducible, observable, recoverable, production-like staging environment ready for provider and real-world validation.
+Phase 5D should not connect production providers, import real client data, enable live messaging/holds or launch a pilot. Its exit criterion is an observable and recoverable shared Staging environment with named ownership and an evidence-producing UAT process. External choices that cannot be inferred—alert recipients/ownership, RPO/RTO, Supabase plan/PITR posture and an isolated restore target—must be supplied before their corresponding proof can be completed.
 
 ## Related registers
 
@@ -171,3 +172,4 @@ Phase 5B should not connect production providers, import real client data, enabl
 - [Production configuration register](production-configuration-register.md)
 - [UAT and pilot plan](uat-and-pilot-plan.md)
 - [Cutover readiness](cutover-readiness.md)
+- [Phase 5C staging deployment evidence](staging-deployment-evidence.md)
