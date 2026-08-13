@@ -95,6 +95,24 @@ describe("staging environment contract", () => {
 });
 
 describe("deployment safety tools", () => {
+  it("uses the repository-pinned Wrangler without workspace mutation fallback", () => {
+    const workflow = readFileSync(".github/workflows/deploy-staging.yml", "utf8");
+    const packageJson = JSON.parse(readFileSync("package.json", "utf8")) as {
+      readonly devDependencies: Readonly<Record<string, string>>;
+    };
+
+    expect(packageJson.devDependencies.wrangler).toBe("4.123.0");
+    expect(workflow).toContain('test "$(pnpm exec wrangler --version)" = "4.123.0"');
+    expect(workflow.match(/packageManager: pnpm/g)).toHaveLength(2);
+    expect(workflow).toContain("pages deploy apps/office-web/dist");
+    expect(workflow).toContain("pages deploy apps/driver-pwa/dist");
+    expect(workflow.match(/--branch=main/g)).toHaveLength(2);
+    expect(workflow.match(/--commit-hash=\$\{\{ inputs\.source_sha \}\}/g)).toHaveLength(2);
+    expect(workflow).not.toContain("wranglerVersion:");
+    expect(workflow).not.toMatch(/pnpm (add|install).*wrangler/);
+    expect(workflow).not.toContain("ignore-workspace-root-check");
+  });
+
   it("maps NodeNext JavaScript source specifiers explicitly for both Edge bundlers", () => {
     const sourceRoots = [
       "packages/domain-types/src",

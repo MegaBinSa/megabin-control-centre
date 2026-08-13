@@ -12,4 +12,6 @@ Production has a documented contract but no active workflow. A future workflow m
 
 Staging frontend hosting uses two isolated Cloudflare Pages projects. The protected workflow deploys the exact traceable Office and Driver `dist` artifacts to their respective projects before smoke tests. The projects preserve SPA routing, keep HTML/service-worker discovery fresh, cache hashed assets immutably, and retain Cloudflare deployment history for rollback. This is a staging hosting decision only; production hosting remains undecided.
 
+Wrangler is an exact root development dependency and the lockfile is authoritative. The protected workflow verifies that exact executable before either pinned Cloudflare action runs and explicitly selects pnpm. The action must use the installed Wrangler; it may not dynamically add deployment tooling or relax workspace-root safety.
+
 The shared target remains main-only. Phase changes are locally and CI verified in a draft PR, then the reviewed merge SHA is dispatched. A feature-branch SHA may not update shared Staging.

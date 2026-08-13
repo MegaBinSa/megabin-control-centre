@@ -6,8 +6,9 @@
 4. Review the migration inventory and dry-run. Set destructive approval only after a named reviewer accepts every finding.
 5. Dispatch `Deploy staging` with the current reviewed merge SHA from `main` and `DEPLOY-STAGING` confirmation. Never reuse an older requested SHA after a deployment-control fix has merged.
 6. Observe migration plus deterministic seed, bounded persona provisioning/verification, application-schema lint, deployment-equivalent Edge bundle verification, explicit Function deployments, Cloudflare Pages deployments and smoke steps. Do not skip a failed stage. The lint gate covers the MegaBin-owned `app_private`, `api` and `public` schemas with `--fail-on error`; Supabase/PostGIS-managed extension implementation schemas are intentionally outside this ownership boundary.
-7. Verify health build SHA/run ID, allowed/denied CORS, Office/Driver authorization boundaries, fake-provider posture, communication capture mode and website intake idempotency.
-8. Complete the release checklist and link workflow/artifact/rollback references.
+7. Confirm the workflow verifies repository-pinned Wrangler `4.123.0` before both Pages deployments. Any attempt by an action to add or upgrade Wrangler dynamically is a deployment-contract failure.
+8. Verify health build SHA/run ID, allowed/denied CORS, Office/Driver authorization boundaries, fake-provider posture, communication capture mode and website intake idempotency.
+9. Complete the release checklist and link workflow/artifact/rollback references.
 
 The workflow deploys only a reviewed SHA contained in `main`. Do not weaken this gate to test a feature branch; merge first, then dispatch the merge SHA.
 
