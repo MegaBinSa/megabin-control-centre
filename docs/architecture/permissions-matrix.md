@@ -148,3 +148,15 @@ Permissions are `website_intake.read`, `.review`, `.approve`, `.reject`, `.activ
 | System Admin/Developer | No by technical role alone | No |
 
 Permissions are `client_migration.read`, `.create`, `.review`, `.approve`, `.activate`, and `.retry`. Mixed-region batch commands require global permission. Row review and activation are region-scoped once geography is known. Technical access never confers business approval.
+
+## Phase 4C Accounting permissions
+
+| Role | Operational status | Sensitive financial detail | Sync | Reconcile | Exceptions | Integration manage |
+|---|---|---|---|---|---|---|
+| Director/Admin | Yes | Yes | Yes | Yes | Yes | Yes |
+| Operations Manager | Yes | Yes | Yes | Yes | Yes | No |
+| Office/Admin | Yes | Yes | No | Yes | Yes | No |
+| Driver/Team | No | No | No | No | No | No |
+| System Admin/Developer | No by default | No | No | No | No | No |
+
+Permissions are `accounting.read`, `accounting.sensitive.read`, `accounting.sync`, `accounting.reconcile`, `accounting.exception.manage`, and `accounting.integration.manage`. Financial reads are region-scoped. Technical access never grants financial visibility.

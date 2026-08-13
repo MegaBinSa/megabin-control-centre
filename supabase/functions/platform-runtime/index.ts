@@ -1,6 +1,6 @@
 import "@supabase/functions-js/edge-runtime.d.ts";
 import { withSupabase } from "@supabase/server";
-import { FakeIntegrationAdapter } from "@megabin/integrations";
+import { FakeIntegrationAdapter, FakeZohoBooksAdapter } from "@megabin/integrations";
 import { FakeOptimizationProvider, FakeRoutingProvider } from "@megabin/route-planning";
 import type { ActorReference } from "@megabin/domain-types";
 import {
@@ -14,6 +14,7 @@ import {
   createLiveOperationsHandler,
   createWebsiteIntakeHandler,
   createClientMigrationHandler,
+  createAccountingHandler,
   MemoryJobStateStore,
   SupabaseRuntimeDatabase,
   type RuntimeRpcClient
@@ -88,6 +89,18 @@ export default {
         | "production"
     })(request);
     if (clientMigrationResponse) return clientMigrationResponse;
+    const accountingResponse = await createAccountingHandler({
+      rpc,
+      actorId,
+      id: () => crypto.randomUUID(),
+      environment: runtimeEnvironment,
+      provider: new FakeZohoBooksAdapter(),
+      organizationId: Deno.env.get("MEGABIN_ACCOUNTING_ORGANIZATION_ID") ?? "local-synthetic",
+      pageSize: Number(Deno.env.get("MEGABIN_ACCOUNTING_PAGE_SIZE") ?? 100),
+      maxRetryAfterMs: Number(Deno.env.get("MEGABIN_ACCOUNTING_MAX_RETRY_DELAY_MS") ?? 5000),
+      defer: (work) => EdgeRuntime.waitUntil(work)
+    })(request);
+    if (accountingResponse) return accountingResponse;
     const liveOperations = createLiveOperationsHandler({
       rpc,
       actorId,

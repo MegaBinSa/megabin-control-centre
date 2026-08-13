@@ -153,3 +153,15 @@ Payloads exclude names, phone numbers, email, addresses, source snapshots, and r
 | `ClientMigration.BatchCompleted` | Reconciliation closes the batch | batch ID and safe outcome counts |
 
 Events exclude source rows, names, contact details, addresses, reasons, and billing references.
+
+## Phase 4C accepted Accounting events
+
+| Event v1 | Trigger | Concise payload |
+|---|---|---|
+| `Accounting.SyncCompleted` | A sync succeeds | sync run ID and status |
+| `Accounting.CustomerMapped` | Office confirms a mapping | provider/customer reference and Client ID |
+| `Accounting.AccountStatusChanged` | A derived status changes | Client ID, old/new status and freshness |
+| `Accounting.AccountingDataStale` | A current projection becomes stale | Client ID and freshness |
+| `Accounting.ExceptionChanged` | A manual exception changes | Client ID and operational status |
+
+Events exclude balances, invoices, payments, contacts, and provider payloads.

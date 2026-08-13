@@ -14,6 +14,7 @@ export * from "./operational-intelligence.js";
 export * from "./live-operations-http.js";
 export * from "./website-intake-http.js";
 export * from "./client-migration-http.js";
+export * from "./accounting-http.js";
 export * from "./jobs.js";
 export * from "./memory.js";
 export * from "./supabase.js";

@@ -9,6 +9,7 @@ import { renderTrackingWorkspace } from "./tracking.js";
 import { renderLiveOperationsWorkspace } from "./live-operations.js";
 import { renderWebsiteIntakeWorkspace } from "./website-intake.js";
 import { renderClientMigrationWorkspace } from "./client-migration.js";
+import { renderAccountingWorkspace } from "./accounting.js";
 
 const modules = [
   "Clients",
@@ -168,6 +169,10 @@ function render(): void {
         "beforeend",
         '<button id="client-migration-workspace">Client Migration</button>'
       );
+  if (identity.permissions.includes("accounting.read"))
+    appRoot
+      .querySelector("nav")
+      ?.insertAdjacentHTML("beforeend", '<button id="accounting-workspace">Accounting</button>');
   document.querySelectorAll<HTMLButtonElement>("[data-module]").forEach((button) =>
     button.addEventListener("click", () => {
       active = button.dataset.module as ModuleName;
@@ -230,6 +235,13 @@ function render(): void {
   });
   document.querySelector("#client-migration-workspace")?.addEventListener("click", () => {
     void renderClientMigrationWorkspace(appRoot, api, identity?.permissions ?? [], async () => {
+      await auth.signOut();
+      identity = null;
+      render();
+    });
+  });
+  document.querySelector("#accounting-workspace")?.addEventListener("click", () => {
+    void renderAccountingWorkspace(appRoot, api, identity?.permissions ?? [], async () => {
       await auth.signOut();
       identity = null;
       render();

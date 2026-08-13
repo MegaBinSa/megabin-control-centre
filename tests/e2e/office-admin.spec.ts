@@ -1189,3 +1189,145 @@ test("Office Client Migration imports, profiles, dry-runs, reviews, approves, ac
   await page.getByRole("button", { name: "Activate batch" }).click();
   await expect(page.getByText("Migration activate succeeded.")).toBeVisible();
 });
+
+test("Office accounting syncs, reconciles, reviews sensitive status, and applies an exception", async ({
+  page
+}) => {
+  await syntheticSession(page, [
+    "master_data.read",
+    "accounting.read",
+    "accounting.sensitive.read",
+    "accounting.sync",
+    "accounting.reconcile",
+    "accounting.exception.manage"
+  ]);
+  const clientId = "57000000-0000-0000-0000-000000000001";
+  let mapped = false,
+    exception = false;
+  await page.route("**/api/v1/accounting/health", (route) =>
+    route.fulfill({
+      json: {
+        ok: true,
+        data: {
+          provider: "zoho-books-fake",
+          status: "active",
+          lastSuccessfulSync: "2026-08-13T06:30:00Z",
+          summary: "Healthy"
+        }
+      }
+    })
+  );
+  await page.route("**/api/v1/accounting/sync-runs", (route) =>
+    route.request().method() === "POST"
+      ? route.fulfill({
+          status: 202,
+          json: {
+            ok: true,
+            data: { syncRunId: "78000000-0000-4000-8000-000000000001", status: "pending" }
+          }
+        })
+      : route.fulfill({
+          json: {
+            ok: true,
+            data: {
+              items: [
+                { status: "succeeded", fetchedCounts: { customers: 3, invoices: 2, payments: 1 } }
+              ]
+            }
+          }
+        })
+  );
+  await page.route("**/api/v1/accounting/status", (route) =>
+    route.fulfill({
+      json: {
+        ok: true,
+        data: {
+          items: [
+            {
+              clientId,
+              clientName: "Synthetic Client One",
+              accountStatus: exception ? "manual_review" : "seriously_overdue",
+              derivedStatus: "seriously_overdue",
+              isStale: false,
+              lastSync: "2026-08-13T06:30:00Z",
+              exception: exception ? { status: "manual_review", reason: "Office review" } : null
+            }
+          ]
+        }
+      }
+    })
+  );
+  await page.route("**/api/v1/accounting/reconciliation", (route) =>
+    route.fulfill({
+      json: {
+        ok: true,
+        data: {
+          items: mapped
+            ? []
+            : [
+                {
+                  provider: "zoho-books-fake",
+                  providerCustomerId: "ZC-200",
+                  classification: "strong_candidate",
+                  candidateClientIds: [clientId],
+                  customer: { displayName: "Strong Candidate" }
+                }
+              ]
+        }
+      }
+    })
+  );
+  await page.route("**/api/v1/accounting/reconciliation/zoho-books-fake/ZC-200", (route) => {
+    mapped = true;
+    return route.fulfill({
+      json: { ok: true, data: { classification: "mapped", mappedClientId: clientId } }
+    });
+  });
+  await page.route(`**/api/v1/accounting/clients/${clientId}`, (route) =>
+    route.fulfill({
+      json: {
+        ok: true,
+        data: {
+          clientId,
+          provider: "zoho-books-fake",
+          providerCustomerId: "ZC-100",
+          accountStatus: exception ? "manual_review" : "seriously_overdue",
+          derivedStatus: "seriously_overdue",
+          freshness: "current",
+          lastSync: "2026-08-13T06:30:00Z",
+          financial: {
+            currency: "ZAR",
+            totalOutstandingMinor: 60000,
+            overdueOutstandingMinor: 60000,
+            daysOverdue: 100,
+            agingBucket: "90_plus",
+            invoices: [{ invoiceNumber: "INV-SYN-100" }],
+            payments: [{ paymentReference: "PAY-SYN-100" }]
+          },
+          eligibility: { recommendation: "financial_attention" }
+        }
+      }
+    })
+  );
+  await page.route(`**/api/v1/accounting/clients/${clientId}/exception`, (route) => {
+    exception = route.request().method() !== "DELETE";
+    return route.fulfill({
+      json: {
+        ok: true,
+        data: { clientId, status: exception ? "manual_review" : "seriously_overdue" }
+      }
+    });
+  });
+  await page.getByRole("button", { name: "Accounting" }).click();
+  await expect(page.getByRole("heading", { name: "Accounting & Account Status" })).toBeVisible();
+  await expect(page.getByText("Synthetic Client One")).toBeVisible();
+  await page.getByRole("button", { name: "Start manual incremental sync" }).click();
+  await expect(page.getByText(/Accounting sync queued/)).toBeVisible();
+  await page.getByRole("button", { name: "Link candidate" }).click();
+  await expect(page.getByText("Accounting customer mapped.")).toBeVisible();
+  await page.getByRole("button", { name: "Open" }).click();
+  await expect(page.getByText("INV-SYN-100")).toBeVisible();
+  await page.getByLabel("Reason").fill("Office review required");
+  await page.getByRole("button", { name: "Apply exception" }).click();
+  await expect(page.getByText(/Manual account exception applied/)).toBeVisible();
+});

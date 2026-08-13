@@ -52,3 +52,7 @@ The standard install-to-decommission process, environment modes, and health stat
 ## Website onboarding boundary
 
 The website remains local-save-first and submits immutable signup intake asynchronously. It is authoritative only for the original submission until activation. The Control Centre never depends on WordPress tables or writes them, and the website never writes master-data tables. See [Website Intake](website-intake.md) and the [website integration contract](website-integration-contract.md).
+
+## Accounting boundary
+
+Phase 4C adds provider-neutral Accounting adapters. Zoho Books translation remains inside its adapter; immutable normalized facts and explicit Client mappings feed only the controlled snapshot and advisory eligibility contract. Routes and Client Services never query Zoho or provider facts directly. Local and CI use the deterministic fake adapter; live activation requires environment secrets and a production provider decision.

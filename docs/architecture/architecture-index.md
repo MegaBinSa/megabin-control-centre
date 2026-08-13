@@ -51,6 +51,9 @@ Material changes to the architecture require an ADR. An ADR may clarify the blue
 | [Website Intake](website-intake.md) | Phase 4A immutable signup intake, matching, review, activation, and authority transition |
 | [Website integration contract](website-integration-contract.md) | Provider-neutral payload, authentication, idempotency, acknowledgement, and WordPress adapter guidance |
 | [Client Migration](client-migration.md) | Immutable batches, canonical mapping, reconciliation, dry-run, activation, provenance, and recovery |
+| [Accounting Integration](accounting-integration.md) | Provider facts, reconciliation, snapshots, status, freshness, and eligibility boundary |
+| [Accounting provider contract](accounting-provider-contract.md) | Provider-neutral sync, failure, pagination, and secret boundary |
+| [Zoho Books adapter](zoho-books-adapter.md) | Fake-adapter posture and production activation steps |
 | [Office master-data workflow](../workflows/office-master-data-administration.md) | Authenticated Office administration behavior |
 | [Office geography workflow](../workflows/office-geography-administration.md) | Territory map editing and assignment-review workflow |
 | [Office Daily Roster workflow](../workflows/office-daily-roster.md) | Daily planning, readiness, substitution, and lock workflow |
@@ -61,6 +64,7 @@ Material changes to the architecture require an ADR. An ADR may clarify the blue
 | [Office Live Operations workflow](../workflows/office-live-operations.md) | Regional intelligence, evidence review, and false-positive dismissal |
 | [Office Website Intake workflow](../workflows/office-website-intake.md) | Signup comparison, approval, rejection, and activation workflow |
 | [Office Client Migration workflow](../workflows/office-client-migration.md) | Import, profile, reconcile, dry-run, review, activation, and reporting |
+| [Office Accounting workflow](../workflows/office-accounting.md) | Provider health, sync, reconciliation, account detail, and exceptions |
 | [Office local development](../runbooks/office-local-development.md) | Local Auth, API, and browser-test workflow |
 | [Master-data migration considerations](master-data-migration-considerations.md) | Import, identity, and transition constraints |
 | [State-machine catalogue](state-machine-catalogue.md) | Implemented lifecycle states and transitions |
