@@ -1,0 +1,2 @@
+legacyClientReference,clientName,organisationName,contactName,mobile,email,addressLine1,suburb,city,postalCode,latitude,longitude,drumCount,billingReference,serviceStartDate,collectionDay,team,legacyStatus,agreementReference
+SYNTHETIC-001,Synthetic Migration Client,,Synthetic Contact,0821234567,synthetic@example.invalid,1 Synthetic Migration Road,Test Suburb,Pretoria,0001,-25.7000,28.2700,2,BILL-SYNTH-001,2026-01-01,1,TEAM-SYNTHETIC,active,AGREE-SYNTH-001

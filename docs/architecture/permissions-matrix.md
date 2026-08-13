@@ -136,3 +136,15 @@ Permissions are `live_operations.read`, `operational_intelligence.read`, `.revie
 | System Admin/Developer | No by default | No | No automatic business authority |
 
 Permissions are `website_intake.read`, `.review`, `.approve`, `.reject`, `.activate`, and `.integration.manage`. Region scope is enforced once geography is known. Sensitive payloads remain behind the application boundary; technical access never implies approval authority.
+
+## Phase 4B Client Migration permissions
+
+| Role | Read/create/review | Approve/activate/retry |
+|---|---|---|
+| Director/Admin | Yes | Yes |
+| Operations Manager | Yes | Yes |
+| Office/Admin | Yes | No |
+| Driver/Team | No | No |
+| System Admin/Developer | No by technical role alone | No |
+
+Permissions are `client_migration.read`, `.create`, `.review`, `.approve`, `.activate`, and `.retry`. Mixed-region batch commands require global permission. Row review and activation are region-scoped once geography is known. Technical access never confers business approval.

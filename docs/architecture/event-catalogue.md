@@ -141,3 +141,15 @@ Repeated evaluations, observation points, evidence details, coordinates, and ack
 | `WebsiteIntake.Activated` | Authoritative activation commits | submission, Client, Address, and Service IDs |
 
 Payloads exclude names, phone numbers, email, addresses, source snapshots, and review reasons.
+
+## Phase 4B accepted Client Migration events
+
+| Event v1 | Trigger | Concise payload |
+|---|---|---|
+| `ClientMigration.BatchCreated` | Batch metadata commits | batch ID |
+| `ClientMigration.BatchApproved` | Reviewed plans freeze | batch ID and row count |
+| `ClientMigration.ActivationStarted` | Batch activation begins | batch ID |
+| `ClientMigration.RowActivated` | A row activates through owning domains | batch, row, Client and Service IDs |
+| `ClientMigration.BatchCompleted` | Reconciliation closes the batch | batch ID and safe outcome counts |
+
+Events exclude source rows, names, contact details, addresses, reasons, and billing references.

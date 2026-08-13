@@ -50,6 +50,7 @@ Material changes to the architecture require an ADR. An ADR may clarify the blue
 | [Live Operations Intelligence](live-operations-intelligence.md) | Phase 3C reviewable derived facts, deterministic inference, Needs Attention, and live progress |
 | [Website Intake](website-intake.md) | Phase 4A immutable signup intake, matching, review, activation, and authority transition |
 | [Website integration contract](website-integration-contract.md) | Provider-neutral payload, authentication, idempotency, acknowledgement, and WordPress adapter guidance |
+| [Client Migration](client-migration.md) | Immutable batches, canonical mapping, reconciliation, dry-run, activation, provenance, and recovery |
 | [Office master-data workflow](../workflows/office-master-data-administration.md) | Authenticated Office administration behavior |
 | [Office geography workflow](../workflows/office-geography-administration.md) | Territory map editing and assignment-review workflow |
 | [Office Daily Roster workflow](../workflows/office-daily-roster.md) | Daily planning, readiness, substitution, and lock workflow |
@@ -59,6 +60,7 @@ Material changes to the architecture require an ADR. An ADR may clarify the blue
 | [Office vehicle tracking workflow](../workflows/office-vehicle-tracking.md) | Regional live map/status and tracking-device administration |
 | [Office Live Operations workflow](../workflows/office-live-operations.md) | Regional intelligence, evidence review, and false-positive dismissal |
 | [Office Website Intake workflow](../workflows/office-website-intake.md) | Signup comparison, approval, rejection, and activation workflow |
+| [Office Client Migration workflow](../workflows/office-client-migration.md) | Import, profile, reconcile, dry-run, review, activation, and reporting |
 | [Office local development](../runbooks/office-local-development.md) | Local Auth, API, and browser-test workflow |
 | [Master-data migration considerations](master-data-migration-considerations.md) | Import, identity, and transition constraints |
 | [State-machine catalogue](state-machine-catalogue.md) | Implemented lifecycle states and transitions |

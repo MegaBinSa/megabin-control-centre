@@ -1091,3 +1091,101 @@ test("Office Website Intake reviews, approves, and activates a signup", async ({
   await page.getByRole("button", { name: "Activate" }).click();
   await expect(page.getByText("Intake activate succeeded.")).toBeVisible();
 });
+
+test("Office Client Migration imports, profiles, dry-runs, reviews, approves, activates, and reconciles", async ({
+  page
+}) => {
+  await syntheticSession(page, [
+    "master_data.read",
+    "client_migration.read",
+    "client_migration.create",
+    "client_migration.review",
+    "client_migration.approve",
+    "client_migration.activate"
+  ]);
+  const batchId = "97000000-0000-4000-8000-000000000001",
+    rowId = "97000000-0000-4000-8000-000000000002";
+  let status = "uploaded",
+    version = 2;
+  await page.route("**/api/v1/client-migrations", async (route) => {
+    if (route.request().method() === "POST")
+      return route.fulfill({
+        json: {
+          ok: true,
+          data: { batchId, sourceName: "synthetic.csv", status: "created", rowCount: 0, version: 1 }
+        }
+      });
+    return route.fulfill({
+      json: {
+        ok: true,
+        data: { items: [{ batchId, sourceName: "synthetic.csv", status, rowCount: 1, version }] }
+      }
+    });
+  });
+  await page.route(`**/api/v1/client-migrations/${batchId}/import`, (route) =>
+    route.fulfill({ json: { ok: true, data: { batchId, status: "uploaded", version: 2 } } })
+  );
+  await page.route(`**/api/v1/client-migrations/${batchId}`, (route) =>
+    route.fulfill({
+      json: {
+        ok: true,
+        data: {
+          batchId,
+          sourceName: "synthetic.csv",
+          status,
+          rowCount: 1,
+          version,
+          profile: { totalRows: 1 },
+          dryRunSummary:
+            status === "dry_run_complete"
+              ? { clientsToCreate: 1, authoritativeWrites: 0 }
+              : undefined,
+          reconciliationReport: status === "completed" ? { activated: 1, failed: 0 } : undefined,
+          rows: [
+            {
+              rowId,
+              rowNumber: 2,
+              source: { clientName: "Synthetic Migrant" },
+              canonical: { clientName: "Synthetic Migrant" },
+              reconciliation: { clientCandidates: [] },
+              proposedPlan: { createClient: true, drumCount: 2 },
+              classification: "ready_create_new_client_address_service",
+              validationErrors: [],
+              decisionVersion: 0,
+              outcome: status === "completed" ? "activated" : undefined
+            }
+          ]
+        }
+      }
+    })
+  );
+  for (const action of ["process", "dry-run", "approve", "activate"] as const)
+    await page.route(`**/api/v1/client-migrations/${batchId}/${action}`, (route) => {
+      status =
+        action === "process"
+          ? "needs_review"
+          : action === "dry-run"
+            ? "dry_run_complete"
+            : action === "approve"
+              ? "approved"
+              : "completed";
+      version++;
+      return route.fulfill({ json: { ok: true, data: { batchId, status, version } } });
+    });
+  await page.route(`**/api/v1/client-migrations/rows/${rowId}/review`, (route) =>
+    route.fulfill({ json: { ok: true, data: { rowId, decision: "approved", version: 1 } } })
+  );
+  await page.getByRole("button", { name: "Client Migration" }).click();
+  await expect(page.getByRole("heading", { name: "Client Migration" })).toBeVisible();
+  await page.getByRole("button", { name: "Open" }).click();
+  await page.getByRole("button", { name: "Profile and reconcile" }).click();
+  await page.getByRole("button", { name: "Open" }).click();
+  await page.getByRole("button", { name: "Run dry run" }).click();
+  await page.getByRole("button", { name: "Open" }).click();
+  await page.getByRole("button", { name: "Approve plan" }).click();
+  await page.getByRole("button", { name: "Open" }).click();
+  await page.getByRole("button", { name: "Approve batch" }).click();
+  await page.getByRole("button", { name: "Open" }).click();
+  await page.getByRole("button", { name: "Activate batch" }).click();
+  await expect(page.getByText("Migration activate succeeded.")).toBeVisible();
+});

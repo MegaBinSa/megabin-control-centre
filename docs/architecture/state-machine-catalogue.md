@@ -42,3 +42,7 @@ Handoff creates the planned assignment and moves directly to `Available`. Driver
 ## Website Intake
 
 `Received -> Processing -> Needs Review -> Approved -> Activating -> Activated`. Receipt validation may produce `Invalid`; Office may move `Needs Review -> Rejected`; technical processing or activation may produce `Failed`. Approval/rejection requires an authorised actor and optimistic version, with a reason for rejection or non-obvious override. `Activated` and `Rejected` are terminal in Phase 4A. Repeated activation returns the prior result.
+
+## Client Migration Batch
+
+`Created -> Uploaded -> Validating -> Needs Review -> Dry Run Complete -> Approved -> Activating -> Completed | Completed With Exceptions`. Approval freezes source identity, mapping/processing versions, counts, and reviewed plans. `Failed`, `Cancelled`, and `Archived` are reserved terminal/control states. Row outcomes are independently `Activated | Failed | Skipped | Conflict`; only technical `Failed` outcomes are retryable.
