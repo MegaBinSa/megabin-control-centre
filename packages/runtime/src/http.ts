@@ -82,7 +82,7 @@ export function createRuntimeHandler(
   return async (request: Request): Promise<Response> => {
     const path = routePath(request);
     if (request.method === "GET" && path === `${API_BASE_PATH}/health/live`) {
-      return json({ status: "healthy", buildId: dependencies.runtime.buildId });
+      return json({ status: "healthy", runtime: dependencies.runtime });
     }
     if (request.method === "GET" && path === `${API_BASE_PATH}/openapi.json`) {
       return json(createOpenApiDocument());
@@ -210,8 +210,12 @@ async function healthResponse(
   const ready = database.status === "healthy" && configuration === "healthy";
   return json(
     readinessOnly
-      ? { status: ready ? "healthy" : "unhealthy" }
-      : { status: ready && outbox.status !== "unhealthy" ? "healthy" : "degraded", components },
+      ? { status: ready ? "healthy" : "unhealthy", runtime: dependencies.runtime }
+      : {
+          status: ready && outbox.status !== "unhealthy" ? "healthy" : "degraded",
+          runtime: dependencies.runtime,
+          components
+        },
     readinessOnly && !ready ? 503 : 200
   );
 }

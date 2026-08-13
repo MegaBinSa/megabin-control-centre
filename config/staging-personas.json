@@ -1,0 +1,36 @@
+{
+  "environment": "staging",
+  "passwordsCommitted": false,
+  "personas": [
+    {
+      "code": "director",
+      "emailPattern": "director+staging@example.invalid",
+      "role": "Director/Admin",
+      "mfaRequired": true
+    },
+    {
+      "code": "operations",
+      "emailPattern": "operations+staging@example.invalid",
+      "role": "Operations Manager",
+      "mfaRequired": true
+    },
+    {
+      "code": "office",
+      "emailPattern": "office+staging@example.invalid",
+      "role": "Office/Admin",
+      "mfaRequired": true
+    },
+    {
+      "code": "driver",
+      "emailPattern": "driver+staging@example.invalid",
+      "role": "Driver/Team",
+      "mfaRequired": false
+    },
+    {
+      "code": "system-admin",
+      "emailPattern": "system-admin+staging@example.invalid",
+      "role": "System Admin/Developer",
+      "mfaRequired": true
+    }
+  ]
+}

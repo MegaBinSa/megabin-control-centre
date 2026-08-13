@@ -13,6 +13,8 @@
 | Providers | Fake, capture, or sandbox adapters | Sandbox/test provider accounts | Production provider accounts |
 | Webhooks | Local/test endpoints | Staging endpoints | Production endpoints |
 | Scheduled jobs | Disabled or manually triggered by default | Enabled only with safe configuration | Enabled under production controls |
+
+Phase 5B formalizes the repository-side Staging contract in [Staging Environment Architecture](staging-environment.md). Deployment must pass the environment validator, match the dedicated project reference, use explicit HTTPS origins, preserve fake/capture provider modes, and keep irreversible automation disabled. The shared Staging environment is manually deployed from a commit contained in `main`; Production deployment remains disabled.
 | Messaging | Capture sink or fixed test recipients | Enforced test-recipient allowlist | Authorized real recipients |
 
 ## Isolation rules
@@ -31,4 +33,3 @@ Non-production must be technically unable to send unrestricted messages to real 
 ## Secrets
 
 Committed documentation and configuration contain variable names and examples only. No live Supabase projects, production credentials, or provider secrets are created by this phase.
-

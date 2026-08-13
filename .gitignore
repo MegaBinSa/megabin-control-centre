@@ -2,6 +2,8 @@
 .env
 .env.*
 !.env.example
+!.env.staging.example
+!.env.production.example
 *.pem
 *.key
 *.p12
@@ -57,4 +59,3 @@ wp-admin/
 wp-includes/
 wordpress/
 *.zip
-

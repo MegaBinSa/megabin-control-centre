@@ -1,0 +1,7 @@
+# Auth and User Provisioning Runbook
+
+Staging users are synthetic personas from [`config/staging-personas.json`](../../config/staging-personas.json); passwords are never committed. The initial admin is invited through the Supabase Staging Auth administration surface by an authorized project administrator, then receives an active application profile, approved role and scope through a reviewed bootstrap transaction. A second privileged account is verified before the bootstrap operator removes temporary access. Every bootstrap action is recorded in the deployment/change record.
+
+Normal lifecycle: invite user; verify identity; create/link Staff where applicable; assign the approved role; assign region/team scope; require MFA for Director/Admin, Operations Manager, Office/Admin and System Admin/Developer in Staging; verify effective permissions with a negative region test. Password reset uses Supabase Auth. Disabling requires session revocation/sign-out, application-profile deactivation and device reassignment/revocation. Departure follows the same order and reviews owned alerts/integration duties.
+
+Raw SQL is not an approved normal provisioning interface. The repository does not yet expose a bounded user-administration workflow, so bootstrap/profile assignment remains a controlled administrator procedure and is recorded as `PRD-IAM-002`. Recovery when all admins are locked out requires two authorized owners using Supabase organization/project recovery, followed by audit and credential rotation.

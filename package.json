@@ -12,6 +12,10 @@
     "build": "pnpm -r --if-present build",
     "check": "pnpm format:check && pnpm lint && pnpm typecheck && pnpm test && pnpm openapi:check && pnpm docs:check",
     "docs:check": "node scripts/check-doc-links.mjs",
+    "env:validate:staging": "node scripts/validate-environment.mjs staging",
+    "env:validate:production": "node scripts/validate-environment.mjs production",
+    "migrations:safety": "node scripts/migration-safety.mjs",
+    "smoke:staging": "node scripts/staging-smoke.mjs",
     "e2e": "playwright test",
     "format": "prettier --write .",
     "format:check": "prettier --check .",
@@ -37,6 +41,6 @@
     "supabase": "2.110.0",
     "typescript": "5.9.3",
     "typescript-eslint": "8.46.4",
-    "vitest": "3.2.4"
+    "vitest": "3.2.6"
   }
 }

@@ -69,6 +69,9 @@ Material changes to the architecture require an ADR. An ADR may clarify the blue
 | [Master-data migration considerations](master-data-migration-considerations.md) | Import, identity, and transition constraints |
 | [State-machine catalogue](state-machine-catalogue.md) | Implemented lifecycle states and transitions |
 | [Environment strategy](environment-strategy.md) | Isolation of development, staging, and production |
+| [Staging environment](staging-environment.md) | Staging identity, isolation, safety posture, and external prerequisites |
+| [Deployment architecture](deployment-architecture.md) | Protected staging release sequence, artifacts, traceability, and production deferral |
+| [Environment configuration guide](environment-configuration-guide.md) | Configuration/secret stores, validation, drift, and safety gates |
 | [Integration architecture](integration-architecture.md) | Adapter boundaries, reliability, and external-system rules |
 | [Financial eligibility](financial-eligibility.md) | Service financial decisions, holds, precedence, and route contract |
 | [Client Communications](client-communications.md) | Intents, attempts, fallback, templates, environment safety, inbound normalization, and privacy |
@@ -83,6 +86,7 @@ Material changes to the architecture require an ADR. An ADR may clarify the blue
 | [Production configuration register](../production/production-configuration-register.md) | Environment configuration and secret inventory without values |
 | [UAT and pilot plan](../production/uat-and-pilot-plan.md) | End-to-end UAT, field validation, and bounded pilot gates |
 | [Cutover readiness](../production/cutover-readiness.md) | Production gates, coexistence, cutover, rollback, and support outline |
+| [Operations runbook index](../runbooks/README.md) | Deployment, recovery, provisioning, monitoring, incident, device, reset, and release procedures |
 
 ## Supporting and migration context
 

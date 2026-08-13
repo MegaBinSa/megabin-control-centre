@@ -1,10 +1,21 @@
 /* global self, caches, fetch, URL */
-const CACHE = "megabin-driver-shell-v1",
+const BUILD = new URL(self.location.href).searchParams.get("build") || "local",
+  CACHE = `megabin-driver-shell-${BUILD}`,
   SHELL = ["/", "/index.html", "/manifest.webmanifest"];
 self.addEventListener("install", (event) =>
   event.waitUntil(caches.open(CACHE).then((cache) => cache.addAll(SHELL)))
 );
-self.addEventListener("activate", (event) => event.waitUntil(self.clients.claim()));
+self.addEventListener("install", () => self.skipWaiting());
+self.addEventListener("activate", (event) =>
+  event.waitUntil(
+    caches
+      .keys()
+      .then((names) =>
+        Promise.all(names.filter((name) => name !== CACHE).map((name) => caches.delete(name)))
+      )
+      .then(() => self.clients.claim())
+  )
+);
 self.addEventListener("fetch", (event) => {
   if (event.request.method !== "GET" || new URL(event.request.url).pathname.startsWith("/api/"))
     return;

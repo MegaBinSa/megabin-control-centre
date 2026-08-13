@@ -3,6 +3,8 @@
 **Status:** Phase 5A inventory; values are not credentials
 **Last reviewed:** 2026-08-13
 
+Phase 5B implements name/status validation and example inventories. No real Staging values are configured; the GitHub `staging` Environment and Supabase/hosting stores still require human provisioning.
+
 `Current posture` describes repository defaults or absence. Actual secret values must never be recorded here.
 
 | ID/key | Module | Current posture | Production value/decision required | Storage location | Owner type | Blocks |
@@ -38,6 +40,10 @@
 | CFG-SKIP | Client SKIP | Conservative manual workflow | Timezone/cutoff/near-cutoff, SLA, Draft generation and acknowledgement timing | Configuration registry | Operations | SKIP pilot |
 | CFG-RET | Retention | Placeholder/disabled deletion | Approved periods, legal holds and deletion enablement per environment | Configuration registry | Business/Privacy | Production |
 | CFG-STORAGE | Evidence storage | No operational bucket/policy | Private bucket, file limits, malware/content policy, signed access and retention | Supabase Storage/project config | Operations/Privacy/Technical | Evidence feature |
+| CFG-CORS / `MEGABIN_ALLOWED_ORIGINS` | Edge Functions | Local origins plus explicit environment list | Exact separate Office/Driver HTTPS origins; wildcard rejected | Supabase Function secret/config | Technical | Staging |
+| CFG-BUILD / `VITE_BUILD_SHA`, `VITE_BUILD_TIMESTAMP`, `VITE_DEPLOYMENT_ID` | Frontends | Local fallbacks | Workflow-generated trace identity | Hosting build config | Technical | Staging |
+| CFG-BUILD-RUNTIME / `MEGABIN_BUILD_SHA`, `MEGABIN_BUILD_TIMESTAMP`, `MEGABIN_DEPLOYMENT_ID` | Runtime | Function deployment fallback | Workflow-generated trace identity | Supabase Function secrets | Technical | Staging |
+| CFG-SAFE-PROVIDERS | Routing/accounting/financial/SKIP | Fake providers and dangerous automation off | Preserve explicit fake/off values in Staging | GitHub/Supabase typed config | Technical/Operations | Staging |
 
 ## Secret rotation requirements
 

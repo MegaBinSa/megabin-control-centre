@@ -124,6 +124,15 @@ describe("synthetic API and transaction runtime", () => {
     });
   });
 
+  it("exposes safe environment and build identity in health", async () => {
+    const runtime = harness();
+    const response = await runtime.handle(new Request("http://localhost/api/v1/health/live"));
+    expect(await response.json()).toEqual({
+      status: "healthy",
+      runtime: { environment: "local", service: "runtime-test", buildId: "test-build" }
+    });
+  });
+
   it("commits one state, audit, idempotency result, and outbox event atomically", async () => {
     const runtime = harness();
     const response = await runtime.handle(proofRequest("proof", "first"));
