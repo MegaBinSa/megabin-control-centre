@@ -34,7 +34,9 @@
 ## Transitional website rule
 
 WordPress remains local-save-first and does not depend on synchronous Control Centre availability. It forwards submissions reliably with a stable source reference and idempotency key. Activation is the authority boundary: after activation, operational edits occur in the Control Centre, not in WordPress or spreadsheets.
-# Phase 1A ownership additions
+
+Phase 4A preserves the immutable source payload and versioned normalized interpretation in Website Intake. Candidate matches, duplicate classifications, and suggestions are derived operational state. Integration registration, safe activity metadata, and external references are provider metadata. None of these replace the authoritative Client, Address, Service, or configuration records created at activation.
+## Phase 1A ownership additions
 
 | Data | Authoritative owner | Permitted inbound source | Notes |
 |---|---|---|---|
@@ -45,4 +47,3 @@ WordPress remains local-save-first and does not depend on synchronous Control Ce
 | Teams and staff directory | Workforce module | Office administration | Not an HR or payroll record |
 | Vehicles | Vehicles module | Office administration; future tracking/maintenance adapters | Raw GPS and maintenance workflows remain deferred |
 | External references | Integrations module | Approved adapters | Unique only within source-system/entity scope |
-

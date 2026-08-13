@@ -17,6 +17,7 @@ import { routeOpenApiPaths } from "./routes-http.js";
 import { routeOperationsOpenApiPaths } from "./route-operations-http.js";
 import { vehicleTrackingOpenApiPaths } from "./vehicle-tracking-http.js";
 import { liveOperationsOpenApiPaths } from "./live-operations-http.js";
+import { websiteIntakeOpenApiPaths } from "./website-intake-http.js";
 
 interface ProofBody {
   readonly value: string;
@@ -231,7 +232,10 @@ export function createOpenApiDocument(): Readonly<Record<string, unknown>> {
     openapi: "3.1.0",
     info: { title: "MegaBin Control Centre API", version: "1.0.0" },
     components: {
-      securitySchemes: { bearerAuth: { type: "http", scheme: "bearer", bearerFormat: "JWT" } }
+      securitySchemes: {
+        bearerAuth: { type: "http", scheme: "bearer", bearerFormat: "JWT" },
+        integrationSecret: { type: "apiKey", in: "header", name: "X-Integration-Secret" }
+      }
     },
     paths: {
       ...geographyOpenApiPaths(),
@@ -240,6 +244,7 @@ export function createOpenApiDocument(): Readonly<Record<string, unknown>> {
       ...routeOperationsOpenApiPaths(),
       ...vehicleTrackingOpenApiPaths,
       ...liveOperationsOpenApiPaths,
+      ...websiteIntakeOpenApiPaths,
       ...masterDataOpenApiPaths(),
       "/api/v1/platform-proof": { post: { operationId: "executePlatformProof" } },
       "/api/v1/health/live": { get: { operationId: "getLiveness" } },

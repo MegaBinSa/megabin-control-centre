@@ -7,6 +7,7 @@ import { renderRoutesWorkspace } from "./routes.js";
 import { renderRouteOperationsWorkspace } from "./route-operations.js";
 import { renderTrackingWorkspace } from "./tracking.js";
 import { renderLiveOperationsWorkspace } from "./live-operations.js";
+import { renderWebsiteIntakeWorkspace } from "./website-intake.js";
 
 const modules = [
   "Clients",
@@ -152,6 +153,13 @@ function render(): void {
         "beforeend",
         '<button id="live-operations-workspace">Live Operations</button>'
       );
+  if (identity.permissions.includes("website_intake.read"))
+    appRoot
+      .querySelector("nav")
+      ?.insertAdjacentHTML(
+        "beforeend",
+        '<button id="website-intake-workspace">Website Intake</button>'
+      );
   document.querySelectorAll<HTMLButtonElement>("[data-module]").forEach((button) =>
     button.addEventListener("click", () => {
       active = button.dataset.module as ModuleName;
@@ -200,6 +208,13 @@ function render(): void {
   });
   document.querySelector("#live-operations-workspace")?.addEventListener("click", () => {
     void renderLiveOperationsWorkspace(appRoot, api, identity?.permissions ?? [], async () => {
+      await auth.signOut();
+      identity = null;
+      render();
+    });
+  });
+  document.querySelector("#website-intake-workspace")?.addEventListener("click", () => {
+    void renderWebsiteIntakeWorkspace(appRoot, api, identity?.permissions ?? [], async () => {
       await auth.signOut();
       identity = null;
       render();

@@ -124,3 +124,15 @@ Permissions are `vehicle_tracking.read`, `.health.read`, `.manage_devices`, `.as
 | System Admin/Developer | No by default | No by default | No | No |
 
 Permissions are `live_operations.read`, `operational_intelligence.read`, `.review`, `.process`, `needs_attention.read`, and `.manage`. Every operation is region-scoped; technical access does not grant sensitive fleet visibility.
+
+## Phase 4A Website Intake permissions
+
+| Role | Read/review | Approve/reject/activate | Integration management |
+|---|---|---|---|
+| Director/Admin | Yes | Yes | Yes |
+| Operations Manager | Yes | Yes | Yes |
+| Office/Admin | Yes | Yes | No |
+| Driver/Team | No | No | No |
+| System Admin/Developer | No by default | No | No automatic business authority |
+
+Permissions are `website_intake.read`, `.review`, `.approve`, `.reject`, `.activate`, and `.integration.manage`. Region scope is enforced once geography is known. Sensitive payloads remain behind the application boundary; technical access never implies approval authority.

@@ -48,3 +48,7 @@ The PostgreSQL outbox is the initial durable event mechanism. No message broker 
 Core transactions must define behavior when a provider is unavailable. External dispatch normally occurs after the authoritative transaction through the outbox. Provider identifiers and payload metadata remain scoped to adapters so a provider can be replaced without changing master entity identities or business rules.
 
 The standard install-to-decommission process, environment modes, and health states are defined in the [integration lifecycle](integration-lifecycle.md). Phase 2B selects deterministic fake routing and optimization adapters by safe environment configuration. A production adapter requires credentials in the runtime secret store and a provider-selection ADR; provider keys, SDK types, raw payloads, and credentials do not enter route-domain records.
+
+## Website onboarding boundary
+
+The website remains local-save-first and submits immutable signup intake asynchronously. It is authoritative only for the original submission until activation. The Control Centre never depends on WordPress tables or writes them, and the website never writes master-data tables. See [Website Intake](website-intake.md) and the [website integration contract](website-integration-contract.md).

@@ -12,6 +12,7 @@ export * from "./route-operations-http.js";
 export * from "./vehicle-tracking-http.js";
 export * from "./operational-intelligence.js";
 export * from "./live-operations-http.js";
+export * from "./website-intake-http.js";
 export * from "./jobs.js";
 export * from "./memory.js";
 export * from "./supabase.js";

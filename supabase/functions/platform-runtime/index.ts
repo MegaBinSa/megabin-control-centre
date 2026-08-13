@@ -12,6 +12,7 @@ import {
   createRouteOperationsHandler,
   createVehicleTrackingHandler,
   createLiveOperationsHandler,
+  createWebsiteIntakeHandler,
   MemoryJobStateStore,
   SupabaseRuntimeDatabase,
   type RuntimeRpcClient
@@ -63,6 +64,19 @@ export default {
       { accepted: true }
     );
     const actorId = jwtSubject(request);
+    const websiteIntake = createWebsiteIntakeHandler({
+      rpc,
+      actorId,
+      id: () => crypto.randomUUID(),
+      integrationKey:
+        Deno.env.get("MEGABIN_WEBSITE_ONBOARDING_INTEGRATION_KEY") ??
+        "megabin-website-onboarding-local",
+      integrationSecret: Deno.env.get("MEGABIN_WEBSITE_ONBOARDING_SECRET"),
+      allowIntegrationRoutes: false,
+      defer: (work) => EdgeRuntime.waitUntil(work)
+    });
+    const websiteIntakeResponse = await websiteIntake(request);
+    if (websiteIntakeResponse) return websiteIntakeResponse;
     const liveOperations = createLiveOperationsHandler({
       rpc,
       actorId,

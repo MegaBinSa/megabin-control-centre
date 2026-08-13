@@ -1,0 +1,16 @@
+{
+  "unstable": ["sloppy-imports"],
+  "imports": {
+    "@megabin/runtime": "../../../packages/runtime/src/index.ts",
+    "@megabin/api-client": "../../../packages/api-client/src/index.ts",
+    "@megabin/config": "../../../packages/config/src/index.ts",
+    "@megabin/domain-types": "../../../packages/domain-types/src/index.ts",
+    "@megabin/integrations": "../../../packages/integrations/src/index.ts",
+    "@megabin/observability": "../../../packages/observability/src/index.ts",
+    "@megabin/route-planning": "../../../packages/route-planning/src/index.ts",
+    "@megabin/validation": "../../../packages/validation/src/index.ts",
+    "zod": "npm:zod@4.1.11",
+    "@supabase/server": "npm:@supabase/server@1.4.1",
+    "@supabase/functions-js": "jsr:@supabase/functions-js@2.112.2"
+  }
+}

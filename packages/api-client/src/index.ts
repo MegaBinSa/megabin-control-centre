@@ -480,6 +480,23 @@ export class MasterDataApiClient {
       true
     );
   }
+  websiteIntake<T>(query = ""): Promise<T> {
+    return this.request(`/website-intake${query ? `?${query}` : ""}`);
+  }
+  websiteIntakeDetail<T>(submissionId: string): Promise<T> {
+    return this.request(`/website-intake/${submissionId}`);
+  }
+  reviewWebsiteIntake<T>(
+    submissionId: string,
+    action: "review" | "approve" | "reject" | "activate",
+    body: unknown
+  ): Promise<T> {
+    return this.request(
+      `/website-intake/${submissionId}/${action}`,
+      { method: "POST", body: JSON.stringify(body) },
+      true
+    );
+  }
   private async request<T>(
     path: string,
     init: RequestInit = {},

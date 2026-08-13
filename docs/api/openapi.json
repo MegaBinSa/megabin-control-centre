@@ -10,6 +10,11 @@
         "type": "http",
         "scheme": "bearer",
         "bearerFormat": "JWT"
+      },
+      "integrationSecret": {
+        "type": "apiKey",
+        "in": "header",
+        "name": "X-Integration-Secret"
       }
     }
   },
@@ -1198,6 +1203,41 @@
     "/api/v1/needs-attention/{itemId}": {
       "get": {
         "operationId": "getNeedsAttentionItem"
+      }
+    },
+    "/api/v1/integrations/website/onboarding": {
+      "post": {
+        "operationId": "submitWebsiteOnboarding",
+        "security": [
+          {
+            "integrationSecret": []
+          }
+        ]
+      }
+    },
+    "/api/v1/integrations/website/onboarding/{sourceSubmissionId}/status": {
+      "get": {
+        "operationId": "getWebsiteOnboardingStatus",
+        "security": [
+          {
+            "integrationSecret": []
+          }
+        ]
+      }
+    },
+    "/api/v1/website-intake": {
+      "get": {
+        "operationId": "listWebsiteIntake"
+      }
+    },
+    "/api/v1/website-intake/{submissionId}": {
+      "get": {
+        "operationId": "getWebsiteIntake"
+      }
+    },
+    "/api/v1/website-intake/{submissionId}/{action}": {
+      "post": {
+        "operationId": "actOnWebsiteIntake"
       }
     },
     "/api/v1/master-data/clients": {
