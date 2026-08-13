@@ -1,15 +1,15 @@
 # UAT and Pilot Plan
 
-**Status:** Phase 5A readiness plan; no pilot authorized
+**Status:** Shared Staging validated; structured UAT plan; no pilot authorized
 **Last reviewed:** 2026-08-13
 
 ## Entry criteria for internal UAT
 
-- Isolated staging database, Auth, Functions and frontend hosting are reproducibly deployed.
-- Production-like role/region permissions, MFA policy and named test users are configured.
-- Synthetic staging dataset covers all roles, regions and negative cases.
+- Isolated Staging database, Auth, Functions and frontend hosting are reproducibly deployed (validated by run 31738092512).
+- Synthetic Office/Driver users, application profiles, region/team scopes and positive/negative authorization smoke checks are proven.
+- Extend the deterministic seed/personas where a UAT scenario requires roles or regions beyond the proven Office/Driver pair.
 - Communications remain capture/allowlist only; provider sandboxes cannot reach real clients.
-- Monitoring, deployment rollback, migration recovery and initial-admin/user runbooks are exercised.
+- Before operationally supervised UAT, assign monitoring/alert owners and recipients. Before pilot, exercise alert delivery, deployment rollback, migration recovery and isolated restore.
 - Required fake providers are explicitly identified; selected staging sandboxes are isolated.
 
 ## End-to-end UAT catalogue
@@ -31,6 +31,8 @@
 | Security boundary suite | Every role | None | Driver/sensitive/cross-region/service-role denials |
 
 Each scenario records build/commit, environment, seed version, actor/role, expected and actual result, defect link, evidence and sign-off. Fakes prove contracts; real staging providers and devices prove external behavior.
+
+The Phase 5C remote smoke suite is infrastructure acceptance evidence, not business UAT sign-off. It proves the environment can host the UAT catalogue safely with synthetic data and fake/capture providers.
 
 ## Minimum safe controlled pilot
 

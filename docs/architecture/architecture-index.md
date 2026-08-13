@@ -86,6 +86,7 @@ Material changes to the architecture require an ADR. An ADR may clarify the blue
 | [Production configuration register](../production/production-configuration-register.md) | Environment configuration and secret inventory without values |
 | [UAT and pilot plan](../production/uat-and-pilot-plan.md) | End-to-end UAT, field validation, and bounded pilot gates |
 | [Cutover readiness](../production/cutover-readiness.md) | Production gates, coexistence, cutover, rollback, and support outline |
+| [Phase 5C staging deployment evidence](../production/staging-deployment-evidence.md) | Validated release, protected deployment controls, remote smoke proof, and remaining assurance gaps |
 | [Operations runbook index](../runbooks/README.md) | Deployment, recovery, provisioning, monitoring, incident, device, reset, and release procedures |
 
 ## Supporting and migration context

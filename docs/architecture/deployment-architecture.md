@@ -1,6 +1,6 @@
 # Deployment Architecture
 
-**Status:** Phase 5C staging implementation; deployment proof awaits the merged release SHA
+**Status:** Phase 5C shared-staging deployment validated
 
 `CI` remains the prerequisite correctness gate. `Deploy staging` is a manual, serialized workflow against the protected GitHub `staging` Environment. It verifies the SHA is reachable from `main`, validates environment safety, reviews changed migrations, links only the declared project, idempotently reconciles the hosted PostgREST exposed-schema setting so the database-owned `api` boundary is reachable by the service-role Function client, previews and applies migrations, lints the remote schema, verifies deployment-equivalent Deno bundles, sets named Function secrets, deploys exactly `platform-runtime` and `website-onboarding`, builds traceable frontend artifacts and runs remote smoke tests after the hosting integration reports configured.
 
@@ -19,3 +19,5 @@ Staging frontend hosting uses two isolated Cloudflare Pages projects. The protec
 Wrangler is an exact root development dependency and the lockfile is authoritative. The protected workflow verifies that exact executable before either pinned Cloudflare action runs and explicitly selects pnpm. The action must use the installed Wrangler; it may not dynamically add deployment tooling or relax workspace-root safety.
 
 The shared target remains main-only. Phase changes are locally and CI verified in a draft PR, then the reviewed merge SHA is dispatched. A feature-branch SHA may not update shared Staging.
+
+The first complete evidence baseline is `main` at `4e471bd250a2757ca67bb0e843c2201d144ac122`, [GitHub Actions run 31738092512](https://github.com/MegaBinSa/megabin-control-centre/actions/runs/31738092512). It passed the full protected path through remote smoke checks. This validates deployment repeatability, not recovery, operational monitoring, provider readiness or production cutover.

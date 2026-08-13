@@ -1,5 +1,7 @@
 # Staging Deployment Runbook
 
+**Validated baseline:** `main` at `4e471bd250a2757ca67bb0e843c2201d144ac122`, [run 31738092512](https://github.com/MegaBinSa/megabin-control-centre/actions/runs/31738092512).
+
 1. Confirm CI and Security checks are green for the SHA and the SHA is contained in `main`.
 2. Confirm the GitHub `staging` Environment, Supabase project and frontend hosts are the intended targets.
 3. Review configuration names/status with `pnpm env:validate:staging -- --deployment`; never paste values into logs.
