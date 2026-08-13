@@ -5,8 +5,10 @@
 3. Review configuration names/status with `pnpm env:validate:staging -- --deployment`; never paste values into logs.
 4. Review the migration inventory and dry-run. Set destructive approval only after a named reviewer accepts every finding.
 5. Dispatch `Deploy staging` with the full SHA and `DEPLOY-STAGING` confirmation.
-6. Observe migration plus deterministic seed, bounded persona provisioning/verification, schema lint, explicit Function deployments, Cloudflare Pages deployments and smoke steps. Do not skip a failed stage.
+6. Observe migration plus deterministic seed, bounded persona provisioning/verification, application-schema lint, explicit Function deployments, Cloudflare Pages deployments and smoke steps. Do not skip a failed stage. The lint gate covers the MegaBin-owned `app_private`, `api` and `public` schemas with `--fail-on error`; Supabase/PostGIS-managed extension implementation schemas are intentionally outside this ownership boundary.
 7. Verify health build SHA/run ID, allowed/denied CORS, Office/Driver authorization boundaries, fake-provider posture, communication capture mode and website intake idempotency.
 8. Complete the release checklist and link workflow/artifact/rollback references.
 
 The workflow deploys only a reviewed SHA contained in `main`. Do not weaken this gate to test a feature branch; merge first, then dispatch the merge SHA.
+
+If a run stops after migrations and seed, rerun the reviewed merged SHA after correcting the failing control. The workflow inventories migration history and performs a dry run before its idempotent `db push --include-seed`; already-recorded migrations are not manually replayed, the deterministic seed remains safe to repeat, and persona provisioning follows only after database verification succeeds. Never reset Staging merely to resume a partially completed deployment.
