@@ -86,9 +86,15 @@ export default {
   fetch: withSupabase({ auth: "user" }, async (request, context) => {
     const runtimeEnvironment = environment();
     const origins = allowedOrigins(runtimeEnvironment);
+    const requestOrigin = request.headers.get("Origin");
+    if (requestOrigin && !origins.includes(requestOrigin)) {
+      return Response.json(
+        { ok: false, error: { code: "permission_denied", message: "Origin denied." } },
+        { status: 403 }
+      );
+    }
     if (request.method === "OPTIONS") {
-      const origin = request.headers.get("Origin");
-      return origin && origins.includes(origin)
+      return requestOrigin
         ? withCors(request, new Response(null, { status: 204 }), origins)
         : Response.json(
             { ok: false, error: { code: "permission_denied", message: "Origin denied." } },

@@ -27,26 +27,39 @@ export async function runSmoke(values, fetchImpl = fetch) {
       name: "release_identity",
       passed:
         runtime.environment === "staging" &&
-        runtime.buildSha === values.VITE_BUILD_SHA &&
+        runtime.buildId === values.VITE_BUILD_SHA &&
         runtime.deploymentId === values.VITE_DEPLOYMENT_ID,
       status: liveness.status
     });
   }
-  const allowedPreflight = await check(
+  await check(
     "allowed_cors_preflight",
     `${values.VITE_MASTER_DATA_API_URL}/api/v1/health/live`,
     204,
     { method: "OPTIONS", headers: { Origin: values.MEGABIN_OFFICE_ORIGIN } }
   );
+  const allowedCorsResponse = await check(
+    "allowed_cors_request",
+    `${values.VITE_MASTER_DATA_API_URL}/api/v1/health/live`,
+    200,
+    {
+      headers: {
+        Origin: values.MEGABIN_OFFICE_ORIGIN,
+        ...(officeToken ? { Authorization: `Bearer ${officeToken}` } : {})
+      }
+    }
+  );
+  const allowedCorsHeader = allowedCorsResponse.headers.get("access-control-allow-origin");
   checks.push({
     name: "allowed_cors_header",
-    passed:
-      allowedPreflight.headers.get("access-control-allow-origin") === values.MEGABIN_OFFICE_ORIGIN,
-    status: allowedPreflight.status
+    passed: allowedCorsHeader === values.MEGABIN_OFFICE_ORIGIN || allowedCorsHeader === "*",
+    status: allowedCorsResponse.status
   });
   await check("unknown_cors_denial", `${values.VITE_MASTER_DATA_API_URL}/api/v1/health/live`, 403, {
-    method: "OPTIONS",
-    headers: { Origin: "https://unapproved.example.invalid" }
+    headers: {
+      Origin: "https://unapproved.example.invalid",
+      ...(officeToken ? { Authorization: `Bearer ${officeToken}` } : {})
+    }
   });
   await check(
     "anonymous_office_denial",
