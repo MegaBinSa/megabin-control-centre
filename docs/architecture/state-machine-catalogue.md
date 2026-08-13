@@ -38,3 +38,7 @@ Handoff creates the planned assignment and moves directly to `Available`. Driver
 
 - Derived Fact: `Open -> Acknowledged -> Resolved | Dismissed`; automatic recovery may move `Open|Acknowledged -> Resolved`. `Superseded` is reserved for rule/source-version replacement. Evidence remains immutable through human review.
 - Needs Attention: `Open -> Acknowledged -> Resolved | Dismissed`. It follows the linked fact lifecycle and does not duplicate evidence or implement a generic workflow engine.
+
+## Website Intake
+
+`Received -> Processing -> Needs Review -> Approved -> Activating -> Activated`. Receipt validation may produce `Invalid`; Office may move `Needs Review -> Rejected`; technical processing or activation may produce `Failed`. Approval/rejection requires an authorised actor and optimistic version, with a reason for rejection or non-obvious override. `Activated` and `Rejected` are terminal in Phase 4A. Repeated activation returns the prior result.

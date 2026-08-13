@@ -129,3 +129,15 @@ Individual GPS observations emit no durable business event. `TrackingHealthChang
 | `NeedsAttention.ItemCreated` | A fact creates its review item | item, fact, region |
 
 Repeated evaluations, observation points, evidence details, coordinates, and acknowledgements emit no event. Human reviews remain in business audit facts.
+
+## Phase 4A accepted Website Intake events
+
+| Event v1 | Trigger | Concise payload |
+|---|---|---|
+| `WebsiteIntake.SubmissionReceived` | Immutable receipt commits | submission and source identifiers |
+| `WebsiteIntake.ReviewRequired` | Processing produces a review decision | submission and region IDs |
+| `WebsiteIntake.Approved` | Office freezes activation values | submission and region IDs |
+| `WebsiteIntake.Rejected` | Office rejects with an audited reason | submission and region IDs |
+| `WebsiteIntake.Activated` | Authoritative activation commits | submission, Client, Address, and Service IDs |
+
+Payloads exclude names, phone numbers, email, addresses, source snapshots, and review reasons.

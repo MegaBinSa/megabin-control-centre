@@ -996,3 +996,98 @@ test("Office Live Operations reviews and dismisses inferred facts", async ({ pag
   await page.getByRole("button", { name: "Dismiss false positive" }).click();
   expect((await request).postDataJSON()).toEqual({ reason: "Synthetic false positive" });
 });
+
+test("Office Website Intake reviews, approves, and activates a signup", async ({ page }) => {
+  await syntheticSession(page, [
+    "master_data.read",
+    "website_intake.read",
+    "website_intake.review",
+    "website_intake.approve",
+    "website_intake.reject",
+    "website_intake.activate"
+  ]);
+  const submissionId = "96000000-0000-4000-8000-000000000001";
+  let status = "needs_review",
+    version = 2;
+  await page.route("**/api/v1/website-intake", (route) =>
+    route.fulfill({
+      json: {
+        ok: true,
+        data: {
+          items: [
+            {
+              submissionId,
+              sourceSubmissionId: "web-e2e-1",
+              displayName: "Website Test Client",
+              status,
+              matchStatus: "no_match",
+              duplicateClassification: "none",
+              receivedAt: new Date().toISOString(),
+              version
+            }
+          ]
+        }
+      }
+    })
+  );
+  await page.route(`**/api/v1/website-intake/${submissionId}`, (route) =>
+    route.fulfill({
+      json: {
+        ok: true,
+        data: {
+          submissionId,
+          sourceSubmissionId: "web-e2e-1",
+          status,
+          version,
+          matchStatus: "no_match",
+          duplicateClassification: "none",
+          receivedAt: new Date().toISOString(),
+          sourcePayload: { client: { displayName: "Website Test Client" }, requestedDrumCount: 2 },
+          normalizedData: {
+            displayName: "Website Test Client",
+            mobileE164: "+27821234567",
+            requestedDrumCount: 2,
+            requestedStartDate: "2026-08-20"
+          },
+          decision: {
+            clientMatch: { status: "no_match", candidates: [] },
+            addressMatch: { status: "no_match", candidates: [] },
+            geography: {
+              serviceRegionId: "51000000-0000-0000-0000-000000000001",
+              suggestedTerritoryId: "53000000-0000-0000-0000-000000000001",
+              defaultDepotId: "52000000-0000-0000-0000-000000000001",
+              defaultTeamId: "54000000-0000-0000-0000-000000000001",
+              collectionDay: 1
+            }
+          },
+          validationErrors: [],
+          history: []
+        }
+      }
+    })
+  );
+  await page.route(`**/api/v1/website-intake/${submissionId}/approve`, async (route) => {
+    expect(route.request().postDataJSON()).toMatchObject({ expectedVersion: 2 });
+    status = "approved";
+    version = 3;
+    await route.fulfill({ json: { ok: true, data: { submissionId, status, version } } });
+  });
+  await page.route(`**/api/v1/website-intake/${submissionId}/activate`, async (route) => {
+    expect(route.request().postDataJSON()).toEqual({ expectedVersion: 3 });
+    status = "activated";
+    version = 4;
+    await route.fulfill({
+      json: { ok: true, data: { submissionId, status, version, clientId: "client-1" } }
+    });
+  });
+  await page.getByRole("button", { name: "Website Intake" }).click();
+  await expect(page.getByRole("heading", { name: "Website Intake" })).toBeVisible();
+  await expect(page.getByText("Website Test Client")).toBeVisible();
+  await page.getByRole("button", { name: "Review" }).click();
+  await expect(page.getByText("Submitted values")).toBeVisible();
+  await expect(page.getByText("Existing authoritative matches and suggestions")).toBeVisible();
+  await page.getByRole("button", { name: "Approve" }).click();
+  await page.getByRole("button", { name: "Review" }).click();
+  await page.getByRole("button", { name: "Activate" }).click();
+  await expect(page.getByText("Intake activate succeeded.")).toBeVisible();
+});
