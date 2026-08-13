@@ -483,6 +483,42 @@ export class MasterDataApiClient {
   websiteIntake<T>(query = ""): Promise<T> {
     return this.request(`/website-intake${query ? `?${query}` : ""}`);
   }
+  clientMigrations<T>(query = ""): Promise<T> {
+    return this.request(`/client-migrations${query ? `?${query}` : ""}`);
+  }
+  clientMigrationDetail<T>(batchId: string): Promise<T> {
+    return this.request(`/client-migrations/${batchId}`);
+  }
+  clientMigrationRows<T>(batchId: string, query = ""): Promise<T> {
+    return this.request(`/client-migrations/${batchId}/rows${query ? `?${query}` : ""}`);
+  }
+  clientMigrationRowDetail<T>(rowId: string): Promise<T> {
+    return this.request(`/client-migrations/rows/${rowId}`);
+  }
+  clientMigrationReport<T>(batchId: string): Promise<T> {
+    return this.request(`/client-migrations/${batchId}/report`);
+  }
+  createClientMigration<T>(body: unknown): Promise<T> {
+    return this.request("/client-migrations", { method: "POST", body: JSON.stringify(body) }, true);
+  }
+  actOnClientMigration<T>(
+    batchId: string,
+    action: "import" | "process" | "dry-run" | "bulk-review-safe" | "approve" | "activate",
+    body: unknown
+  ): Promise<T> {
+    return this.request(
+      `/client-migrations/${batchId}/${action}`,
+      { method: "POST", body: JSON.stringify(body) },
+      true
+    );
+  }
+  reviewClientMigrationRow<T>(rowId: string, body: unknown): Promise<T> {
+    return this.request(
+      `/client-migrations/rows/${rowId}/review`,
+      { method: "POST", body: JSON.stringify(body) },
+      true
+    );
+  }
   websiteIntakeDetail<T>(submissionId: string): Promise<T> {
     return this.request(`/website-intake/${submissionId}`);
   }

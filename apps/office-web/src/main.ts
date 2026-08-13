@@ -8,6 +8,7 @@ import { renderRouteOperationsWorkspace } from "./route-operations.js";
 import { renderTrackingWorkspace } from "./tracking.js";
 import { renderLiveOperationsWorkspace } from "./live-operations.js";
 import { renderWebsiteIntakeWorkspace } from "./website-intake.js";
+import { renderClientMigrationWorkspace } from "./client-migration.js";
 
 const modules = [
   "Clients",
@@ -160,6 +161,13 @@ function render(): void {
         "beforeend",
         '<button id="website-intake-workspace">Website Intake</button>'
       );
+  if (identity.permissions.includes("client_migration.read"))
+    appRoot
+      .querySelector("nav")
+      ?.insertAdjacentHTML(
+        "beforeend",
+        '<button id="client-migration-workspace">Client Migration</button>'
+      );
   document.querySelectorAll<HTMLButtonElement>("[data-module]").forEach((button) =>
     button.addEventListener("click", () => {
       active = button.dataset.module as ModuleName;
@@ -215,6 +223,13 @@ function render(): void {
   });
   document.querySelector("#website-intake-workspace")?.addEventListener("click", () => {
     void renderWebsiteIntakeWorkspace(appRoot, api, identity?.permissions ?? [], async () => {
+      await auth.signOut();
+      identity = null;
+      render();
+    });
+  });
+  document.querySelector("#client-migration-workspace")?.addEventListener("click", () => {
+    void renderClientMigrationWorkspace(appRoot, api, identity?.permissions ?? [], async () => {
       await auth.signOut();
       identity = null;
       render();

@@ -36,6 +36,8 @@
 WordPress remains local-save-first and does not depend on synchronous Control Centre availability. It forwards submissions reliably with a stable source reference and idempotency key. Activation is the authority boundary: after activation, operational edits occur in the Control Centre, not in WordPress or spreadsheets.
 
 Phase 4A preserves the immutable source payload and versioned normalized interpretation in Website Intake. Candidate matches, duplicate classifications, and suggestions are derived operational state. Integration registration, safe activity metadata, and external references are provider metadata. None of these replace the authoritative Client, Address, Service, or configuration records created at activation.
+
+Phase 4B treats spreadsheet/export rows as inbound source evidence only. Client Migration owns batch metadata, immutable snapshots, mappings, reconciliation decisions, dry-run reports, outcomes, and provenance. The owning master-data modules remain authoritative and receive approved writes only through their application APIs. Billing/reference fields remain source context pending an approved accounting model.
 ## Phase 1A ownership additions
 
 | Data | Authoritative owner | Permitted inbound source | Notes |

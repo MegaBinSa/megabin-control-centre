@@ -13,6 +13,7 @@ import {
   createVehicleTrackingHandler,
   createLiveOperationsHandler,
   createWebsiteIntakeHandler,
+  createClientMigrationHandler,
   MemoryJobStateStore,
   SupabaseRuntimeDatabase,
   type RuntimeRpcClient
@@ -77,6 +78,16 @@ export default {
     });
     const websiteIntakeResponse = await websiteIntake(request);
     if (websiteIntakeResponse) return websiteIntakeResponse;
+    const clientMigrationResponse = await createClientMigrationHandler({
+      rpc,
+      actorId,
+      id: () => crypto.randomUUID(),
+      environment: (Deno.env.get("MEGABIN_ENVIRONMENT") ?? "local") as
+        | "local"
+        | "staging"
+        | "production"
+    })(request);
+    if (clientMigrationResponse) return clientMigrationResponse;
     const liveOperations = createLiveOperationsHandler({
       rpc,
       actorId,

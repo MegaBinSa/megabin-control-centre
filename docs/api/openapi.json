@@ -1240,6 +1240,74 @@
         "operationId": "actOnWebsiteIntake"
       }
     },
+    "/api/v1/client-migrations": {
+      "get": {
+        "operationId": "listClientMigrations"
+      },
+      "post": {
+        "operationId": "createClientMigration"
+      }
+    },
+    "/api/v1/client-migrations/{batchId}": {
+      "get": {
+        "operationId": "getClientMigration"
+      }
+    },
+    "/api/v1/client-migrations/{batchId}/rows": {
+      "get": {
+        "operationId": "listClientMigrationRows"
+      }
+    },
+    "/api/v1/client-migrations/{batchId}/report": {
+      "get": {
+        "operationId": "getClientMigrationReport"
+      }
+    },
+    "/api/v1/client-migrations/rows/{rowId}": {
+      "get": {
+        "operationId": "getClientMigrationRow"
+      }
+    },
+    "/api/v1/client-migrations/{batchId}/import": {
+      "post": {
+        "operationId": "importClientMigrationRows"
+      }
+    },
+    "/api/v1/client-migrations/{batchId}/process": {
+      "post": {
+        "operationId": "processClientMigration"
+      }
+    },
+    "/api/v1/client-migrations/{batchId}/dry-run": {
+      "post": {
+        "operationId": "dryRunClientMigration"
+      }
+    },
+    "/api/v1/client-migrations/{batchId}/bulk-review-safe": {
+      "post": {
+        "operationId": "bulkReviewSafeClientMigrationRows"
+      }
+    },
+    "/api/v1/client-migrations/{batchId}/approve": {
+      "post": {
+        "operationId": "approveClientMigration"
+      }
+    },
+    "/api/v1/client-migrations/{batchId}/activate": {
+      "post": {
+        "operationId": "activateClientMigration"
+      }
+    },
+    "/api/v1/client-migrations/rows/{rowId}/review": {
+      "post": {
+        "operationId": "reviewClientMigrationRow"
+      }
+    },
+    "/api/v1/client-migrations/rows/{rowId}/retry": {
+      "post": {
+        "operationId": "retryClientMigrationRow"
+      }
+    },
     "/api/v1/master-data/clients": {
       "get": {
         "operationId": "list-clients",
