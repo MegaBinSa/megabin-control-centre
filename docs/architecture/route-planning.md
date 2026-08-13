@@ -4,6 +4,8 @@
 
 Route Planning consumes only the Financial Eligibility service contract. A current `Held` decision produces explicit unassigned work with reason `financial_hold`. Draft/Ready versions become stale when the input changes. Published versions and active Route Operations are never silently mutated.
 
+Route Planning also consumes the Client SKIP occurrence-exclusion contract. An active exclusion for an Operational Day and Client Service produces explicit unassigned work with reason `client_requested_skip`. Draft/Ready inputs become stale and replanning creates a new Draft version; Published versions and Route Operations are never edited in place. Route Planning does not read inbound-message content.
+
 ## Authority and aggregate
 
 Routes owns Route Plan, immutable Route Version history, Planned Route, Planned Stop, assignment, sequence, planning metrics, unassigned-service decisions, readiness, and publication. One Route Plan is identified by an immutable UUID for an Operational Day; dates and address text are never identifiers. A plan points to its current working version and current published version. Published versions are immutable historical facts and later plans supersede rather than overwrite them.

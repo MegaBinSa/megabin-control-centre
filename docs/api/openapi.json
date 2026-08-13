@@ -1650,6 +1650,246 @@
         ]
       }
     },
+    "/api/v1/client-skips": {
+      "get": {
+        "operationId": "listClientSkipRequests",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Client SKIP response"
+          },
+          "202": {
+            "description": "Replan requested"
+          },
+          "403": {
+            "description": "Permission or region denied"
+          },
+          "409": {
+            "description": "Review or route conflict"
+          }
+        }
+      }
+    },
+    "/api/v1/client-skips/{id}": {
+      "get": {
+        "operationId": "getClientSkipRequest",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Client SKIP response"
+          },
+          "202": {
+            "description": "Replan requested"
+          },
+          "403": {
+            "description": "Permission or region denied"
+          },
+          "409": {
+            "description": "Review or route conflict"
+          }
+        }
+      }
+    },
+    "/api/v1/client-skips/{id}/rematch": {
+      "post": {
+        "operationId": "rematchClientSkipRequest",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Client SKIP response"
+          },
+          "202": {
+            "description": "Replan requested"
+          },
+          "403": {
+            "description": "Permission or region denied"
+          },
+          "409": {
+            "description": "Review or route conflict"
+          }
+        }
+      }
+    },
+    "/api/v1/client-skips/{id}/approve": {
+      "post": {
+        "operationId": "approveClientSkipRequest",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Client SKIP response"
+          },
+          "202": {
+            "description": "Replan requested"
+          },
+          "403": {
+            "description": "Permission or region denied"
+          },
+          "409": {
+            "description": "Review or route conflict"
+          }
+        }
+      }
+    },
+    "/api/v1/client-skips/{id}/reject": {
+      "post": {
+        "operationId": "rejectClientSkipRequest",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Client SKIP response"
+          },
+          "202": {
+            "description": "Replan requested"
+          },
+          "403": {
+            "description": "Permission or region denied"
+          },
+          "409": {
+            "description": "Review or route conflict"
+          }
+        }
+      }
+    },
+    "/api/v1/client-skips/{id}/duplicate": {
+      "post": {
+        "operationId": "deduplicateClientSkipRequest",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Client SKIP response"
+          },
+          "202": {
+            "description": "Replan requested"
+          },
+          "403": {
+            "description": "Permission or region denied"
+          },
+          "409": {
+            "description": "Review or route conflict"
+          }
+        }
+      }
+    },
+    "/api/v1/client-skips/{id}/expire": {
+      "post": {
+        "operationId": "expireClientSkipRequest",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Client SKIP response"
+          },
+          "202": {
+            "description": "Replan requested"
+          },
+          "403": {
+            "description": "Permission or region denied"
+          },
+          "409": {
+            "description": "Review or route conflict"
+          }
+        }
+      }
+    },
+    "/api/v1/client-skips/{id}/route-impact": {
+      "get": {
+        "operationId": "getClientSkipRouteImpact",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Client SKIP response"
+          },
+          "202": {
+            "description": "Replan requested"
+          },
+          "403": {
+            "description": "Permission or region denied"
+          },
+          "409": {
+            "description": "Review or route conflict"
+          }
+        }
+      }
+    },
+    "/api/v1/client-skips/{id}/replan": {
+      "post": {
+        "operationId": "replanClientSkipRequest",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Client SKIP response"
+          },
+          "202": {
+            "description": "Replan requested"
+          },
+          "403": {
+            "description": "Permission or region denied"
+          },
+          "409": {
+            "description": "Review or route conflict"
+          }
+        }
+      }
+    },
+    "/api/v1/client-skips/{clientServiceId}/history": {
+      "get": {
+        "operationId": "getClientSkipHistory",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Client SKIP response"
+          },
+          "202": {
+            "description": "Replan requested"
+          },
+          "403": {
+            "description": "Permission or region denied"
+          },
+          "409": {
+            "description": "Review or route conflict"
+          }
+        }
+      }
+    },
     "/api/v1/master-data/clients": {
       "get": {
         "operationId": "list-clients",

@@ -62,3 +62,8 @@ Decisions are immutable versions: `Eligible | Warning | Hold Recommended | Held 
 - Attempt: `Pending -> Sending -> Accepted -> Sent -> Delivered`; technical failures are `Failed Temporary` or `Failed Permanent`, while provider/template rejection is `Rejected`. Delivery acknowledgement is monotonic.
 - Template: `Draft -> Approved -> Active -> Retired`.
 - Inbound: `New -> Recognized | Needs Review -> Processed | Ignored`. Command recognition is not operational execution.
+# Client SKIP state machines
+
+SKIP Request: `Received -> Matching -> Needs Review | Qualified -> Approved -> Applied -> Acknowledged`. `Rejected`, `Duplicate`, `Expired`, and `Failed` preserve history. Approval requires an optimistic review version and does not mutate recurring Service Configuration.
+
+Collection Occurrence: `Expected -> Included | Excluded -> Completed | Not Serviced`, with `Cancelled` and `Superseded` reserved for explicit owning workflows. Driver completion remains authoritative where execution exists.

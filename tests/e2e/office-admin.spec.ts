@@ -1506,3 +1506,82 @@ test("Office requests a safe test communication and reviews delivery and inbound
   await expect(page.getByText(/Test communication queued/)).toBeVisible();
   await expect(page.getByText("whatsapp: delivered")).toBeVisible();
 });
+
+test("Office reviews inbound SKIP, approves one occurrence, replans, and sees acknowledgement", async ({
+  page
+}) => {
+  await syntheticSession(page, [
+    "master_data.read",
+    "client_skip.read",
+    "client_skip.approve",
+    "client_skip.reject",
+    "client_skip.replan"
+  ]);
+  const requestId = "94000000-0000-4000-8000-000000000001";
+  let status = "qualified",
+    version = 1,
+    replanned = false;
+  await page.route("**/api/v1/client-skips", (route) =>
+    route.fulfill({
+      json: {
+        ok: true,
+        data: {
+          items: [
+            {
+              requestId,
+              clientName: "Synthetic Client One",
+              serviceAddress: "10 Shared Test Street",
+              collectionDate: "2026-08-14",
+              receivedAt: "2026-08-13T08:00:00Z",
+              channel: "whatsapp",
+              matchState: "matched",
+              status,
+              cutoffStatus: "before_cutoff",
+              reviewVersion: version,
+              acknowledgementIntentId: status === "applied" ? "intent-skip-1" : null,
+              routeImpact: {
+                routeVersions: [
+                  {
+                    routeVersionId: "version-old",
+                    status: replanned ? "published" : "draft",
+                    isStale: status === "applied"
+                  }
+                ],
+                routeOperations: []
+              }
+            }
+          ]
+        }
+      }
+    })
+  );
+  await page.route(`**/api/v1/client-skips/${requestId}/approve`, async (route) => {
+    expect(route.request().postDataJSON()).toMatchObject({
+      expectedVersion: 1,
+      reason: "Client confirmed one-day SKIP"
+    });
+    status = "applied";
+    version = 2;
+    await route.fulfill({ json: { ok: true, data: { status } } });
+  });
+  await page.route(`**/api/v1/client-skips/${requestId}/replan`, async (route) => {
+    expect(route.request().postDataJSON()).toMatchObject({
+      reason: "Create reviewed replacement Draft"
+    });
+    replanned = true;
+    await route.fulfill({
+      status: 202,
+      json: { ok: true, data: { candidateRouteVersionId: "version-new", status: "succeeded" } }
+    });
+  });
+  await page.getByRole("button", { name: "Client SKIP" }).click();
+  await expect(page.getByRole("heading", { name: "Client SKIP requests" })).toBeVisible();
+  await page.getByRole("button", { name: "qualified" }).click();
+  await page.getByLabel("Reason / context").fill("Client confirmed one-day SKIP");
+  await page.getByRole("button", { name: "Approve one-day SKIP" }).click();
+  await expect(page.getByText(/One-occurrence exclusion applied/)).toBeVisible();
+  await page.getByRole("button", { name: "applied" }).click();
+  await page.getByLabel("Reason / context").fill("Create reviewed replacement Draft");
+  await page.getByRole("button", { name: "Create Draft replan" }).click();
+  await expect(page.getByText(/new Draft route candidate/)).toBeVisible();
+});
