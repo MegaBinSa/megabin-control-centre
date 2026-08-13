@@ -72,6 +72,7 @@ Material changes to the architecture require an ADR. An ADR may clarify the blue
 | [Integration architecture](integration-architecture.md) | Adapter boundaries, reliability, and external-system rules |
 | [Financial eligibility](financial-eligibility.md) | Service financial decisions, holds, precedence, and route contract |
 | [Client Communications](client-communications.md) | Intents, attempts, fallback, templates, environment safety, inbound normalization, and privacy |
+| [Client SKIP Workflow](client-skip-workflow.md) | One-occurrence qualification, approval, exclusion, replanning, protection, and acknowledgement |
 | [Messaging provider contract](messaging-provider-contract.md) | Provider-neutral adapter and secure webhook boundary |
 | [Office Communications workflow](../workflows/office-communications.md) | Test sends, delivery history, provider health, and inbound review |
 | [ADR index](../adr/README.md) | Accepted architecture decisions and their status |

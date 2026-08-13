@@ -188,3 +188,12 @@ Events exclude balances, invoices, payments and free-text reasons.
 | `Communications.InboundCommandRecognized` | A matched message normalizes to a command | inbound ID, command and optional Service ID |
 
 Events exclude destinations, contact identity, rendered/inbound content, provider payloads and financial data.
+# Client SKIP events
+
+| Event | Producer | Safe payload | Consumers |
+|---|---|---|---|
+| `ClientSkip.RequestQualified` | Client SKIP | Request/status/region IDs | Office queue, diagnostics |
+| `ClientSkip.Approved` | Client SKIP | Request/occurrence/region IDs | Replanning, operations review |
+| `ClientSkip.Rejected` | Client SKIP | Request and status | Communications acknowledgement |
+| `ClientSkip.ExclusionApplied` | Client SKIP | Occurrence and stable reason | Route Planning eligibility |
+| `ClientSkip.ReplanRequested` | Client SKIP | Source/candidate version IDs | Office route review |

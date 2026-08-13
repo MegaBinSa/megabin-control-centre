@@ -12,6 +12,7 @@ import { renderClientMigrationWorkspace } from "./client-migration.js";
 import { renderAccountingWorkspace } from "./accounting.js";
 import { renderFinancialEligibilityWorkspace } from "./financial-eligibility.js";
 import { renderCommunicationsWorkspace } from "./communications.js";
+import { renderClientSkipWorkspace } from "./client-skips.js";
 
 const modules = [
   "Clients",
@@ -189,6 +190,10 @@ function render(): void {
         "beforeend",
         '<button id="communications-workspace">Communications</button>'
       );
+  if (identity.permissions.includes("client_skip.read"))
+    appRoot
+      .querySelector("nav")
+      ?.insertAdjacentHTML("beforeend", '<button id="client-skip-workspace">Client SKIP</button>');
   document.querySelectorAll<HTMLButtonElement>("[data-module]").forEach((button) =>
     button.addEventListener("click", () => {
       active = button.dataset.module as ModuleName;
@@ -277,6 +282,13 @@ function render(): void {
   });
   document.querySelector("#communications-workspace")?.addEventListener("click", () => {
     void renderCommunicationsWorkspace(appRoot, api, identity?.permissions ?? [], async () => {
+      await auth.signOut();
+      identity = null;
+      render();
+    });
+  });
+  document.querySelector("#client-skip-workspace")?.addEventListener("click", () => {
+    void renderClientSkipWorkspace(appRoot, api, identity?.permissions ?? [], async () => {
       await auth.signOut();
       identity = null;
       render();

@@ -184,3 +184,12 @@ Permissions are `financial_eligibility.read`, `.review`, `.hold`, `.release`, `.
 | System Admin/Developer | No by default | No by default | No | No |
 
 Permissions are `communications.read`, `.send`, `.templates.read`, `.templates.manage`, `.inbound.read`, `.inbound.review`, and `.integration.manage`. Content and history reads are region-scoped. Technical access grants no automatic message-content visibility.
+# Client SKIP permissions
+
+| Permission | Purpose | Initial roles | Scope |
+|---|---|---|---|
+| `client_skip.read` | Read SKIP queue and history | Director/Admin, Operations Manager, Office/Admin | Region/global |
+| `client_skip.review` | Rematch ambiguous targets | Director/Admin, Operations Manager, Office/Admin | Region/global |
+| `client_skip.approve` | Apply one-occurrence exclusion | Director/Admin, Operations Manager, Office/Admin | Region/global |
+| `client_skip.reject` | Reject, expire, or deduplicate | Director/Admin, Operations Manager, Office/Admin | Region/global |
+| `client_skip.replan` | Create replacement Draft | Director/Admin, Operations Manager, Office/Admin | Region/global |

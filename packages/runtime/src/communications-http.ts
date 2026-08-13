@@ -65,7 +65,9 @@ const allowedVariables: Record<string, readonly string[]> = {
   collection_reminder: ["clientName", "collectionDate", "serviceAddress"],
   route_change_notice: ["serviceNotice"],
   financial_notice: ["clientName", "safeFinancialNotice"],
-  general_service_notice: ["clientName", "serviceNotice"]
+  general_service_notice: ["clientName", "serviceNotice"],
+  skip_approved: ["clientName", "collectionDate"],
+  skip_rejected: ["clientName"]
 };
 const templates: Record<string, { subject?: string; body: string }> = {
   test_message: {
@@ -80,7 +82,15 @@ const templates: Record<string, { subject?: string; body: string }> = {
     subject: "MegaBin account notice",
     body: "Hello {{clientName}}. {{safeFinancialNotice}}"
   },
-  general_service_notice: { body: "Hello {{clientName}}. {{serviceNotice}}" }
+  general_service_notice: { body: "Hello {{clientName}}. {{serviceNotice}}" },
+  skip_approved: {
+    subject: "MegaBin collection SKIP confirmed",
+    body: "Hello {{clientName}}. Your MegaBin collection for {{collectionDate}} has been skipped as requested."
+  },
+  skip_rejected: {
+    subject: "MegaBin SKIP request update",
+    body: "Hello {{clientName}}. We could not apply your MegaBin SKIP request. Our Office team can assist."
+  }
 };
 export function renderCommunicationTemplate(
   key: string,

@@ -22,6 +22,8 @@ Local and staging default to capture/test behavior. A destination must be allowl
 
 Provider adapters authenticate and normalize inbound messages but do not interpret business commands. The communications command parser recognizes only trimmed, case-insensitive `SKIP` and `unknown`. Matching is `matched`, `ambiguous`, or `unmatched`. Recognition emits a concise fact for Phase 4F; it never changes services, routes, stops, or operations.
 
+Phase 4F consumes that normalized fact through the [Client SKIP workflow](client-skip-workflow.md). Approval and rejection return to Communications only as idempotent, approved acknowledgement intents; Client SKIP never calls channel providers directly.
+
 ## Privacy and retention
 
 Destinations, rendered content, and inbound content are sensitive and remain in protected schemas/API responses. Production retention periods for rendered content, attempts, and inbound content require legal/business approval; until then records are preserved and deletion automation is disabled.

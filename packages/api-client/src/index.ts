@@ -23,6 +23,8 @@ export type ApiErrorCode =
   | "sync_failed"
   | "stale_financial_decision"
   | "communication_suppressed"
+  | "stale_skip_review"
+  | "skip_conflict"
   | "invalid_destination"
   | "provider_callback_rejected"
   | "internal_error";
@@ -665,6 +667,53 @@ export class MasterDataApiClient {
       { method: "POST", body: JSON.stringify(body) },
       true
     );
+  }
+  clientSkipRequests<T>(query = ""): Promise<T> {
+    return this.request(`/client-skips${query ? `?${query}` : ""}`);
+  }
+  clientSkipRequest<T>(requestId: string): Promise<T> {
+    return this.request(`/client-skips/${requestId}`);
+  }
+  rematchClientSkip<T>(requestId: string, body: unknown): Promise<T> {
+    return this.request(
+      `/client-skips/${requestId}/rematch`,
+      { method: "POST", body: JSON.stringify(body) },
+      true
+    );
+  }
+  approveClientSkip<T>(requestId: string, body: unknown): Promise<T> {
+    return this.request(
+      `/client-skips/${requestId}/approve`,
+      { method: "POST", body: JSON.stringify(body) },
+      true
+    );
+  }
+  rejectClientSkip<T>(requestId: string, body: unknown): Promise<T> {
+    return this.request(
+      `/client-skips/${requestId}/reject`,
+      { method: "POST", body: JSON.stringify(body) },
+      true
+    );
+  }
+  markClientSkip<T>(requestId: string, action: "duplicate" | "expire", body: unknown): Promise<T> {
+    return this.request(
+      `/client-skips/${requestId}/${action}`,
+      { method: "POST", body: JSON.stringify(body) },
+      true
+    );
+  }
+  clientSkipRouteImpact<T>(requestId: string): Promise<T> {
+    return this.request(`/client-skips/${requestId}/route-impact`);
+  }
+  replanClientSkip<T>(requestId: string, body: unknown): Promise<T> {
+    return this.request(
+      `/client-skips/${requestId}/replan`,
+      { method: "POST", body: JSON.stringify(body) },
+      true
+    );
+  }
+  clientSkipHistory<T>(clientServiceId: string): Promise<T> {
+    return this.request(`/client-skips/${clientServiceId}/history`);
   }
   financialEligibility<T>(serviceId: string): Promise<T> {
     return this.request(`/financial-eligibility/services/${serviceId}`);
