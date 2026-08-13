@@ -128,3 +128,16 @@ textarea {
     grid-template-columns: 1fr 1fr;
   }
 }
+.environment-banner {
+  position: sticky;
+  top: 0;
+  z-index: 1000;
+  padding: 0.35rem 1rem;
+  background: #8a3d00;
+  color: white;
+  font:
+    700 0.8rem/1.3 system-ui,
+    sans-serif;
+  text-align: center;
+  letter-spacing: 0.08em;
+}

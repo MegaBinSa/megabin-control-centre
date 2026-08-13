@@ -25,6 +25,8 @@ export interface RuntimeMetadata {
   readonly environment: "local" | "staging" | "production";
   readonly service: string;
   readonly buildId: string;
+  readonly deploymentId?: string;
+  readonly buildTimestamp?: string;
 }
 
 export interface StructuredLogRecord {

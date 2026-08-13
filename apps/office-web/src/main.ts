@@ -1,4 +1,19 @@
 import "./style.css";
+
+const deploymentEnvironment = String(import.meta.env.VITE_MEGABIN_ENVIRONMENT ?? "local");
+const deploymentBuild = String(import.meta.env.VITE_BUILD_SHA ?? "local");
+document.documentElement.dataset.environment = deploymentEnvironment;
+document.documentElement.dataset.buildSha = deploymentBuild;
+document.documentElement.dataset.buildTimestamp = String(
+  import.meta.env.VITE_BUILD_TIMESTAMP ?? "local"
+);
+if (deploymentEnvironment === "staging") {
+  const banner = document.createElement("div");
+  banner.className = "environment-banner";
+  banner.textContent = `STAGING - ${deploymentBuild.slice(0, 8)}`;
+  banner.title = `Build ${deploymentBuild} - ${String(import.meta.env.VITE_BUILD_TIMESTAMP ?? "unknown time")} - ${String(import.meta.env.VITE_DEPLOYMENT_ID ?? "local")}`;
+  document.body.prepend(banner);
+}
 import { createOfficeAuth, type OfficeIdentity } from "@megabin/auth";
 import { MasterDataApiClient } from "@megabin/api-client";
 import { renderGeographyWorkspace } from "./geography.js";

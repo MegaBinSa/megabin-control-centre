@@ -5,7 +5,8 @@ export default defineConfig({
   use: { baseURL: "http://127.0.0.1:4174", trace: "retain-on-failure" },
   webServer: [
     {
-      command: "pnpm --filter @megabin/office-web dev --host 127.0.0.1 --port 4174",
+      command:
+        "node apps/office-web/node_modules/vite/bin/vite.js apps/office-web --host 127.0.0.1 --port 4174",
       url: "http://127.0.0.1:4174",
       reuseExistingServer: !process.env.CI,
       env: {
@@ -15,7 +16,8 @@ export default defineConfig({
       }
     },
     {
-      command: "pnpm --filter @megabin/driver-pwa dev --host 127.0.0.1 --port 4175",
+      command:
+        "node apps/driver-pwa/node_modules/vite/bin/vite.js apps/driver-pwa --host 127.0.0.1 --port 4175",
       url: "http://127.0.0.1:4175",
       reuseExistingServer: !process.env.CI,
       env: {

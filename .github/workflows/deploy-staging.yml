@@ -1,0 +1,185 @@
+name: Deploy staging
+
+on:
+  workflow_dispatch:
+    inputs:
+      source_sha:
+        description: Commit SHA from main to deploy
+        required: true
+        type: string
+      confirm_environment:
+        description: Type DEPLOY-STAGING
+        required: true
+        type: string
+      allow_destructive_migrations:
+        description: Migration review has explicitly approved guarded destructive SQL
+        required: false
+        default: false
+        type: boolean
+
+permissions:
+  contents: read
+  checks: read
+
+concurrency:
+  group: megabin-shared-staging
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    if: inputs.confirm_environment == 'DEPLOY-STAGING'
+    runs-on: ubuntu-latest
+    environment: staging
+    env:
+      MEGABIN_ENVIRONMENT: staging
+      SUPABASE_PROJECT_REF: ${{ vars.SUPABASE_PROJECT_REF }}
+      SUPABASE_URL: ${{ vars.SUPABASE_URL }}
+      SUPABASE_PUBLISHABLE_KEY: ${{ secrets.SUPABASE_PUBLISHABLE_KEY }}
+      SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+      SUPABASE_DB_PASSWORD: ${{ secrets.SUPABASE_DB_PASSWORD }}
+      STAGING_OFFICE_EMAIL: ${{ vars.STAGING_OFFICE_EMAIL }}
+      STAGING_OFFICE_PASSWORD: ${{ secrets.STAGING_OFFICE_PASSWORD }}
+      STAGING_DRIVER_EMAIL: ${{ vars.STAGING_DRIVER_EMAIL }}
+      STAGING_DRIVER_PASSWORD: ${{ secrets.STAGING_DRIVER_PASSWORD }}
+      VITE_SUPABASE_URL: ${{ vars.SUPABASE_URL }}
+      VITE_SUPABASE_PUBLISHABLE_KEY: ${{ secrets.SUPABASE_PUBLISHABLE_KEY }}
+      VITE_MASTER_DATA_API_URL: ${{ vars.SUPABASE_URL }}/functions/v1/platform-runtime
+      VITE_DRIVER_API_URL: ${{ vars.SUPABASE_URL }}/functions/v1/platform-runtime
+      VITE_MEGABIN_ENVIRONMENT: staging
+      VITE_BUILD_SHA: ${{ inputs.source_sha }}
+      VITE_BUILD_TIMESTAMP: ${{ vars.BUILD_TIMESTAMP }}
+      VITE_DEPLOYMENT_ID: github-${{ github.run_id }}-${{ github.run_attempt }}
+      MEGABIN_BUILD_SHA: ${{ inputs.source_sha }}
+      MEGABIN_BUILD_TIMESTAMP: ${{ vars.BUILD_TIMESTAMP }}
+      MEGABIN_DEPLOYMENT_ID: github-${{ github.run_id }}-${{ github.run_attempt }}
+      MEGABIN_OFFICE_ORIGIN: ${{ vars.OFFICE_ORIGIN }}
+      MEGABIN_DRIVER_ORIGIN: ${{ vars.DRIVER_ORIGIN }}
+      MEGABIN_ALLOWED_ORIGINS: ${{ vars.OFFICE_ORIGIN }},${{ vars.DRIVER_ORIGIN }}
+      MEGABIN_WEBSITE_ONBOARDING_INTEGRATION_KEY: ${{ vars.WEBSITE_ONBOARDING_INTEGRATION_KEY }}
+      MEGABIN_WEBSITE_ONBOARDING_SECRET: ${{ secrets.WEBSITE_ONBOARDING_SECRET }}
+      MEGABIN_WEBSITE_ONBOARDING_URL: ${{ vars.SUPABASE_URL }}/functions/v1/website-onboarding
+      MEGABIN_COMMUNICATIONS_MODE: capture
+      MEGABIN_COMMUNICATIONS_TEST_RECIPIENTS: ${{ vars.COMMUNICATIONS_TEST_RECIPIENTS }}
+      MEGABIN_COMMUNICATIONS_WEBHOOK_SECRET: ${{ secrets.COMMUNICATIONS_WEBHOOK_SECRET }}
+      MEGABIN_ROUTING_PROVIDER: fake-routing
+      MEGABIN_OPTIMIZATION_PROVIDER: fake-optimizer
+      MEGABIN_ACCOUNTING_PROVIDER: zoho-books-fake
+      MEGABIN_AUTO_FINANCIAL_HOLD: "false"
+      MEGABIN_AUTO_FINANCIAL_RELEASE: "false"
+      MEGABIN_AUTO_SKIP_REPLAN: "false"
+    steps:
+      - name: Check out requested release
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ inputs.source_sha }}
+          fetch-depth: 0
+
+      - name: Require source commit from main
+        shell: bash
+        run: |
+          git fetch origin main
+          git merge-base --is-ancestor "${{ inputs.source_sha }}" origin/main
+
+      - name: Require successful CI checks for source commit
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          checks="$(gh api "repos/${{ github.repository }}/commits/${{ inputs.source_sha }}/check-runs" --jq '[.check_runs[] | select(.name == "quality" or .name == "database") | {name, conclusion, started_at}] | sort_by(.name, .started_at) | group_by(.name) | map(last)')"
+          echo "$checks" | jq -e 'length == 2 and all(.conclusion == "success")'
+
+      - name: Set build timestamp
+        shell: bash
+        run: echo "VITE_BUILD_TIMESTAMP=$(date -u +%Y-%m-%dT%H:%M:%SZ)" >> "$GITHUB_ENV"
+
+      - name: Set up pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 11.16.0
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version-file: .node-version
+          cache: pnpm
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Validate staging identity and safety gates
+        run: pnpm env:validate:staging -- --deployment
+
+      - name: Review changed migrations
+        env:
+          ALLOW_DESTRUCTIVE_MIGRATIONS: ${{ inputs.allow_destructive_migrations && 'reviewed' || '' }}
+        run: pnpm migrations:safety -- --git-range "${{ inputs.source_sha }}^..${{ inputs.source_sha }}"
+
+      - name: Link the dedicated staging project
+        run: pnpm exec supabase link --project-ref "$SUPABASE_PROJECT_REF" --password "$SUPABASE_DB_PASSWORD"
+
+      - name: Inventory and preview migrations
+        run: |
+          pnpm exec supabase migration list --linked
+          pnpm exec supabase db push --linked --dry-run
+
+      - name: Apply migrations
+        run: pnpm exec supabase db push --linked
+
+      - name: Verify database after migration
+        run: |
+          pnpm exec supabase migration list --linked
+          pnpm exec supabase db lint --linked --level warning --fail-on error
+
+      - name: Inject Edge Function staging secrets
+        run: >-
+          pnpm exec supabase secrets set --project-ref "$SUPABASE_PROJECT_REF"
+          MEGABIN_ENVIRONMENT="$MEGABIN_ENVIRONMENT"
+          MEGABIN_BUILD_SHA="$MEGABIN_BUILD_SHA"
+          MEGABIN_BUILD_TIMESTAMP="$VITE_BUILD_TIMESTAMP"
+          MEGABIN_DEPLOYMENT_ID="$MEGABIN_DEPLOYMENT_ID"
+          MEGABIN_ALLOWED_ORIGINS="$MEGABIN_ALLOWED_ORIGINS"
+          MEGABIN_WEBSITE_ONBOARDING_INTEGRATION_KEY="$MEGABIN_WEBSITE_ONBOARDING_INTEGRATION_KEY"
+          MEGABIN_WEBSITE_ONBOARDING_SECRET="$MEGABIN_WEBSITE_ONBOARDING_SECRET"
+          MEGABIN_COMMUNICATIONS_MODE="$MEGABIN_COMMUNICATIONS_MODE"
+          MEGABIN_COMMUNICATIONS_TEST_RECIPIENTS="$MEGABIN_COMMUNICATIONS_TEST_RECIPIENTS"
+          MEGABIN_COMMUNICATIONS_WEBHOOK_SECRET="$MEGABIN_COMMUNICATIONS_WEBHOOK_SECRET"
+
+      - name: Deploy tracked Edge Functions
+        run: |
+          pnpm exec supabase functions deploy platform-runtime --project-ref "$SUPABASE_PROJECT_REF" --use-api
+          pnpm exec supabase functions deploy website-onboarding --project-ref "$SUPABASE_PROJECT_REF" --use-api
+
+      - name: Build traceable frontend artifacts
+        run: pnpm build
+
+      - name: Upload Office artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: office-web-staging-${{ inputs.source_sha }}
+          path: apps/office-web/dist
+          if-no-files-found: error
+
+      - name: Upload Driver artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: driver-pwa-staging-${{ inputs.source_sha }}
+          path: apps/driver-pwa/dist
+          if-no-files-found: error
+
+      - name: Require configured frontend deployment integration
+        if: vars.FRONTEND_DEPLOYMENT_CONFIGURED != 'true'
+        run: |
+          echo "Staging frontend host integration is not configured. Artifacts were built but not deployed."
+          exit 1
+
+      - name: Run non-destructive remote smoke checks
+        run: pnpm smoke:staging
+
+      - name: Record release summary
+        if: always()
+        run: |
+          echo "### Staging deployment" >> "$GITHUB_STEP_SUMMARY"
+          echo "- SHA: ${{ inputs.source_sha }}" >> "$GITHUB_STEP_SUMMARY"
+          echo "- Project: $SUPABASE_PROJECT_REF" >> "$GITHUB_STEP_SUMMARY"
+          echo "- Deployment: $MEGABIN_DEPLOYMENT_ID" >> "$GITHUB_STEP_SUMMARY"
+          echo "- Functions: platform-runtime, website-onboarding" >> "$GITHUB_STEP_SUMMARY"

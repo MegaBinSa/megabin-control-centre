@@ -35,6 +35,20 @@ interface Manifest {
 }
 const root = document.querySelector<HTMLElement>("#app");
 if (!root) throw new Error("Driver root missing");
+const deploymentEnvironment = String(import.meta.env.VITE_MEGABIN_ENVIRONMENT ?? "local");
+const deploymentBuild = String(import.meta.env.VITE_BUILD_SHA ?? "local");
+document.documentElement.dataset.environment = deploymentEnvironment;
+document.documentElement.dataset.buildSha = deploymentBuild;
+document.documentElement.dataset.buildTimestamp = String(
+  import.meta.env.VITE_BUILD_TIMESTAMP ?? "local"
+);
+if (deploymentEnvironment === "staging") {
+  const banner = document.createElement("div");
+  banner.className = "environment-banner";
+  banner.textContent = `STAGING - ${deploymentBuild.slice(0, 8)}`;
+  banner.title = `Build ${deploymentBuild} - ${String(import.meta.env.VITE_BUILD_TIMESTAMP ?? "unknown time")} - ${String(import.meta.env.VITE_DEPLOYMENT_ID ?? "local")}`;
+  document.body.prepend(banner);
+}
 const url = import.meta.env.VITE_SUPABASE_URL as string | undefined,
   key = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY as string | undefined,
   base = import.meta.env.VITE_DRIVER_API_URL as string | undefined;
@@ -495,7 +509,8 @@ addEventListener("offline", () => {
   online = false;
   void render();
 });
-if ("serviceWorker" in navigator) void navigator.serviceWorker.register("/sw.js");
+if ("serviceWorker" in navigator)
+  void navigator.serviceWorker.register(`/sw.js?build=${encodeURIComponent(deploymentBuild)}`);
 if (!auth || !api)
   root.innerHTML =
     '<main class="login"><div class="notice">Driver environment is not configured.</div></main>';
