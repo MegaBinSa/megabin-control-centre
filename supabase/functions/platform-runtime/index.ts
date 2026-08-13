@@ -15,6 +15,7 @@ import {
   createWebsiteIntakeHandler,
   createClientMigrationHandler,
   createAccountingHandler,
+  createFinancialEligibilityHandler,
   MemoryJobStateStore,
   SupabaseRuntimeDatabase,
   type RuntimeRpcClient
@@ -101,6 +102,13 @@ export default {
       defer: (work) => EdgeRuntime.waitUntil(work)
     })(request);
     if (accountingResponse) return accountingResponse;
+    const financialEligibilityResponse = await createFinancialEligibilityHandler({
+      rpc,
+      actorId,
+      id: () => crypto.randomUUID(),
+      defer: (work) => EdgeRuntime.waitUntil(work)
+    })(request);
+    if (financialEligibilityResponse) return financialEligibilityResponse;
     const liveOperations = createLiveOperationsHandler({
       rpc,
       actorId,

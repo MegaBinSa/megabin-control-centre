@@ -1331,3 +1331,87 @@ test("Office accounting syncs, reconciles, reviews sensitive status, and applies
   await page.getByRole("button", { name: "Apply exception" }).click();
   await expect(page.getByText(/Manual account exception applied/)).toBeVisible();
 });
+
+test("Office previews, holds, releases, and reevaluates service financial eligibility", async ({
+  page
+}) => {
+  await syntheticSession(page, [
+    "master_data.read",
+    "financial_eligibility.read",
+    "financial_eligibility.review",
+    "financial_eligibility.hold",
+    "financial_eligibility.release",
+    "financial_eligibility.reevaluate"
+  ]);
+  const serviceId = "59000000-0000-0000-0000-000000000001";
+  let held = false,
+    version = 1;
+  await page.route("**/api/v1/financial-eligibility/decisions", (route) =>
+    route.fulfill({
+      json: {
+        ok: true,
+        data: {
+          items: [
+            {
+              clientServiceId: serviceId,
+              clientName: "Synthetic Client One",
+              serviceAddress: "10 Shared Test Street",
+              accountStatus: "seriously_overdue",
+              freshness: "current",
+              decisionStatus: held ? "held" : "hold_recommended",
+              reasonCode: held ? "manual_financial_hold" : "serious_overdue_threshold",
+              decisionVersion: version,
+              activeHold: held
+            }
+          ]
+        }
+      }
+    })
+  );
+  await page.route(`**/api/v1/financial-eligibility/services/${serviceId}/simulate`, (route) =>
+    route.fulfill({
+      json: {
+        ok: true,
+        data: {
+          suggestedStatus: "hold_recommended",
+          reasonCode: "serious_overdue_threshold",
+          wouldHold: false,
+          committed: false
+        }
+      }
+    })
+  );
+  await page.route(`**/api/v1/financial-eligibility/services/${serviceId}/hold`, (route) => {
+    held = true;
+    version++;
+    return route.fulfill({
+      json: { ok: true, data: { decisionStatus: "held", decisionVersion: version } }
+    });
+  });
+  await page.route(`**/api/v1/financial-eligibility/services/${serviceId}/release`, (route) => {
+    held = false;
+    version++;
+    return route.fulfill({
+      json: { ok: true, data: { decisionStatus: "hold_recommended", decisionVersion: version } }
+    });
+  });
+  await page.route(`**/api/v1/financial-eligibility/services/${serviceId}/reevaluate`, (route) =>
+    route.fulfill({
+      json: { ok: true, data: { decisionStatus: held ? "held" : "hold_recommended" } }
+    })
+  );
+  await page.getByRole("button", { name: "Financial Eligibility" }).click();
+  await expect(page.getByRole("heading", { name: "Financial Eligibility" })).toBeVisible();
+  await expect(page.getByText("Synthetic Client One")).toBeVisible();
+  await page.getByRole("button", { name: "Preview" }).click();
+  await expect(page.getByText("No decision was committed.")).toBeVisible();
+  await page.getByRole("button", { name: "Close" }).click();
+  page.once("dialog", (dialog) => dialog.accept("Approved operations hold"));
+  await page.getByRole("button", { name: "Hold" }).click();
+  await expect(page.getByText(/Financial hold activated/)).toBeVisible();
+  page.once("dialog", (dialog) => dialog.accept("Account reviewed and released"));
+  await page.getByRole("button", { name: "Release" }).click();
+  await expect(page.getByText(/Hold released/)).toBeVisible();
+  await page.getByRole("button", { name: "Reevaluate", exact: true }).click();
+  await expect(page.getByText("Service reevaluated.")).toBeVisible();
+});

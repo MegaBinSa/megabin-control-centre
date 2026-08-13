@@ -10,6 +10,7 @@ import { renderLiveOperationsWorkspace } from "./live-operations.js";
 import { renderWebsiteIntakeWorkspace } from "./website-intake.js";
 import { renderClientMigrationWorkspace } from "./client-migration.js";
 import { renderAccountingWorkspace } from "./accounting.js";
+import { renderFinancialEligibilityWorkspace } from "./financial-eligibility.js";
 
 const modules = [
   "Clients",
@@ -173,6 +174,13 @@ function render(): void {
     appRoot
       .querySelector("nav")
       ?.insertAdjacentHTML("beforeend", '<button id="accounting-workspace">Accounting</button>');
+  if (identity.permissions.includes("financial_eligibility.read"))
+    appRoot
+      .querySelector("nav")
+      ?.insertAdjacentHTML(
+        "beforeend",
+        '<button id="financial-eligibility-workspace">Financial Eligibility</button>'
+      );
   document.querySelectorAll<HTMLButtonElement>("[data-module]").forEach((button) =>
     button.addEventListener("click", () => {
       active = button.dataset.module as ModuleName;
@@ -246,6 +254,18 @@ function render(): void {
       identity = null;
       render();
     });
+  });
+  document.querySelector("#financial-eligibility-workspace")?.addEventListener("click", () => {
+    void renderFinancialEligibilityWorkspace(
+      appRoot,
+      api,
+      identity?.permissions ?? [],
+      async () => {
+        await auth.signOut();
+        identity = null;
+        render();
+      }
+    );
   });
   const dialog = document.querySelector<HTMLDialogElement>("#create-dialog");
   document.querySelector("#create")?.addEventListener("click", () => dialog?.showModal());

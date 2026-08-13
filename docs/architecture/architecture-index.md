@@ -70,6 +70,7 @@ Material changes to the architecture require an ADR. An ADR may clarify the blue
 | [State-machine catalogue](state-machine-catalogue.md) | Implemented lifecycle states and transitions |
 | [Environment strategy](environment-strategy.md) | Isolation of development, staging, and production |
 | [Integration architecture](integration-architecture.md) | Adapter boundaries, reliability, and external-system rules |
+| [Financial eligibility](financial-eligibility.md) | Service financial decisions, holds, precedence, and route contract |
 | [ADR index](../adr/README.md) | Accepted architecture decisions and their status |
 
 ## Supporting and migration context

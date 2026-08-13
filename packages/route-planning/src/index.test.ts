@@ -8,5 +8,6 @@ describe("route planning domain", () => {
   it("keeps unassigned explanations explicit", () => {
     expect(unassignedReasonCodes).toContain("capacity_exceeded");
     expect(unassignedReasonCodes).toContain("missing_coordinates");
+    expect(unassignedReasonCodes).toContain("financial_hold");
   });
 });

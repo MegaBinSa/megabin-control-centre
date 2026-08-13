@@ -1,5 +1,9 @@
 # Route Planning architecture
 
+## Financial eligibility contract
+
+Route Planning consumes only the Financial Eligibility service contract. A current `Held` decision produces explicit unassigned work with reason `financial_hold`. Draft/Ready versions become stale when the input changes. Published versions and active Route Operations are never silently mutated.
+
 ## Authority and aggregate
 
 Routes owns Route Plan, immutable Route Version history, Planned Route, Planned Stop, assignment, sequence, planning metrics, unassigned-service decisions, readiness, and publication. One Route Plan is identified by an immutable UUID for an Operational Day; dates and address text are never identifiers. A plan points to its current working version and current published version. Published versions are immutable historical facts and later plans supersede rather than overwrite them.

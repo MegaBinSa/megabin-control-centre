@@ -1349,6 +1349,244 @@
         "operationId": "removeAccountException"
       }
     },
+    "/api/v1/financial-eligibility/decisions": {
+      "get": {
+        "operationId": "listFinancialEligibilityDecisions",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Financial eligibility response"
+          },
+          "202": {
+            "description": "Reevaluation queued"
+          },
+          "403": {
+            "description": "Permission or region denied"
+          },
+          "409": {
+            "description": "Optimistic concurrency conflict"
+          }
+        }
+      }
+    },
+    "/api/v1/financial-eligibility/services/{id}": {
+      "get": {
+        "operationId": "getFinancialEligibility",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Financial eligibility response"
+          },
+          "202": {
+            "description": "Reevaluation queued"
+          },
+          "403": {
+            "description": "Permission or region denied"
+          },
+          "409": {
+            "description": "Optimistic concurrency conflict"
+          }
+        }
+      }
+    },
+    "/api/v1/financial-eligibility/services/{id}/simulate": {
+      "post": {
+        "operationId": "simulateFinancialEligibility",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Financial eligibility response"
+          },
+          "202": {
+            "description": "Reevaluation queued"
+          },
+          "403": {
+            "description": "Permission or region denied"
+          },
+          "409": {
+            "description": "Optimistic concurrency conflict"
+          }
+        }
+      }
+    },
+    "/api/v1/financial-eligibility/services/{id}/hold": {
+      "post": {
+        "operationId": "holdServiceFinancially",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Financial eligibility response"
+          },
+          "202": {
+            "description": "Reevaluation queued"
+          },
+          "403": {
+            "description": "Permission or region denied"
+          },
+          "409": {
+            "description": "Optimistic concurrency conflict"
+          }
+        }
+      }
+    },
+    "/api/v1/financial-eligibility/services/{id}/release": {
+      "post": {
+        "operationId": "releaseServiceFinancialHold",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Financial eligibility response"
+          },
+          "202": {
+            "description": "Reevaluation queued"
+          },
+          "403": {
+            "description": "Permission or region denied"
+          },
+          "409": {
+            "description": "Optimistic concurrency conflict"
+          }
+        }
+      }
+    },
+    "/api/v1/financial-eligibility/services/{id}/override": {
+      "put": {
+        "operationId": "setFinancialEligibilityOverride",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Financial eligibility response"
+          },
+          "202": {
+            "description": "Reevaluation queued"
+          },
+          "403": {
+            "description": "Permission or region denied"
+          },
+          "409": {
+            "description": "Optimistic concurrency conflict"
+          }
+        }
+      },
+      "delete": {
+        "operationId": "clearFinancialEligibilityOverride",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Financial eligibility response"
+          },
+          "202": {
+            "description": "Reevaluation queued"
+          },
+          "403": {
+            "description": "Permission or region denied"
+          },
+          "409": {
+            "description": "Optimistic concurrency conflict"
+          }
+        }
+      }
+    },
+    "/api/v1/financial-eligibility/services/{id}/reevaluate": {
+      "post": {
+        "operationId": "reevaluateServiceFinancialEligibility",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Financial eligibility response"
+          },
+          "202": {
+            "description": "Reevaluation queued"
+          },
+          "403": {
+            "description": "Permission or region denied"
+          },
+          "409": {
+            "description": "Optimistic concurrency conflict"
+          }
+        }
+      }
+    },
+    "/api/v1/financial-eligibility/services/{id}/route-impact": {
+      "get": {
+        "operationId": "getFinancialRouteImpact",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Financial eligibility response"
+          },
+          "202": {
+            "description": "Reevaluation queued"
+          },
+          "403": {
+            "description": "Permission or region denied"
+          },
+          "409": {
+            "description": "Optimistic concurrency conflict"
+          }
+        }
+      }
+    },
+    "/api/v1/financial-eligibility/reevaluations": {
+      "post": {
+        "operationId": "startFinancialEligibilityReevaluation",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Financial eligibility response"
+          },
+          "202": {
+            "description": "Reevaluation queued"
+          },
+          "403": {
+            "description": "Permission or region denied"
+          },
+          "409": {
+            "description": "Optimistic concurrency conflict"
+          }
+        }
+      }
+    },
     "/api/v1/master-data/clients": {
       "get": {
         "operationId": "list-clients",
