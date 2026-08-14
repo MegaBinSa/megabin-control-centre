@@ -1,0 +1,12 @@
+{
+  "version": 1,
+  "status": "DECISION_REQUIRED",
+  "rpo": null,
+  "rto": null,
+  "backupPosture": "UNVERIFIED",
+  "pitrPosture": "UNVERIFIED",
+  "recoveryAuthority": "UNASSIGNED",
+  "verificationAuthority": "UNASSIGNED",
+  "restoreTargetProjectRef": null,
+  "notes": "No recovery objective, Supabase plan capability, authority, or isolated restore target has been approved."
+}

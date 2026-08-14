@@ -1,0 +1,150 @@
+{
+  "version": 1,
+  "environment": "staging",
+  "allowedDataPosture": ["synthetic", "fake-providers", "capture-communications"],
+  "cases": [
+    {
+      "id": "UAT-OFF-001",
+      "journey": "Office operational planning",
+      "preconditions": [
+        "Synthetic Office persona is provisioned",
+        "Deterministic synthetic service and geography data exist"
+      ],
+      "persona": "office",
+      "steps": [
+        "Authenticate and confirm scoped profile",
+        "Review permitted client/service and geography",
+        "Prepare roster and route plan",
+        "Review candidate, publish and hand off",
+        "Inspect Route Operations, Live Operations and Needs Attention",
+        "Confirm Driver financial isolation"
+      ],
+      "expectedOutcome": "Office completes a region-scoped planning journey while financial and cross-scope boundaries remain enforced.",
+      "actualOutcome": null,
+      "evidenceReference": null,
+      "result": "Not Run",
+      "executionTimestamp": null,
+      "environmentReleaseIdentity": null,
+      "testerIdentity": null,
+      "defectReferences": []
+    },
+    {
+      "id": "UAT-DRV-001",
+      "journey": "Driver route execution and offline synchronization",
+      "preconditions": [
+        "Synthetic Driver is assigned a not-started Route Operation",
+        "Test device supports offline rehearsal"
+      ],
+      "persona": "driver",
+      "steps": [
+        "Authenticate and load only assigned manifest",
+        "Accept and start route",
+        "Record synthetic stop outcomes",
+        "Queue actions offline and reconnect",
+        "Set near-capacity and complete eligible route",
+        "Confirm Office, financial and admin denial"
+      ],
+      "expectedOutcome": "Assigned work synchronizes idempotently and privileged functions remain unavailable.",
+      "actualOutcome": null,
+      "evidenceReference": null,
+      "result": "Not Run",
+      "executionTimestamp": null,
+      "environmentReleaseIdentity": null,
+      "testerIdentity": null,
+      "defectReferences": []
+    },
+    {
+      "id": "UAT-WEB-001",
+      "journey": "Website onboarding authority transition",
+      "preconditions": [
+        "Synthetic website identity and signing secret are configured",
+        "Only synthetic payloads are used"
+      ],
+      "persona": "office",
+      "steps": [
+        "Submit idempotent synthetic intake",
+        "Review normalization and matching",
+        "Approve and activate",
+        "Verify authoritative master records",
+        "Retry identical submission"
+      ],
+      "expectedOutcome": "One intake and one activated operational identity exist without duplicate records.",
+      "actualOutcome": null,
+      "evidenceReference": null,
+      "result": "Not Run",
+      "executionTimestamp": null,
+      "environmentReleaseIdentity": null,
+      "testerIdentity": null,
+      "defectReferences": []
+    },
+    {
+      "id": "UAT-SKP-001",
+      "journey": "Client SKIP review and protected replanning",
+      "preconditions": [
+        "Synthetic inbound communications are enabled",
+        "A future synthetic collection occurrence exists"
+      ],
+      "persona": "office",
+      "steps": [
+        "Inject and normalize SKIP",
+        "Qualify occurrence",
+        "Approve exclusion",
+        "Create Draft replan",
+        "Verify Published and active-operation protection",
+        "Verify acknowledgement remains captured"
+      ],
+      "expectedOutcome": "One occurrence is excluded and protected operational history is unchanged.",
+      "actualOutcome": null,
+      "evidenceReference": null,
+      "result": "Not Run",
+      "executionTimestamp": null,
+      "environmentReleaseIdentity": null,
+      "testerIdentity": null,
+      "defectReferences": []
+    },
+    {
+      "id": "UAT-FIN-001",
+      "journey": "Accounting and financial isolation",
+      "preconditions": ["Fake accounting adapter is active", "Synthetic accounting facts exist"],
+      "persona": "office",
+      "steps": [
+        "Run/read fake accounting synchronization",
+        "Inspect authorized accounting and eligibility projections",
+        "Verify Driver denial",
+        "Confirm Published and active work are not silently rewritten"
+      ],
+      "expectedOutcome": "Authorized projections are visible without leaking financial data or mutating protected operations.",
+      "actualOutcome": null,
+      "evidenceReference": null,
+      "result": "Not Run",
+      "executionTimestamp": null,
+      "environmentReleaseIdentity": null,
+      "testerIdentity": null,
+      "defectReferences": []
+    },
+    {
+      "id": "UAT-TRK-001",
+      "journey": "Synthetic vehicle tracking and intelligence",
+      "preconditions": [
+        "Synthetic vehicle/operation exists",
+        "Synthetic GPS ingestion is permitted"
+      ],
+      "persona": "office",
+      "steps": [
+        "Submit deterministic GPS observations",
+        "Verify current position and tracking health",
+        "Produce one deterministic intelligence fact",
+        "Review and resolve Needs Attention",
+        "Confirm Driver outcomes remain authoritative"
+      ],
+      "expectedOutcome": "Tracking evidence and inferred intelligence remain distinct from Driver-recorded outcomes.",
+      "actualOutcome": null,
+      "evidenceReference": null,
+      "result": "Not Run",
+      "executionTimestamp": null,
+      "environmentReleaseIdentity": null,
+      "testerIdentity": null,
+      "defectReferences": []
+    }
+  ]
+}

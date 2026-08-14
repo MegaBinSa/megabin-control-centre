@@ -1,0 +1,19 @@
+{
+  "version": 1,
+  "environment": "staging",
+  "namespace": "megabin-uat",
+  "idempotencyPrefix": "uat:",
+  "emailDomains": ["example.invalid", "megabin.local"],
+  "preservedPersonas": ["staging-office@megabin.local", "staging-driver@megabin.local"],
+  "resetScope": [
+    "source references prefixed uat:",
+    "records tagged megabin-uat",
+    "derived records linked only to those synthetic roots"
+  ],
+  "forbiddenOperations": [
+    "database reset",
+    "schema truncate",
+    "unscoped delete",
+    "persona deletion"
+  ]
+}

@@ -6,3 +6,5 @@
 - **Database:** default to a corrective forward migration. SQL rollback is migration-specific and never assumed. Restore is an incident action governed by the backup runbook and approved data-loss/downtime decision.
 
 If smoke tests fail, hold the release, prevent users entering the target where possible, capture the failed run, restore safe frontend/Function versions, assess database state and rerun smoke only after remediation. A release is not successful because one component deployed.
+
+Before a rehearsal, use `pnpm rollback:plan` with current/prior 40-character release SHAs and confirmation bound to the prior SHA. Verify the prior commit/artifacts exist and its API remains compatible with the current database. Rehearse Office and Driver independently so frontend rollback cannot change database truth. Edge Functions require a compatibility review before redeployment. Database failure follows the migration forward-repair runbook. Retain selected identities, operator, timestamps, actions and post-recovery smoke evidence. The repository currently proves the fail-closed plan contract; no remote rollback is claimed.

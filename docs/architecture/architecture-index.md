@@ -71,6 +71,7 @@ Material changes to the architecture require an ADR. An ADR may clarify the blue
 | [Environment strategy](environment-strategy.md) | Isolation of development, staging, and production |
 | [Staging environment](staging-environment.md) | Staging identity, isolation, safety posture, and external prerequisites |
 | [Deployment architecture](deployment-architecture.md) | Protected staging release sequence, artifacts, traceability, and production deferral |
+| [Operational assurance](operational-assurance.md) | Monitoring evidence, isolated recovery, rollback and synthetic UAT boundaries |
 | [Environment configuration guide](environment-configuration-guide.md) | Configuration/secret stores, validation, drift, and safety gates |
 | [Integration architecture](integration-architecture.md) | Adapter boundaries, reliability, and external-system rules |
 | [Financial eligibility](financial-eligibility.md) | Service financial decisions, holds, precedence, and route contract |
@@ -87,6 +88,9 @@ Material changes to the architecture require an ADR. An ADR may clarify the blue
 | [UAT and pilot plan](../production/uat-and-pilot-plan.md) | End-to-end UAT, field validation, and bounded pilot gates |
 | [Cutover readiness](../production/cutover-readiness.md) | Production gates, coexistence, cutover, rollback, and support outline |
 | [Phase 5C staging deployment evidence](../production/staging-deployment-evidence.md) | Validated release, protected deployment controls, remote smoke proof, and remaining assurance gaps |
+| [Recovery objectives register](../production/recovery-objectives-register.md) | Explicit RPO/RTO, backup/PITR, authority and isolated-target decisions |
+| [Readiness gates](../production/readiness-gates.md) | Evidence-based Staging, UAT, Pilot and Production gates |
+| [Phase 5D assurance evidence](../production/phase-5d-assurance-evidence.md) | Verification obtained, evidence not obtained, and explicit blockers |
 | [Operations runbook index](../runbooks/README.md) | Deployment, recovery, provisioning, monitoring, incident, device, reset, and release procedures |
 
 ## Supporting and migration context
