@@ -15,4 +15,3 @@ The assurance evidence retention target is 12 months. This repository is public,
 The new recovery and rollback workflows must exist on the default branch before GitHub permits protected `workflow_dispatch` execution. They cannot safely consume `staging-recovery` or `staging` Environment secrets from an unmerged workflow. Consequently no restore, rollback, synthetic alert failure or six-journey UAT execution is claimed by this branch.
 
 After merge, execute the controlled synthetic alert proof, isolated recovery rehearsal, component rollback/current-release restoration, reviewed database forward-repair tabletop, and six release-bound UAT journeys. Update this record with run IDs, observed RTO, results and blocker references. No production system, live provider, real client data or active Staging database was changed while preparing these controls.
-
