@@ -6,8 +6,14 @@ import { describe, expect, it, vi } from "vitest";
 import { validateEnvironment } from "../scripts/environment-contract.mjs";
 import { ensureSupabaseDataApiSchema } from "../scripts/ensure-supabase-data-api-schema.mjs";
 import { inspectSql } from "../scripts/migration-safety.mjs";
+import { buildMonitoringEvidence } from "../scripts/operational-monitor.mjs";
+import { validateReadinessGates } from "../scripts/readiness-gates.mjs";
+import { assertRestoreRehearsal } from "../scripts/recovery-contract.mjs";
+import { createRollbackPlan } from "../scripts/rollback-rehearsal.mjs";
 import { assertStagingReset } from "../scripts/staging-reset.mjs";
 import { runSmoke } from "../scripts/staging-smoke.mjs";
+import { validateUatCatalogue } from "../scripts/uat-contract.mjs";
+import { assertUatDataOperation } from "../scripts/uat-data-contract.mjs";
 
 const staging = {
   MEGABIN_ENVIRONMENT: "staging",
@@ -268,7 +274,8 @@ describe("deployment safety tools", () => {
         );
       if (url.includes("/master-data/clients") && !init?.headers)
         return new Response(null, { status: 401 });
-      if (url.includes("website-onboarding")) return new Response(null, { status: 202 });
+      if (url.includes("website-onboarding"))
+        return new Response(null, { status: init?.method === "POST" ? 202 : 404 });
       if (url.includes("/accounting/health") || url.includes("/communications/provider-health"))
         return new Response(null, { status: 403 });
       if (url.includes("/accounting/status") && init?.headers)
@@ -277,6 +284,11 @@ describe("deployment safety tools", () => {
     });
     const checks = await runSmoke(staging, fetchMock as unknown as typeof fetch);
     expect(checks.every((check) => check.passed)).toBe(true);
+    expect(
+      fetchMock.mock.calls.some(
+        (call) => String(call[0]).includes("website-onboarding") && call[1]?.method === "POST"
+      )
+    ).toBe(false);
   });
 
   it("reports a failed remote smoke invariant", async () => {
@@ -301,7 +313,8 @@ describe("deployment safety tools", () => {
         );
       if (url.includes("/master-data/clients") && !init?.headers)
         return new Response(null, { status: 401 });
-      if (url.includes("website-onboarding")) return new Response(null, { status: 202 });
+      if (url.includes("website-onboarding"))
+        return new Response(null, { status: init?.method === "POST" ? 202 : 404 });
       if (url.includes("/accounting/health") || url.includes("/communications/provider-health"))
         return new Response(null, { status: 403 });
       if (url.includes("/accounting/status") && init?.headers)
@@ -310,5 +323,99 @@ describe("deployment safety tools", () => {
     });
     const checks = await runSmoke(staging, fetchMock as unknown as typeof fetch);
     expect(checks.find((check) => check.name === "driver_frontend")?.passed).toBe(false);
+  });
+
+  it("creates stable deduplicated monitoring evidence without pretending ownership", () => {
+    const definition = JSON.parse(readFileSync("config/operational-alerts.json", "utf8"));
+    const evidence = buildMonitoringEvidence(
+      staging,
+      [{ name: "runtime_liveness", passed: false, status: 503 }],
+      definition,
+      new Date("2026-08-15T00:00:00Z")
+    );
+    expect(evidence.outcome).toBe("Failed");
+    expect(evidence.alerts.find((alert) => alert.alertId === "MBA-STG-API-001")).toMatchObject({
+      alertId: "MBA-STG-API-001",
+      deduplicationKey: "staging:MBA-STG-API-001",
+      owner: "UNASSIGNED",
+      deliveryDestination: "UNCONFIGURED",
+      state: "Open"
+    });
+  });
+
+  it("retains non-mutating monitor evidence without inventing alert delivery", () => {
+    const workflow = readFileSync(".github/workflows/monitor-staging.yml", "utf8");
+    expect(workflow).toContain("pnpm monitor:staging");
+    expect(workflow).toContain("actions/upload-artifact@v4");
+    expect(workflow).toContain("Alert destination: UNCONFIGURED");
+    expect(workflow).toContain("vars.WEBSITE_ONBOARDING_INTEGRATION_KEY");
+    expect(workflow).toContain("secrets.WEBSITE_ONBOARDING_SECRET");
+    expect(workflow).not.toContain("MEGABIN_SMOKE_ALLOW_MUTATION");
+    expect(readFileSync(".github/workflows/deploy-staging.yml", "utf8")).toContain(
+      'MEGABIN_SMOKE_ALLOW_MUTATION: "true"'
+    );
+  });
+
+  it("fails restore rehearsal closed until decisions and an isolated target exist", () => {
+    const objectives = JSON.parse(readFileSync("config/recovery-objectives.json", "utf8"));
+    expect(() => assertRestoreRehearsal({}, objectives)).toThrow("restore-rehearsal");
+    expect(() =>
+      assertRestoreRehearsal(
+        {
+          MEGABIN_ENVIRONMENT: "restore-rehearsal",
+          SOURCE_SUPABASE_PROJECT_REF: "abcdefghijklmnopqrst",
+          RESTORE_SUPABASE_PROJECT_REF: "abcdefghijklmnopqrst"
+        },
+        objectives
+      )
+    ).toThrow("isolated");
+  });
+
+  it("builds an explicit non-destructive rollback and forward-repair plan", () => {
+    const prior = "1".repeat(40);
+    const current = "2".repeat(40);
+    const plan = createRollbackPlan({
+      MEGABIN_ENVIRONMENT: "staging",
+      CURRENT_RELEASE_SHA: current,
+      PRIOR_RELEASE_SHA: prior,
+      CONFIRM_ROLLBACK_REHEARSAL: `REHEARSE-ROLLBACK:${prior}`
+    });
+    expect(plan.status).toBe("PLAN_ONLY");
+    expect(plan.components.find((item) => item.component === "database")?.action).toContain(
+      "forward repair"
+    );
+  });
+
+  it("validates the journey-based synthetic UAT catalogue", () => {
+    const catalogue = JSON.parse(readFileSync("config/synthetic-uat-catalogue.json", "utf8"));
+    expect(validateUatCatalogue(catalogue)).toEqual({ ok: true, cases: 6 });
+    const invalid = structuredClone(catalogue);
+    invalid.cases[0].result = "Passed";
+    expect(() => validateUatCatalogue(invalid)).toThrow("actualOutcome");
+  });
+
+  it("bounds UAT data recycling to a confirmed synthetic namespace", () => {
+    const contract = JSON.parse(readFileSync("config/synthetic-uat-data.json", "utf8"));
+    const ref = "abcdefghijklmnopqrst";
+    expect(
+      assertUatDataOperation(
+        {
+          MEGABIN_ENVIRONMENT: "staging",
+          SUPABASE_PROJECT_REF: ref,
+          PRODUCTION_SUPABASE_PROJECT_REF: "zyxwvutsrqponmlkjihg",
+          UAT_DATA_OPERATION: "recycle",
+          CONFIRM_UAT_DATA_OPERATION: `UAT-RECYCLE:${ref}:megabin-uat`
+        },
+        contract
+      )
+    ).toMatchObject({ status: "BOUNDED_PLAN_ONLY", namespace: "megabin-uat" });
+  });
+
+  it("prevents readiness gates passing with unresolved evidence", () => {
+    const register = JSON.parse(readFileSync("config/readiness-gates.json", "utf8"));
+    expect(validateReadinessGates(register)).toEqual({ ok: true, gates: 5 });
+    const invalid = structuredClone(register);
+    invalid.gates[1].status = "Passed";
+    expect(() => validateReadinessGates(invalid)).toThrow("unresolved approvals");
   });
 });

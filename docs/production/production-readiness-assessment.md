@@ -134,9 +134,9 @@ Business/legal review is required for POPIA-related processing of client identit
 
 ## Monitoring, incident response and recovery
 
-The runtime exposes safe health and durable job/integration state, but no external monitoring destination, alert routing or named ownership exists. Production monitoring must cover API/Edge Function errors, Auth failures, database health, outbox/job backlog, route provider failures, GPS ingestion/lag, stale tracking/intelligence, website intake, Zoho sync, communications delivery/webhooks and migration failures. Alerts need severity, owner, acknowledgement and escalation rules.
+Phase 5D adds stable alert IDs, severity, deduplication, response expectations and private scheduled-monitor evidence for frontend/runtime/onboarding availability, release identity, Auth/authorization and fake/capture posture. External delivery, recipients, monitoring/escalation owners and routing approval remain absent, so operational alerting is not claimed. Broader production monitoring must still cover database health, outbox/job backlog, provider failures, GPS lag, stale intelligence, accounting/communications and migration failures.
 
-Missing runbooks: Supabase/database outage, provider outage, failed route generation, Driver sync failure, GPS failure, communications outage, website intake outage, Zoho sync outage, compromised credential, lost/stolen device, bad deployment, migration failure, restore and provider degradation/fallback. Recovery requires approved RPO/RTO, platform backup/PITR configuration, storage/configuration backup, secret-recovery ownership, restore testing, migration roll-forward/recovery, frontend/Edge Function rollback and preservation of inbound source data.
+Recovery now has fail-closed restore-target, rollback-plan and immutable migration forward-repair contracts plus evidence requirements. Actual recovery remains blocked by approved RPO/RTO, Supabase backup/PITR capability evidence, an isolated restore target, named recovery/verifying authorities and an executed rehearsal. Provider/device incident ownership and secret-recovery rehearsal also remain unresolved.
 
 ## Legacy coexistence principles
 
@@ -158,11 +158,11 @@ During pilot, existing spreadsheets and operational processes should remain a co
 
 Close every P0/P1 applicable to the agreed launch scope; activate and validate live providers; migrate/reconcile authoritative data; complete training and user/device provisioning; approve financial, communications, SKIP, tracking and retention policies; test backup restore and deployment rollback; establish support/on-call ownership; freeze legacy writes; execute signed cutover/smoke/reconciliation steps; and retain a time-bounded read-only legacy fallback.
 
-## Recommended next phase
+## Recommended next phase after Phase 5D foundation
 
-**Phase 5D – Operational Assurance, Recovery and Synthetic UAT Foundation.** Preserve the proven deployment path; select monitoring destinations and named operational recipients; prove alert acknowledgement/escalation; approve RPO/RTO and the Supabase backup/PITR posture; provision an isolated non-production restore target; execute and document restore, deployment rollback and migration-recovery rehearsals; then begin the structured synthetic UAT catalogue with evidence capture.
+**Phase 5E – Assurance Decision Closure and Rehearsal Execution.** Supply the human/external decisions Phase 5D correctly cannot invent: monitoring and escalation owners, recipients/destination, severity routing, RPO/RTO, recovery/verifying authorities, Supabase backup/PITR posture and an isolated restore target. Then execute alert-delivery, restore, component rollback, migration forward-repair and the six synthetic UAT journeys through the Phase 5D evidence contracts.
 
-Phase 5D should not connect production providers, import real client data, enable live messaging/holds or launch a pilot. Its exit criterion is an observable and recoverable shared Staging environment with named ownership and an evidence-producing UAT process. External choices that cannot be inferred—alert recipients/ownership, RPO/RTO, Supabase plan/PITR posture and an isolated restore target—must be supplied before their corresponding proof can be completed.
+Phase 5E should remain synthetic and must not connect production providers, import real client data, enable live messaging/holds or launch a pilot. Its exit criterion is actual, release-bound operational/recovery/UAT evidence—not merely configured tooling.
 
 ## Related registers
 
@@ -173,3 +173,5 @@ Phase 5D should not connect production providers, import real client data, enabl
 - [UAT and pilot plan](uat-and-pilot-plan.md)
 - [Cutover readiness](cutover-readiness.md)
 - [Phase 5C staging deployment evidence](staging-deployment-evidence.md)
+- [Recovery objectives register](recovery-objectives-register.md)
+- [Readiness gates](readiness-gates.md)

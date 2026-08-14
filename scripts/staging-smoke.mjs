@@ -20,16 +20,25 @@ export async function runSmoke(values, fetchImpl = fetch) {
     200,
     officeToken ? { headers: { Authorization: `Bearer ${officeToken}` } } : undefined
   );
-  if (liveness.ok && values.VITE_BUILD_SHA && values.VITE_DEPLOYMENT_ID) {
+  if (liveness.ok) {
     const body = await liveness.json();
     const runtime = body.runtime ?? {};
     checks.push({
       name: "release_identity",
       passed:
         runtime.environment === "staging" &&
-        runtime.buildId === values.VITE_BUILD_SHA &&
-        runtime.deploymentId === values.VITE_DEPLOYMENT_ID,
-      status: liveness.status
+        typeof runtime.buildId === "string" &&
+        runtime.buildId.length > 0 &&
+        typeof runtime.deploymentId === "string" &&
+        runtime.deploymentId.length > 0 &&
+        (!values.VITE_BUILD_SHA || runtime.buildId === values.VITE_BUILD_SHA) &&
+        (!values.VITE_DEPLOYMENT_ID || runtime.deploymentId === values.VITE_DEPLOYMENT_ID),
+      status: liveness.status,
+      observed: {
+        environment: runtime.environment ?? null,
+        buildId: runtime.buildId ?? null,
+        deploymentId: runtime.deploymentId ?? null
+      }
     });
   }
   await check(
@@ -127,6 +136,20 @@ export async function runSmoke(values, fetchImpl = fetch) {
     );
   }
   if (values.MEGABIN_WEBSITE_ONBOARDING_URL) {
+    await check(
+      "website_onboarding_availability",
+      `${values.MEGABIN_WEBSITE_ONBOARDING_URL}/api/v1/integrations/website/onboarding`,
+      404,
+      {
+        headers: {
+          "X-Integration-Key": values.MEGABIN_WEBSITE_ONBOARDING_INTEGRATION_KEY,
+          "X-Integration-Secret": values.MEGABIN_WEBSITE_ONBOARDING_SECRET,
+          "X-Correlation-Id": crypto.randomUUID()
+        }
+      }
+    );
+  }
+  if (values.MEGABIN_WEBSITE_ONBOARDING_URL && values.MEGABIN_SMOKE_ALLOW_MUTATION === "true") {
     await check(
       "synthetic_website_intake",
       `${values.MEGABIN_WEBSITE_ONBOARDING_URL}/api/v1/integrations/website/onboarding`,

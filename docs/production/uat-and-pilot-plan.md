@@ -1,7 +1,7 @@
 # UAT and Pilot Plan
 
-**Status:** Shared Staging validated; structured UAT plan; no pilot authorized
-**Last reviewed:** 2026-08-13
+**Status:** Shared Staging validated; synthetic journey contracts implemented; execution blocked/not run; no pilot authorized
+**Last reviewed:** 2026-08-15
 
 ## Entry criteria for internal UAT
 
@@ -33,6 +33,8 @@
 Each scenario records build/commit, environment, seed version, actor/role, expected and actual result, defect link, evidence and sign-off. Fakes prove contracts; real staging providers and devices prove external behavior.
 
 The Phase 5C remote smoke suite is infrastructure acceptance evidence, not business UAT sign-off. It proves the environment can host the UAT catalogue safely with synthetic data and fake/capture providers.
+
+`config/synthetic-uat-catalogue.json` defines the six Phase 5D executable journey groups with stable IDs and mandatory evidence fields. `config/synthetic-uat-data.json` bounds preparation/recycling to synthetic provenance and preserves Phase 5C personas. Repository contract tests pass, but all six journeys remain `Not Run`; Synthetic Internal UAT Ready remains blocked on monitoring ownership/routing, and Synthetic Internal UAT Passed is not claimed.
 
 ## Minimum safe controlled pilot
 

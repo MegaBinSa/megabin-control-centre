@@ -1,0 +1,65 @@
+{
+  "version": 1,
+  "gates": [
+    {
+      "id": "GATE-STAGING-READY",
+      "name": "Shared Staging Ready",
+      "status": "Passed",
+      "automatedEvidence": ["deployment run 31738092512", "remote smoke suite"],
+      "humanApprovals": [],
+      "externalDependencies": []
+    },
+    {
+      "id": "GATE-UAT-READY",
+      "name": "Synthetic Internal UAT Ready",
+      "status": "Blocked",
+      "automatedEvidence": [
+        "synthetic personas",
+        "fake/capture provider guards",
+        "UAT catalogue contract"
+      ],
+      "humanApprovals": ["monitoring owner", "alert recipient and escalation ownership"],
+      "externalDependencies": [
+        "operational alert destination or accepted manual monitoring posture"
+      ]
+    },
+    {
+      "id": "GATE-UAT-PASSED",
+      "name": "Synthetic Internal UAT Passed",
+      "status": "Not Run",
+      "automatedEvidence": [],
+      "humanApprovals": ["UAT execution and sign-off"],
+      "externalDependencies": []
+    },
+    {
+      "id": "GATE-PILOT-READY",
+      "name": "Controlled Pilot Ready",
+      "status": "Blocked",
+      "automatedEvidence": [],
+      "humanApprovals": [
+        "privacy/security/business decisions",
+        "support ownership",
+        "RPO/RTO",
+        "recovery authority"
+      ],
+      "externalDependencies": [
+        "isolated restore proof",
+        "device/field validation",
+        "selected pilot providers",
+        "migration rehearsal"
+      ]
+    },
+    {
+      "id": "GATE-PRODUCTION-READY",
+      "name": "Production Ready",
+      "status": "Blocked",
+      "automatedEvidence": [],
+      "humanApprovals": ["production cutover and retention decisions"],
+      "externalDependencies": [
+        "production infrastructure",
+        "live provider validation",
+        "production recovery proof"
+      ]
+    }
+  ]
+}

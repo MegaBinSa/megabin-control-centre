@@ -1,6 +1,10 @@
 # Environment files and secrets
 .env
 .env.*
+monitoring-evidence*.json
+synthetic-uat-evidence*.json
+recovery-evidence*.json
+rollback-evidence*.json
 !.env.example
 !.env.staging.example
 !.env.production.example

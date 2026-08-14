@@ -1,0 +1,128 @@
+{
+  "version": 1,
+  "environment": "staging",
+  "defaultOwner": "UNASSIGNED",
+  "deliveryDestination": "UNCONFIGURED",
+  "alerts": [
+    {
+      "sourceWorkflow": "Monitor staging",
+      "id": "MBA-STG-MON-001",
+      "severity": "SEV1",
+      "response": "Investigate a missed or failed scheduled monitor execution."
+    },
+    {
+      "sourceWorkflow": "Deploy staging",
+      "id": "MBA-STG-DEP-001",
+      "severity": "SEV1",
+      "response": "Stop release acceptance and investigate the failed protected deployment."
+    },
+    {
+      "check": "office_frontend",
+      "id": "MBA-STG-WEB-001",
+      "severity": "SEV2",
+      "response": "Investigate during the active support window."
+    },
+    {
+      "check": "driver_frontend",
+      "id": "MBA-STG-WEB-002",
+      "severity": "SEV2",
+      "response": "Investigate during the active support window."
+    },
+    {
+      "check": "runtime_liveness",
+      "id": "MBA-STG-API-001",
+      "severity": "SEV1",
+      "response": "Acknowledge immediately when an operational owner is assigned."
+    },
+    {
+      "check": "release_identity",
+      "id": "MBA-STG-REL-001",
+      "severity": "SEV2",
+      "response": "Stop release acceptance and reconcile deployed identities."
+    },
+    {
+      "check": "allowed_cors_preflight",
+      "id": "MBA-STG-SEC-005",
+      "severity": "SEV2",
+      "response": "Investigate the approved-origin preflight contract."
+    },
+    {
+      "check": "allowed_cors_request",
+      "id": "MBA-STG-SEC-001",
+      "severity": "SEV2",
+      "response": "Investigate the approved-origin contract."
+    },
+    {
+      "check": "allowed_cors_header",
+      "id": "MBA-STG-SEC-006",
+      "severity": "SEV2",
+      "response": "Investigate the approved-origin response header."
+    },
+    {
+      "check": "unknown_cors_denial",
+      "id": "MBA-STG-SEC-002",
+      "severity": "SEV1",
+      "response": "Treat unexpected origin access as a security incident."
+    },
+    {
+      "check": "anonymous_office_denial",
+      "id": "MBA-STG-SEC-003",
+      "severity": "SEV1",
+      "response": "Treat anonymous Office access as a security incident."
+    },
+    {
+      "check": "authenticated_office",
+      "id": "MBA-STG-AUTH-001",
+      "severity": "SEV2",
+      "response": "Investigate Office authentication and authorization."
+    },
+    {
+      "check": "authenticated_driver",
+      "id": "MBA-STG-AUTH-002",
+      "severity": "SEV2",
+      "response": "Investigate Driver authentication and assignment scope."
+    },
+    {
+      "check": "driver_financial_denial",
+      "id": "MBA-STG-SEC-004",
+      "severity": "SEV1",
+      "response": "Treat Driver financial access as a security incident."
+    },
+    {
+      "check": "fake_routing_provider_health",
+      "id": "MBA-STG-PRV-001",
+      "severity": "SEV2",
+      "response": "Confirm the fake routing adapter remains healthy."
+    },
+    {
+      "check": "regional_office_accounting_provider_health_denial",
+      "id": "MBA-STG-SEC-007",
+      "severity": "SEV1",
+      "response": "Treat unintended global accounting-health access as a security incident."
+    },
+    {
+      "check": "regional_office_communications_provider_health_denial",
+      "id": "MBA-STG-SEC-008",
+      "severity": "SEV1",
+      "response": "Treat unintended global communications-health access as a security incident."
+    },
+    {
+      "check": "fake_accounting_provider_configuration",
+      "id": "MBA-STG-PRV-002",
+      "severity": "SEV1",
+      "response": "Stop Staging use if accounting is not fake."
+    },
+    {
+      "check": "capture_communications_configuration",
+      "id": "MBA-STG-PRV-003",
+      "severity": "SEV1",
+      "response": "Stop Staging use if communications are not capture-only."
+    },
+    {
+      "check": "website_onboarding_availability",
+      "id": "MBA-STG-INT-001",
+      "severity": "SEV2",
+      "response": "Investigate the signed non-mutating onboarding boundary."
+    }
+  ]
+}

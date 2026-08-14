@@ -27,6 +27,12 @@ jobs:
       MEGABIN_DRIVER_ORIGIN: ${{ vars.DRIVER_ORIGIN }}
       VITE_MASTER_DATA_API_URL: ${{ vars.SUPABASE_URL }}/functions/v1/platform-runtime
       VITE_DRIVER_API_URL: ${{ vars.SUPABASE_URL }}/functions/v1/platform-runtime
+      MEGABIN_ACCOUNTING_PROVIDER: zoho-books-fake
+      MEGABIN_COMMUNICATIONS_MODE: capture
+      MEGABIN_WEBSITE_ONBOARDING_URL: ${{ vars.SUPABASE_URL }}/functions/v1/website-onboarding
+      MEGABIN_WEBSITE_ONBOARDING_INTEGRATION_KEY: ${{ vars.WEBSITE_ONBOARDING_INTEGRATION_KEY }}
+      MEGABIN_WEBSITE_ONBOARDING_SECRET: ${{ secrets.WEBSITE_ONBOARDING_SECRET }}
+      MEGABIN_MONITOR_EVIDENCE_PATH: monitoring-evidence.json
     steps:
       - uses: actions/checkout@v4
       - uses: pnpm/action-setup@v4
@@ -37,5 +43,19 @@ jobs:
           node-version-file: .node-version
           cache: pnpm
       - run: pnpm install --frozen-lockfile
-      - name: Run non-mutating synthetic health checks
-        run: pnpm smoke:staging
+      - name: Run non-mutating operational monitor
+        run: pnpm monitor:staging
+      - name: Publish monitoring evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: staging-monitor-${{ github.run_id }}
+          path: monitoring-evidence.json
+          if-no-files-found: error
+      - name: Record monitor execution
+        if: always()
+        run: |
+          echo "### Staging monitor" >> "$GITHUB_STEP_SUMMARY"
+          echo "Alert destination: UNCONFIGURED" >> "$GITHUB_STEP_SUMMARY"
+          echo "Operational owner: UNASSIGNED" >> "$GITHUB_STEP_SUMMARY"
+          echo "Evidence artifact: staging-monitor-${GITHUB_RUN_ID}" >> "$GITHUB_STEP_SUMMARY"
