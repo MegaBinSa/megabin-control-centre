@@ -15,14 +15,14 @@
 - Both frontends build; 150 TypeScript/integration tests and 30 Playwright workflows pass.
 - OpenAPI drift, documentation links, dependency audit, migration safety, environment/secret scan and whitespace checks pass.
 - GitHub Staging configuration contains the existing deployment/provider credentials and synthetic personas, but no approved recovery target/objectives or alert owner/destination variables. Only configuration names were inspected; values were not exposed.
+- Non-mutating protected Staging monitor [run 31847180318](https://github.com/MegaBinSa/megabin-control-centre/actions/runs/31847180318) passed and retained its private evidence artifact. It observed the deployed Phase 5C release `4e471bd250a2757ca67bb0e843c2201d144ac122` / `github-31738092512-1`, both frontends, runtime and onboarding availability, CORS, Office/Driver authentication, critical denials, Driver financial isolation and fake/capture provider posture.
 
 ## Evidence not obtained
 
-- No external alert was delivered or acknowledged because no destination, recipient or owner is approved.
+- No external alert was delivered or acknowledged because no destination, recipient or owner is approved. The successful monitor evidence correctly records `UNCONFIGURED`, `UNASSIGNED` and null acknowledgement fields.
 - No backup/PITR availability is claimed because the actual Supabase plan/capability has not been approved and recorded.
 - No restore was attempted because RPO/RTO, authorities and an isolated restore target are absent.
 - No remote frontend/Function rollback or migration repair rehearsal was executed from an unmerged branch.
 - No shared-Staging business UAT journey was marked Passed. The six catalogue journeys remain `Not Run` pending monitoring ownership/routing and controlled execution.
 
 These omissions are explicit gate blockers, not successful evidence inferred from tooling.
-
