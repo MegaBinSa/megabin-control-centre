@@ -63,7 +63,38 @@ export function buildMonitoringEvidence(values, checks, definition, now = new Da
 
 export async function runOperationalMonitor(values, fetchImpl = fetch, now = new Date()) {
   const definition = JSON.parse(readFileSync("config/operational-alerts.json", "utf8"));
-  return buildMonitoringEvidence(values, await runSmoke(values, fetchImpl), definition, now);
+  const evidence = buildMonitoringEvidence(
+    values,
+    await runSmoke(values, fetchImpl),
+    definition,
+    now
+  );
+  if (values.MEGABIN_SYNTHETIC_ALERT_PROOF === "MBA-STG-MON-TEST-001") {
+    const proof = definition.alerts.find(
+      (alert) => alert.id === values.MEGABIN_SYNTHETIC_ALERT_PROOF
+    );
+    if (!proof) throw new Error("Synthetic alert proof identifier is not registered.");
+    evidence.alerts.push({
+      alertId: proof.id,
+      deduplicationKey: `staging:${proof.id}:${values.GITHUB_RUN_ID ?? "local"}`,
+      severity: proof.severity,
+      check: "synthetic_alert_delivery_proof",
+      state: "Open",
+      owner: definition.defaultOwner,
+      escalationOwner: definition.escalationOwner,
+      deliveryDestination: definition.deliveryDestination,
+      deliveryRecipient: definition.deliveryRecipient,
+      deliveryVerification: "HUMAN_CONFIRMATION_REQUIRED",
+      responseExpectation: proof.response,
+      observedStatus: 1,
+      observedAt: now.toISOString(),
+      acknowledgement: null,
+      resolution: null,
+      synthetic: true
+    });
+    evidence.outcome = "Failed";
+  }
+  return evidence;
 }
 
 if (process.argv[1]?.endsWith("operational-monitor.mjs")) {
@@ -88,8 +119,11 @@ if (process.argv[1]?.endsWith("operational-monitor.mjs")) {
           severity: "SEV1",
           check: "monitor_execution",
           state: "Open",
-          owner: "UNASSIGNED",
-          deliveryDestination: "UNCONFIGURED",
+          owner: "Shaun",
+          escalationOwner: "Shaun",
+          deliveryDestination: "github-actions-email",
+          deliveryRecipient: "infomegabin@gmail.com",
+          deliveryVerification: "HUMAN_CONFIRMATION_REQUIRED",
           responseExpectation: "Investigate a missed or failed scheduled monitor execution.",
           observedStatus: 0,
           observedAt: now,

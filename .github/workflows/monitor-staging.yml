@@ -4,6 +4,18 @@ on:
   schedule:
     - cron: "17 * * * *"
   workflow_dispatch:
+    inputs:
+      synthetic_alert_proof:
+        description: Leave blank for a normal monitor; use MBA-STG-MON-TEST-001 for controlled notification proof
+        required: false
+        type: choice
+        options:
+          - ""
+          - MBA-STG-MON-TEST-001
+      confirm_synthetic_alert:
+        description: For proof only, type PROVE-ALERT-DELIVERY:MBA-STG-MON-TEST-001
+        required: false
+        type: string
 
 permissions:
   contents: read
@@ -33,6 +45,7 @@ jobs:
       MEGABIN_WEBSITE_ONBOARDING_INTEGRATION_KEY: ${{ vars.WEBSITE_ONBOARDING_INTEGRATION_KEY }}
       MEGABIN_WEBSITE_ONBOARDING_SECRET: ${{ secrets.WEBSITE_ONBOARDING_SECRET }}
       MEGABIN_MONITOR_EVIDENCE_PATH: monitoring-evidence.json
+      MEGABIN_SYNTHETIC_ALERT_PROOF: ${{ inputs.synthetic_alert_proof }}
     steps:
       - uses: actions/checkout@v4
       - uses: pnpm/action-setup@v4
@@ -43,6 +56,12 @@ jobs:
           node-version-file: .node-version
           cache: pnpm
       - run: pnpm install --frozen-lockfile
+      - name: Validate controlled synthetic alert proof
+        if: inputs.synthetic_alert_proof != ''
+        shell: bash
+        run: |
+          test "${{ inputs.synthetic_alert_proof }}" = "MBA-STG-MON-TEST-001"
+          test "${{ inputs.confirm_synthetic_alert }}" = "PROVE-ALERT-DELIVERY:MBA-STG-MON-TEST-001"
       - name: Run non-mutating operational monitor
         run: pnpm monitor:staging
       - name: Publish monitoring evidence
@@ -52,10 +71,13 @@ jobs:
           name: staging-monitor-${{ github.run_id }}
           path: monitoring-evidence.json
           if-no-files-found: error
+          retention-days: 90
       - name: Record monitor execution
         if: always()
         run: |
           echo "### Staging monitor" >> "$GITHUB_STEP_SUMMARY"
-          echo "Alert destination: UNCONFIGURED" >> "$GITHUB_STEP_SUMMARY"
-          echo "Operational owner: UNASSIGNED" >> "$GITHUB_STEP_SUMMARY"
+          echo "Alert destination: GitHub Actions workflow notification email" >> "$GITHUB_STEP_SUMMARY"
+          echo "Alert recipient: infomegabin@gmail.com" >> "$GITHUB_STEP_SUMMARY"
+          echo "Operational/escalation owner: Shaun" >> "$GITHUB_STEP_SUMMARY"
+          echo "Delivery receipt: requires human mailbox confirmation" >> "$GITHUB_STEP_SUMMARY"
           echo "Evidence artifact: staging-monitor-${GITHUB_RUN_ID}" >> "$GITHUB_STEP_SUMMARY"

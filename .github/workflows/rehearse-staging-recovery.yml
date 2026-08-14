@@ -1,0 +1,128 @@
+name: Rehearse staging recovery
+
+on:
+  workflow_dispatch:
+    inputs:
+      recovery_point:
+        description: Operator-selected logical recovery-point label (for example 2026-08-15T12:00:00Z)
+        required: true
+        type: string
+      confirm_restore:
+        description: Type RESTORE-REHEARSAL:xniweqdmswzljcgkfglx:ivtaoqorcryzsempsogs
+        required: true
+        type: string
+
+permissions:
+  contents: read
+
+concurrency:
+  group: megabin-staging-recovery-rehearsal
+  cancel-in-progress: false
+
+jobs:
+  logical-restore:
+    runs-on: ubuntu-latest
+    environment: staging-recovery
+    env:
+      MEGABIN_ENVIRONMENT: ${{ vars.MEGABIN_ENVIRONMENT }}
+      SOURCE_SUPABASE_PROJECT_REF: ${{ vars.SOURCE_SUPABASE_PROJECT_REF }}
+      RESTORE_SUPABASE_PROJECT_REF: ${{ vars.RESTORE_SUPABASE_PROJECT_REF }}
+      SUPABASE_RECOVERY_PROJECT_REF: ${{ vars.SUPABASE_RECOVERY_PROJECT_REF }}
+      STAGING_SUPABASE_PROJECT_REF: ${{ vars.STAGING_SUPABASE_PROJECT_REF }}
+      SUPABASE_RECOVERY_URL: ${{ vars.SUPABASE_RECOVERY_URL }}
+      SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+      SUPABASE_STAGING_DB_PASSWORD: ${{ secrets.SUPABASE_STAGING_DB_PASSWORD }}
+      SUPABASE_RECOVERY_DB_PASSWORD: ${{ secrets.SUPABASE_RECOVERY_DB_PASSWORD }}
+      RECOVERY_POINT: ${{ inputs.recovery_point }}
+      CONFIRM_RESTORE_REHEARSAL: ${{ inputs.confirm_restore }}
+      RECOVERY_EVIDENCE_PATH: recovery-rehearsal-evidence.json
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 11.16.0
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: .node-version
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+
+      - name: Validate approved source, target and recovery decision contract
+        run: pnpm recovery:validate
+
+      - name: Link and capture active Staging logical snapshot
+        shell: bash
+        run: |
+          set -euo pipefail
+          work="$RUNNER_TEMP/megabin-recovery-${GITHUB_RUN_ID}"
+          mkdir -p "$work"
+          chmod 700 "$work"
+          echo "RECOVERY_WORK=$work" >> "$GITHUB_ENV"
+          pnpm exec supabase link --project-ref "$SOURCE_SUPABASE_PROJECT_REF" --password "$SUPABASE_STAGING_DB_PASSWORD"
+          curl --fail --silent --show-error \
+            "https://${SOURCE_SUPABASE_PROJECT_REF}.supabase.co/functions/v1/platform-runtime/health/live" \
+            > "$work/source-release.json"
+          pnpm exec supabase migration list --linked > "$work/source-migrations.txt"
+          pnpm exec supabase db dump --linked --schema app_private,api,public --file "$work/schema.sql"
+          pnpm exec supabase db dump --linked --schema auth --data-only --file "$work/auth-data.sql"
+          pnpm exec supabase db dump --linked --schema app_private,public --data-only --file "$work/application-data.sql"
+          pnpm exec supabase db dump --linked --schema supabase_migrations --data-only --file "$work/migration-data.sql"
+          echo "DUMP_CREATED_AT=$(date -u +%Y-%m-%dT%H:%M:%SZ)" >> "$GITHUB_ENV"
+          echo "SOURCE_RELEASE_IDENTITY=$(jq -c '.runtime // .' "$work/source-release.json")" >> "$GITHUB_ENV"
+          echo "MIGRATION_IDENTITY=$(sha256sum "$work/source-migrations.txt" | cut -d' ' -f1)" >> "$GITHUB_ENV"
+
+      - name: Verify isolated target is empty or previously authorized disposable recovery data
+        run: |
+          pnpm exec supabase link --project-ref "$RESTORE_SUPABASE_PROJECT_REF" --password "$SUPABASE_RECOVERY_DB_PASSWORD"
+          pnpm exec supabase db query --linked --file supabase/recovery/verify-disposable-target.sql
+
+      - name: Restore logical snapshot into approved isolated target
+        shell: bash
+        run: |
+          set -euo pipefail
+          echo "RESTORE_STARTED_AT=$(date -u +%Y-%m-%dT%H:%M:%SZ)" >> "$GITHUB_ENV"
+          pnpm exec supabase db query --linked --file supabase/recovery/prepare-disposable-target.sql
+          pnpm exec supabase db query --linked --file "$RECOVERY_WORK/schema.sql"
+          pnpm exec supabase db query --linked --file "$RECOVERY_WORK/auth-data.sql"
+          pnpm exec supabase db query --linked --file "$RECOVERY_WORK/application-data.sql"
+          pnpm exec supabase db query --linked --file "$RECOVERY_WORK/migration-data.sql"
+          pnpm exec supabase db query --linked --file supabase/recovery/verify-restored-target.sql
+          pnpm exec supabase migration list --linked > "$RECOVERY_WORK/restored-migrations.txt"
+          diff -u "$RECOVERY_WORK/source-migrations.txt" "$RECOVERY_WORK/restored-migrations.txt"
+          echo "RESTORE_COMPLETED_AT=$(date -u +%Y-%m-%dT%H:%M:%SZ)" >> "$GITHUB_ENV"
+          echo "RESTORE_RESULT=Passed" >> "$GITHUB_ENV"
+          echo "INTEGRITY_CHECKS=migration-history,schema,synthetic-reference-data,office-region-scope,driver-office-denial,driver-financial-denial,driver-staff-link" >> "$GITHUB_ENV"
+
+      - name: Write non-sensitive recovery evidence
+        if: success()
+        run: node scripts/recovery-evidence.mjs
+
+      - name: Remove sensitive logical dump files
+        if: always()
+        shell: bash
+        run: |
+          if test -n "${RECOVERY_WORK:-}" && test -d "$RECOVERY_WORK"; then
+            find "$RECOVERY_WORK" -type f -exec shred -u {} \; 2>/dev/null || rm -f "$RECOVERY_WORK"/*
+            rmdir "$RECOVERY_WORK" 2>/dev/null || true
+          fi
+
+      - name: Publish bounded rehearsal evidence
+        if: success()
+        uses: actions/upload-artifact@v4
+        with:
+          name: staging-recovery-rehearsal-${{ github.run_id }}
+          path: recovery-rehearsal-evidence.json
+          if-no-files-found: error
+          retention-days: 90
+
+      - name: Record recovery summary
+        if: always()
+        run: |
+          echo "### Staging recovery rehearsal" >> "$GITHUB_STEP_SUMMARY"
+          echo "- Source: $SOURCE_SUPABASE_PROJECT_REF" >> "$GITHUB_STEP_SUMMARY"
+          echo "- Isolated target: $RESTORE_SUPABASE_PROJECT_REF" >> "$GITHUB_STEP_SUMMARY"
+          echo "- Mechanism: operator-triggered logical dump/restore (not managed backup or PITR)" >> "$GITHUB_STEP_SUMMARY"
+          echo "- Target RPO: 1 hour; status: not achieved" >> "$GITHUB_STEP_SUMMARY"
+          echo "- Target RTO: 4 hours; observed result is recorded only on successful verification" >> "$GITHUB_STEP_SUMMARY"
+          echo "- Independent verifier: Sidney; confirmation remains external to workflow execution" >> "$GITHUB_STEP_SUMMARY"
+          echo "- Evidence retention: 90 workflow days; 12-month target remains unmet" >> "$GITHUB_STEP_SUMMARY"
