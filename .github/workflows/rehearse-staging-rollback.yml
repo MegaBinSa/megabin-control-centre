@@ -1,0 +1,77 @@
+name: Rehearse staging component rollback
+
+on:
+  workflow_dispatch:
+    inputs:
+      current_release_sha:
+        description: Current main release SHA to restore after the rehearsal
+        required: true
+        type: string
+      prior_release_sha:
+        description: Known compatible prior main release SHA
+        required: true
+        type: string
+      confirm_rollback:
+        description: Type REHEARSE-ROLLBACK followed by a colon and the prior SHA
+        required: true
+        type: string
+
+permissions:
+  contents: read
+  checks: read
+
+concurrency:
+  group: megabin-staging-rollback-controller
+  cancel-in-progress: false
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    outputs:
+      prior: ${{ steps.identity.outputs.prior }}
+      current: ${{ steps.identity.outputs.current }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 11.16.0
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: .node-version
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - name: Validate immutable releases and forward-only database posture
+        id: identity
+        env:
+          MEGABIN_ENVIRONMENT: staging
+          CURRENT_RELEASE_SHA: ${{ inputs.current_release_sha }}
+          PRIOR_RELEASE_SHA: ${{ inputs.prior_release_sha }}
+          CONFIRM_ROLLBACK_REHEARSAL: ${{ inputs.confirm_rollback }}
+        shell: bash
+        run: |
+          pnpm rollback:plan
+          git fetch origin main
+          git merge-base --is-ancestor "$PRIOR_RELEASE_SHA" origin/main
+          git merge-base --is-ancestor "$CURRENT_RELEASE_SHA" origin/main
+          test "$(git rev-parse origin/main)" = "$CURRENT_RELEASE_SHA"
+          echo "prior=$PRIOR_RELEASE_SHA" >> "$GITHUB_OUTPUT"
+          echo "current=$CURRENT_RELEASE_SHA" >> "$GITHUB_OUTPUT"
+
+  deploy-prior-compatible-release:
+    needs: validate
+    uses: ./.github/workflows/deploy-staging.yml
+    with:
+      source_sha: ${{ needs.validate.outputs.prior }}
+      confirm_environment: DEPLOY-STAGING
+      allow_destructive_migrations: false
+    secrets: inherit
+
+  restore-current-release:
+    if: ${{ always() && needs.validate.result == 'success' }}
+    needs: [validate, deploy-prior-compatible-release]
+    uses: ./.github/workflows/deploy-staging.yml
+    with:
+      source_sha: ${{ needs.validate.outputs.current }}
+      confirm_environment: DEPLOY-STAGING
+      allow_destructive_migrations: false
+    secrets: inherit

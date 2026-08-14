@@ -91,6 +91,11 @@ Material changes to the architecture require an ADR. An ADR may clarify the blue
 | [Recovery objectives register](../production/recovery-objectives-register.md) | Explicit RPO/RTO, backup/PITR, authority and isolated-target decisions |
 | [Readiness gates](../production/readiness-gates.md) | Evidence-based Staging, UAT, Pilot and Production gates |
 | [Phase 5D assurance evidence](../production/phase-5d-assurance-evidence.md) | Verification obtained, evidence not obtained, and explicit blockers |
+| [Phase 5E assurance evidence](../production/phase-5e-assurance-evidence.md) | Approved decisions, executable rehearsal controls, and truthful execution boundary |
+| [Alert delivery evidence](../production/alert-delivery-evidence.md) | Controlled notification proof and human receipt requirement |
+| [Restore rehearsal evidence](../production/restore-rehearsal-evidence.md) | Logical restore/RTO evidence and unresolved RPO posture |
+| [Rollback rehearsal evidence](../production/rollback-rehearsal-evidence.md) | Prior-release and forward-repair rehearsal evidence |
+| [Synthetic UAT results](../production/synthetic-uat-results.md) | Release-bound results for the six operational journeys |
 | [Operations runbook index](../runbooks/README.md) | Deployment, recovery, provisioning, monitoring, incident, device, reset, and release procedures |
 
 ## Supporting and migration context

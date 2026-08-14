@@ -1,6 +1,6 @@
 # UAT and Pilot Plan
 
-**Status:** Shared Staging validated; synthetic journey contracts implemented; execution blocked/not run; no pilot authorized
+**Status:** Shared Staging and Synthetic Internal UAT Ready gates passed; six journeys not run; no pilot authorized
 **Last reviewed:** 2026-08-15
 
 ## Entry criteria for internal UAT
@@ -9,7 +9,7 @@
 - Synthetic Office/Driver users, application profiles, region/team scopes and positive/negative authorization smoke checks are proven.
 - Extend the deterministic seed/personas where a UAT scenario requires roles or regions beyond the proven Office/Driver pair.
 - Communications remain capture/allowlist only; provider sandboxes cannot reach real clients.
-- Before operationally supervised UAT, assign monitoring/alert owners and recipients. Before pilot, exercise alert delivery, deployment rollback, migration recovery and isolated restore.
+- Monitoring and escalation ownership, recipient and GitHub Actions notification route are approved. Before pilot, prove human receipt, deployment rollback, migration recovery and isolated restore.
 - Required fake providers are explicitly identified; selected staging sandboxes are isolated.
 
 ## End-to-end UAT catalogue
@@ -34,7 +34,7 @@ Each scenario records build/commit, environment, seed version, actor/role, expec
 
 The Phase 5C remote smoke suite is infrastructure acceptance evidence, not business UAT sign-off. It proves the environment can host the UAT catalogue safely with synthetic data and fake/capture providers.
 
-`config/synthetic-uat-catalogue.json` defines the six Phase 5D executable journey groups with stable IDs and mandatory evidence fields. `config/synthetic-uat-data.json` bounds preparation/recycling to synthetic provenance and preserves Phase 5C personas. Repository contract tests pass, but all six journeys remain `Not Run`; Synthetic Internal UAT Ready remains blocked on monitoring ownership/routing, and Synthetic Internal UAT Passed is not claimed.
+`config/synthetic-uat-catalogue.json` defines the six executable journey groups with stable IDs and mandatory evidence fields. `config/synthetic-uat-data.json` bounds preparation/recycling to synthetic provenance and preserves Phase 5C personas. Approved monitoring ownership/routing closes the UAT Ready gate, but all six journeys remain `Not Run`; Synthetic Internal UAT Passed is not claimed.
 
 ## Minimum safe controlled pilot
 

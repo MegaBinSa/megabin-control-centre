@@ -17,6 +17,7 @@
     "migrations:safety": "node scripts/migration-safety.mjs",
     "monitor:staging": "node scripts/operational-monitor.mjs",
     "recovery:validate": "node scripts/recovery-contract.mjs",
+    "recovery:evidence": "node scripts/recovery-evidence.mjs",
     "readiness:validate": "node scripts/readiness-gates.mjs",
     "rollback:plan": "node scripts/rollback-rehearsal.mjs",
     "smoke:staging": "node scripts/staging-smoke.mjs",

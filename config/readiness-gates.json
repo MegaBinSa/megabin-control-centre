@@ -12,16 +12,14 @@
     {
       "id": "GATE-UAT-READY",
       "name": "Synthetic Internal UAT Ready",
-      "status": "Blocked",
+      "status": "Passed",
       "automatedEvidence": [
         "synthetic personas",
         "fake/capture provider guards",
         "UAT catalogue contract"
       ],
-      "humanApprovals": ["monitoring owner", "alert recipient and escalation ownership"],
-      "externalDependencies": [
-        "operational alert destination or accepted manual monitoring posture"
-      ]
+      "humanApprovals": [],
+      "externalDependencies": []
     },
     {
       "id": "GATE-UAT-PASSED",
@@ -39,11 +37,11 @@
       "humanApprovals": [
         "privacy/security/business decisions",
         "support ownership",
-        "RPO/RTO",
-        "recovery authority"
+        "privacy/legal approval"
       ],
       "externalDependencies": [
         "isolated restore proof",
+        "achieved one-hour RPO or formally accepted pilot exception",
         "device/field validation",
         "selected pilot providers",
         "migration rehearsal"

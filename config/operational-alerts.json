@@ -1,9 +1,23 @@
 {
-  "version": 1,
+  "version": 2,
   "environment": "staging",
-  "defaultOwner": "UNASSIGNED",
-  "deliveryDestination": "UNCONFIGURED",
+  "defaultOwner": "Shaun",
+  "escalationOwner": "Shaun",
+  "deliveryDestination": "github-actions-email",
+  "deliveryRecipient": "infomegabin@gmail.com",
+  "deliveryVerification": "HUMAN_CONFIRMATION_REQUIRED",
+  "severityRouting": {
+    "SEV1": "immediate-email",
+    "SEV2": "immediate-email",
+    "SEV3": "email-no-urgent-escalation"
+  },
   "alerts": [
+    {
+      "sourceWorkflow": "Monitor staging synthetic alert proof",
+      "id": "MBA-STG-MON-TEST-001",
+      "severity": "SEV3",
+      "response": "Confirm the expected GitHub Actions failure notification reached the approved mailbox; no application incident exists."
+    },
     {
       "sourceWorkflow": "Monitor staging",
       "id": "MBA-STG-MON-001",
@@ -32,7 +46,7 @@
       "check": "runtime_liveness",
       "id": "MBA-STG-API-001",
       "severity": "SEV1",
-      "response": "Acknowledge immediately when an operational owner is assigned."
+      "response": "Shaun acknowledges immediately and begins runtime investigation."
     },
     {
       "check": "release_identity",

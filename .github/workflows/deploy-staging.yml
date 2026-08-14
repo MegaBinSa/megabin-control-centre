@@ -16,6 +16,18 @@ on:
         required: false
         default: false
         type: boolean
+  workflow_call:
+    inputs:
+      source_sha:
+        required: true
+        type: string
+      confirm_environment:
+        required: true
+        type: string
+      allow_destructive_migrations:
+        required: false
+        default: false
+        type: boolean
 
 permissions:
   contents: read

@@ -9,6 +9,7 @@ import { inspectSql } from "../scripts/migration-safety.mjs";
 import { buildMonitoringEvidence } from "../scripts/operational-monitor.mjs";
 import { validateReadinessGates } from "../scripts/readiness-gates.mjs";
 import { assertRestoreRehearsal } from "../scripts/recovery-contract.mjs";
+import { buildRecoveryEvidence } from "../scripts/recovery-evidence.mjs";
 import { createRollbackPlan } from "../scripts/rollback-rehearsal.mjs";
 import { assertStagingReset } from "../scripts/staging-reset.mjs";
 import { runSmoke } from "../scripts/staging-smoke.mjs";
@@ -325,7 +326,7 @@ describe("deployment safety tools", () => {
     expect(checks.find((check) => check.name === "driver_frontend")?.passed).toBe(false);
   });
 
-  it("creates stable deduplicated monitoring evidence without pretending ownership", () => {
+  it("creates stable deduplicated monitoring evidence with approved ownership", () => {
     const definition = JSON.parse(readFileSync("config/operational-alerts.json", "utf8"));
     const evidence = buildMonitoringEvidence(
       staging,
@@ -337,17 +338,18 @@ describe("deployment safety tools", () => {
     expect(evidence.alerts.find((alert) => alert.alertId === "MBA-STG-API-001")).toMatchObject({
       alertId: "MBA-STG-API-001",
       deduplicationKey: "staging:MBA-STG-API-001",
-      owner: "UNASSIGNED",
-      deliveryDestination: "UNCONFIGURED",
+      owner: "Shaun",
+      deliveryDestination: "github-actions-email",
       state: "Open"
     });
   });
 
-  it("retains non-mutating monitor evidence without inventing alert delivery", () => {
+  it("retains non-mutating monitor evidence and requires human delivery confirmation", () => {
     const workflow = readFileSync(".github/workflows/monitor-staging.yml", "utf8");
     expect(workflow).toContain("pnpm monitor:staging");
     expect(workflow).toContain("actions/upload-artifact@v4");
-    expect(workflow).toContain("Alert destination: UNCONFIGURED");
+    expect(workflow).toContain("Alert destination: GitHub Actions workflow notification email");
+    expect(workflow).toContain("PROVE-ALERT-DELIVERY:MBA-STG-MON-TEST-001");
     expect(workflow).toContain("vars.WEBSITE_ONBOARDING_INTEGRATION_KEY");
     expect(workflow).toContain("secrets.WEBSITE_ONBOARDING_SECRET");
     expect(workflow).not.toContain("MEGABIN_SMOKE_ALLOW_MUTATION");
@@ -356,19 +358,86 @@ describe("deployment safety tools", () => {
     );
   });
 
-  it("fails restore rehearsal closed until decisions and an isolated target exist", () => {
+  it("fails restore rehearsal closed outside the exact approved source and target", () => {
     const objectives = JSON.parse(readFileSync("config/recovery-objectives.json", "utf8"));
     expect(() => assertRestoreRehearsal({}, objectives)).toThrow("restore-rehearsal");
     expect(() =>
       assertRestoreRehearsal(
         {
           MEGABIN_ENVIRONMENT: "restore-rehearsal",
-          SOURCE_SUPABASE_PROJECT_REF: "abcdefghijklmnopqrst",
-          RESTORE_SUPABASE_PROJECT_REF: "abcdefghijklmnopqrst"
+          SOURCE_SUPABASE_PROJECT_REF: objectives.sourceProjectRef,
+          RESTORE_SUPABASE_PROJECT_REF: objectives.sourceProjectRef
         },
         objectives
       )
     ).toThrow("isolated");
+    expect(
+      assertRestoreRehearsal(
+        {
+          MEGABIN_ENVIRONMENT: "restore-rehearsal",
+          SOURCE_SUPABASE_PROJECT_REF: objectives.sourceProjectRef,
+          STAGING_SUPABASE_PROJECT_REF: objectives.sourceProjectRef,
+          RESTORE_SUPABASE_PROJECT_REF: objectives.restoreTargetProjectRef,
+          CONFIRM_RESTORE_REHEARSAL: `RESTORE-REHEARSAL:${objectives.sourceProjectRef}:${objectives.restoreTargetProjectRef}`,
+          RECOVERY_POINT: "2026-08-15T12:00:00Z"
+        },
+        objectives
+      )
+    ).toMatchObject({
+      targetRpo: "PT1H",
+      achievedRpo: null,
+      rpoStatus: "NOT_ACHIEVED",
+      targetRto: "PT4H",
+      managedBackup: false,
+      pitr: false
+    });
+  });
+
+  it("records observed restore time without converting the unmet RPO into success", () => {
+    const objectives = JSON.parse(readFileSync("config/recovery-objectives.json", "utf8"));
+    expect(
+      buildRecoveryEvidence(
+        {
+          RECOVERY_POINT: "2026-08-15T12:00:00Z",
+          DUMP_CREATED_AT: "2026-08-15T12:01:00Z",
+          RESTORE_STARTED_AT: "2026-08-15T12:02:00Z",
+          RESTORE_COMPLETED_AT: "2026-08-15T12:32:00Z",
+          RESTORE_RESULT: "Passed",
+          GITHUB_ACTOR: "synthetic-operator",
+          INTEGRITY_CHECKS: "schema,authorization"
+        },
+        objectives
+      )
+    ).toMatchObject({
+      elapsedSeconds: 1800,
+      observedRtoMet: true,
+      achievedRpo: null,
+      rpoStatus: "NOT_ACHIEVED",
+      verificationStatus: "PENDING_INDEPENDENT_CONFIRMATION"
+    });
+  });
+
+  it("keeps logical dumps private and recovery refs immutable in the protected workflow", () => {
+    const workflow = readFileSync(".github/workflows/rehearse-staging-recovery.yml", "utf8");
+    expect(workflow).toContain("environment: staging-recovery");
+    expect(workflow).toContain("pnpm recovery:validate");
+    expect(workflow).toContain("supabase/recovery/verify-disposable-target.sql");
+    expect(workflow).toContain("supabase/recovery/prepare-disposable-target.sql");
+    expect(workflow).toContain("supabase/recovery/verify-restored-target.sql");
+    expect(workflow).toContain("retention-days: 90");
+    expect(workflow).not.toMatch(/path:\s*\$?RECOVERY_WORK/);
+    expect(workflow).not.toContain("restore-pitr");
+    expect(workflow).not.toContain("db reset");
+  });
+
+  it("restores current Staging after a compatible component rollback rehearsal", () => {
+    const workflow = readFileSync(".github/workflows/rehearse-staging-rollback.yml", "utf8");
+    expect(workflow).toContain("pnpm rollback:plan");
+    expect(workflow).toContain("deploy-prior-compatible-release");
+    expect(workflow).toContain("restore-current-release");
+    expect(workflow).toContain("allow_destructive_migrations: false");
+    expect(workflow).not.toContain("migration down");
+    expect(workflow).not.toContain("db reset");
   });
 
   it("builds an explicit non-destructive rollback and forward-repair plan", () => {
@@ -415,7 +484,7 @@ describe("deployment safety tools", () => {
     const register = JSON.parse(readFileSync("config/readiness-gates.json", "utf8"));
     expect(validateReadinessGates(register)).toEqual({ ok: true, gates: 5 });
     const invalid = structuredClone(register);
-    invalid.gates[1].status = "Passed";
+    invalid.gates[3].status = "Passed";
     expect(() => validateReadinessGates(invalid)).toThrow("unresolved approvals");
   });
 });
