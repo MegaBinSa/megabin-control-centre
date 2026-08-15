@@ -36,9 +36,11 @@
       "automatedEvidence": [
         "recovery rehearsal run 31877345920; observed RTO 296 seconds",
         "alert delivery proof run 31878853824; human mailbox receipt confirmed",
-        "component rollback and current-release restoration run 31881010706"
+        "component rollback and current-release restoration run 31881010706",
+        "isolated database forward-repair rehearsal run 31906816621"
       ],
       "humanApprovals": [
+        "independent recovery evidence confirmation",
         "privacy/security/business decisions",
         "support ownership",
         "privacy/legal approval"

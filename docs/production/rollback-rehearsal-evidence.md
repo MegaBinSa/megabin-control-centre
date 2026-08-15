@@ -13,3 +13,7 @@ The workflow then restored current release `e2837def54f922649965298e27f97357977b
 No database rollback, downgrade, reset or migration application occurred. Both deployment passes reported `Remote database is up to date`. Database operations did occur: migration inventory/verification and authorization checks ran, bounded persona provisioning was invoked idempotently, and the smoke suite submitted synthetic website intake (prior pass `200`, restored-current pass `202`). These bounded synthetic operations do not change the schema or represent a database rollback.
 
 Non-blocking warnings were the known Supabase bundler `.js` source-specifier read warnings followed by successful `.ts` uploads/bundles, GitHub Actions Node 20 deprecation notices while actions were forced onto Node 24, and routine tool-update/deprecation notices. None affected deployment or verification.
+
+## Database forward-repair evidence
+
+Database recovery remains forward-only and separate from component rollback. [Run 31906816621](https://github.com/MegaBinSa/megabin-control-centre/actions/runs/31906816621) applied the approved synthetic fault and immutable repair migrations only to the isolated recovery target. The expected fault identifier, repaired invariant, restored-data checks, authorization isolation and critical RLS passed; source Staging migration identity remained unchanged and no Staging write, down migration or reset occurred. This closes automated forward-repair execution while independent post-run evidence confirmation, one-hour RPO and durable retention remain open.

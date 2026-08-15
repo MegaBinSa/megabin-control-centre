@@ -41,5 +41,5 @@ This proves the reproducible shared-staging deployment path. It does not prove p
 
 - Staging alert delivery passed in run 31878853824; broader production monitoring remains open.
 - Logical restore into the isolated target passed in run 31877345920; independent verification, one-hour RPO and 12-month evidence retention remain open.
-- Component rollback/current restoration passed in run 31881010706; migration forward-repair rehearsal remains open.
+- Component rollback/current restoration passed in run 31881010706. Isolated database forward repair passed in run 31906816621 with the expected synthetic fault, immutable repair, post-repair integrity/security verification and zero shared-Staging writes; independent post-run review remains pending.
 - Complete the outstanding business, security, privacy, retention, provider, device and support decisions in the production registers.
