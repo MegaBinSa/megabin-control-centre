@@ -33,6 +33,7 @@ jobs:
       SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
       SUPABASE_STAGING_DB_PASSWORD: ${{ secrets.SUPABASE_STAGING_DB_PASSWORD }}
       SUPABASE_RECOVERY_DB_PASSWORD: ${{ secrets.SUPABASE_RECOVERY_DB_PASSWORD }}
+      SUPABASE_RECOVERY_DB_URL: ${{ secrets.SUPABASE_RECOVERY_DB_URL }}
       SUPABASE_STAGING_PUBLISHABLE_KEY: ${{ secrets.SUPABASE_STAGING_PUBLISHABLE_KEY }}
       STAGING_OFFICE_EMAIL: ${{ vars.STAGING_OFFICE_EMAIL }}
       STAGING_OFFICE_PASSWORD: ${{ secrets.STAGING_OFFICE_PASSWORD }}
@@ -81,6 +82,7 @@ jobs:
           pnpm exec supabase db dump --linked --schema app_private,api,public --file "$work/schema.sql"
           pnpm exec supabase db dump --linked --schema auth --data-only --file "$work/auth-data.sql"
           pnpm exec supabase db dump --linked --schema app_private,public --data-only --file "$work/application-data.sql"
+          pnpm exec supabase db dump --linked --schema supabase_migrations --file "$work/migration-schema.sql"
           pnpm exec supabase db dump --linked --schema supabase_migrations --data-only --file "$work/migration-data.sql"
           echo "DUMP_CREATED_AT=$(date -u +%Y-%m-%dT%H:%M:%SZ)" >> "$GITHUB_ENV"
           echo "SOURCE_RELEASE_IDENTITY=$(jq -c '.runtime // .' "$work/source-release.json")" >> "$GITHUB_ENV"
@@ -96,11 +98,31 @@ jobs:
         run: |
           set -euo pipefail
           echo "RESTORE_STARTED_AT=$(date -u +%Y-%m-%dT%H:%M:%SZ)" >> "$GITHUB_ENV"
-          pnpm exec supabase db query --linked --file supabase/recovery/prepare-disposable-target.sql
-          pnpm exec supabase db query --linked --file "$RECOVERY_WORK/schema.sql"
-          pnpm exec supabase db query --linked --file "$RECOVERY_WORK/auth-data.sql"
-          pnpm exec supabase db query --linked --file "$RECOVERY_WORK/application-data.sql"
-          pnpm exec supabase db query --linked --file "$RECOVERY_WORK/migration-data.sql"
+          test -n "$SUPABASE_RECOVERY_DB_URL"
+          case "$SUPABASE_RECOVERY_DB_URL" in
+            *"$RESTORE_SUPABASE_PROJECT_REF"*) ;;
+            *) echo "Recovery database URL does not identify the approved target." >&2; exit 1 ;;
+          esac
+          case "$SUPABASE_RECOVERY_DB_URL" in
+            *"$SOURCE_SUPABASE_PROJECT_REF"*) echo "Recovery database URL identifies active Staging." >&2; exit 1 ;;
+          esac
+          psql --version
+          # Supabase-generated data dumps already enter replica mode. The explicit command documents
+          # and enforces that posture before every data file in one fail-closed transaction.
+          psql "$SUPABASE_RECOVERY_DB_URL" \
+            --no-psqlrc \
+            --single-transaction \
+            --set ON_ERROR_STOP=1 \
+            --file supabase/recovery/prepare-disposable-target.sql \
+            --file "$RECOVERY_WORK/schema.sql" \
+            --file "$RECOVERY_WORK/migration-schema.sql" \
+            --command "set session_replication_role = replica;" \
+            --file "$RECOVERY_WORK/auth-data.sql" \
+            --command "set session_replication_role = replica;" \
+            --file "$RECOVERY_WORK/application-data.sql" \
+            --command "set session_replication_role = replica;" \
+            --file "$RECOVERY_WORK/migration-data.sql" \
+            --command "set session_replication_role = origin;"
           pnpm exec supabase db query --linked --file supabase/recovery/verify-restored-target.sql
           pnpm exec supabase migration list --linked > "$RECOVERY_WORK/restored-migrations.txt"
           diff -u "$RECOVERY_WORK/source-migrations.txt" "$RECOVERY_WORK/restored-migrations.txt"

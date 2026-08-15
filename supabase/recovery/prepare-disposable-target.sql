@@ -3,4 +3,6 @@ truncate table auth.users cascade;
 drop schema if exists api cascade;
 drop schema if exists app_private cascade;
 drop schema if exists public cascade;
-truncate table supabase_migrations.schema_migrations;
+drop schema if exists supabase_migrations cascade;
+create schema if not exists extensions;
+create extension if not exists postgis with schema extensions;
