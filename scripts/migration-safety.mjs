@@ -1,5 +1,7 @@
 import { execFileSync } from "node:child_process";
 import { readFileSync } from "node:fs";
+import { resolve } from "node:path";
+import { pathToFileURL } from "node:url";
 
 export const destructivePatterns = [
   ["drop_table", /\bdrop\s+table\b/i],
@@ -24,7 +26,9 @@ export function changedMigrationFiles(range = "HEAD^..HEAD") {
     .filter(Boolean);
 }
 
-if (import.meta.url === new URL(`file://${process.argv[1].replace(/\\/g, "/")}`).href) {
+const cliEntryPath = process.argv[1];
+
+if (cliEntryPath && import.meta.url === pathToFileURL(resolve(cliEntryPath)).href) {
   const rangeIndex = process.argv.indexOf("--git-range");
   const range = rangeIndex >= 0 ? process.argv[rangeIndex + 1] : "HEAD^..HEAD";
   const files = changedMigrationFiles(range);
