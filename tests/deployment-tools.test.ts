@@ -419,6 +419,7 @@ describe("deployment safety tools", () => {
 
   it("keeps logical dumps private and recovery refs immutable in the protected workflow", () => {
     const workflow = readFileSync(".github/workflows/rehearse-staging-recovery.yml", "utf8");
+    const preparation = readFileSync("supabase/recovery/prepare-disposable-target.sql", "utf8");
     expect(workflow).toContain("environment: staging-recovery");
     expect(workflow).toContain("pnpm recovery:validate");
     expect(workflow).toContain("supabase/recovery/verify-disposable-target.sql");
@@ -428,6 +429,37 @@ describe("deployment safety tools", () => {
     expect(workflow).not.toMatch(/path:\s*\$?RECOVERY_WORK/);
     expect(workflow).not.toContain("restore-pitr");
     expect(workflow).not.toContain("db reset");
+    expect(preparation).toContain("drop schema if exists supabase_migrations cascade;");
+    expect(preparation).not.toContain("truncate table supabase_migrations.schema_migrations");
+    expect(preparation).toContain("create extension if not exists postgis with schema extensions;");
+  });
+
+  it("restores the real migration schema before history and loads circular data atomically", () => {
+    const workflow = readFileSync(".github/workflows/rehearse-staging-recovery.yml", "utf8");
+    const migrationSchemaDump =
+      'supabase db dump --linked --schema supabase_migrations --file "$work/migration-schema.sql"';
+    expect(workflow).toContain(migrationSchemaDump);
+    expect(workflow).toContain("SUPABASE_RECOVERY_DB_URL: ${{ secrets.SUPABASE_RECOVERY_DB_URL }}");
+    expect(workflow).toContain('test -n "$SUPABASE_RECOVERY_DB_URL"');
+    expect(workflow).toContain("psql --version");
+    expect(workflow).toContain('psql "$SUPABASE_RECOVERY_DB_URL"');
+    expect(workflow).toContain("--single-transaction");
+    expect(workflow).toContain("--set ON_ERROR_STOP=1");
+    expect(workflow).toContain('--command "set session_replication_role = replica;"');
+    expect(workflow).toContain('--command "set session_replication_role = origin;"');
+    expect(workflow.indexOf('--file "$RECOVERY_WORK/migration-schema.sql"')).toBeLessThan(
+      workflow.indexOf('--file "$RECOVERY_WORK/migration-data.sql"')
+    );
+    expect(workflow.indexOf('--command "set session_replication_role = replica;"')).toBeLessThan(
+      workflow.indexOf('--file "$RECOVERY_WORK/auth-data.sql"')
+    );
+    expect(workflow.match(/--command "set session_replication_role = replica;"/g)).toHaveLength(3);
+    expect(workflow.indexOf('--file "$RECOVERY_WORK/application-data.sql"')).toBeLessThan(
+      workflow.indexOf('--file "$RECOVERY_WORK/migration-data.sql"')
+    );
+    expect(workflow).toContain('*"$RESTORE_SUPABASE_PROJECT_REF"*');
+    expect(workflow).toContain('*"$SOURCE_SUPABASE_PROJECT_REF"*');
+    expect(workflow).not.toContain('supabase db query --linked --file "$RECOVERY_WORK/schema.sql"');
   });
 
   it("authenticates the protected source runtime health request with the staging Office persona", () => {
