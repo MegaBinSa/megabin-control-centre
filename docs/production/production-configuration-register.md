@@ -1,7 +1,7 @@
 # Production Configuration Register
 
 **Status:** Phase 5A inventory; values are not credentials
-**Last reviewed:** 2026-08-13
+**Last reviewed:** 2026-08-15
 
 Phase 5C configured and proved the isolated Supabase project, protected GitHub Staging names/secrets, exact Cloudflare Pages targets and two synthetic Auth identities. Values remain outside the repository. The evidence baseline is `main` at `4e471bd250a2757ca67bb0e843c2201d144ac122`, deployment run 31738092512.
 
@@ -32,7 +32,7 @@ Phase 5C configured and proved the isolated Supabase project, protected GitHub S
 | CFG-DB-NET | PostgreSQL | Local open network, SSL/pooler production posture absent | Network/SSL/pooling/connection limits and approved admin access | Supabase project config | Technical/Security | Production |
 | CFG-BACKUP | PostgreSQL | One-hour target RPO, four-hour target RTO, Shaun/Sidney authorities and isolated target configured; logical restore passed in 296 seconds; PITR disabled; RPO unmet | Obtain Sidney confirmation; add secure retained hourly recovery points or approve pilot exception; decide durable 12-month evidence archive and production backup design | `staging-recovery`, repository config, Supabase/org operations | Business/Technical | Pilot/Production |
 | CFG-DOMAIN | Hosting/Auth | Separate Office and Driver Cloudflare Pages Staging origins configured | Production domains and Auth redirect allowlist later | Cloudflare/GitHub/Supabase | Business/Technical | Production |
-| CFG-OBS | Observability | Shaun owns monitoring/escalation; GitHub Actions email to `infomegabin@gmail.com`; SEV1/2 immediate, SEV3 nonurgent; controlled proof implemented | Human receipt confirmation and broader production routing/support posture | GitHub Actions/repository config | Technical/Operations | Pilot/Production |
+| CFG-OBS | Observability | Shaun owns monitoring/escalation; GitHub Actions email to `infomegabin@gmail.com`; SEV1/2 immediate, SEV3 nonurgent; controlled proof passed in run 31878853824 and Shaun confirmed mailbox receipt | Preserve Staging notification settings; decide and prove broader production routing/support posture | GitHub Actions/repository config | Technical/Operations | Production |
 | CFG-JOBS | Background jobs | Manual/local foundations | Cadences, concurrency, timeouts, retries, owners and kill switches per job | Typed config/Cron | Operations/Technical | Production |
 | CFG-LIVE | Live intelligence | Typed synthetic defaults | Approved regional thresholds and grace windows | Configuration registry | Operations | Production |
 | CFG-GPS | Tracking | 45-second local target; 1,000 buffered observations | Provider/device cadence, accuracy floor, batch/storage/retention and outside-hours rules | Configuration registry | Operations/Privacy/Technical | Pilot/Production |
