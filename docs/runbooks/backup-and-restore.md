@@ -8,4 +8,6 @@ Rehearsal must use Supabase's isolated restore-to-new-project path (or another e
 
 Run `pnpm recovery:validate` before any operator action. The guard requires `MEGABIN_ENVIRONMENT=restore-rehearsal`, the exact approved Staging source and isolated recovery target, an explicit recovery point, source/target-bound confirmation, approved RPO/RTO and both authorities. The protected `Rehearse staging recovery` workflow performs a Free-plan logical dump/restore only after verifying the target is empty or carries the repository-owned disposable marker. It never uploads logical dumps. The current one-hour RPO remains unmet; a successful rehearsal may establish observed RTO only. Sidney must independently verify the evidence before acceptance.
 
+Recovery rehearsal #6 passed in [run 31877345920](https://github.com/MegaBinSa/megabin-control-centre/actions/runs/31877345920): the isolated restore and configured integrity checks completed with an observed restore interval of 296 seconds. This is the current mechanics/RTO baseline, not evidence that one-hour recovery points exist. Sidney's independent evidence confirmation remains required.
+
 The workflow is operator-triggered and may run only after its definition is merged to the default branch. Do not reproduce its destructive target preparation manually or point it at active Staging.
