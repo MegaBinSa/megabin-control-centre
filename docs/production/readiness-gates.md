@@ -13,5 +13,5 @@ The machine-readable register is `config/readiness-gates.json`. A gate cannot be
 ## Phase 5E execution status
 
 - **Passed:** shared Staging; Synthetic Internal UAT readiness; isolated logical restore mechanics and automated integrity checks; observed RTO within four hours; controlled alert delivery with human mailbox confirmation; Office/Driver/Edge Function rollback and current-release restoration.
-- **Not Run:** database forward-repair rehearsal/tabletop; all six synthetic UAT journeys.
+- **Not Run:** database forward-repair rehearsal (mechanism implemented; protected execution pending); all six synthetic UAT journeys.
 - **Blocked/pending human or external evidence:** Sidney's independent restore verification; one-hour RPO; 12-month evidence retention; Pilot and Production approvals/dependencies listed above.

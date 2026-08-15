@@ -13,3 +13,9 @@ Variables: `SUPABASE_PROJECT_REF`, `SUPABASE_URL`, `OFFICE_ORIGIN`, `DRIVER_ORIG
 Supabase Function secrets receive environment/build identity, explicit origins, website signing configuration and capture-mode communications configuration. Provider credentials remain absent. Hosting receives only the publishable Supabase key, URLs, environment and build metadata. A service-role/secret key is forbidden in browser configuration.
 
 Configuration drift is checked by the validator against required names and invariant relationships. It does not display values. The project reference must match hosted Supabase URLs; both frontend origins must be HTTPS, distinct and explicitly allowlisted; wildcard authenticated CORS is rejected; risky automation stays false.
+
+## GitHub Staging Recovery Environment
+
+The restore and forward-repair workflows share `staging-recovery` and the `megabin-staging-recovery-rehearsal` concurrency boundary. Forward repair consumes existing project variables `SOURCE_SUPABASE_PROJECT_REF`, `STAGING_SUPABASE_PROJECT_REF`, `RESTORE_SUPABASE_PROJECT_REF` and `SUPABASE_RECOVERY_PROJECT_REF`; and existing secrets `SUPABASE_ACCESS_TOKEN`, `SUPABASE_STAGING_DB_PASSWORD` and `SUPABASE_RECOVERY_DB_URL`. The restore workflow separately continues to consume `SUPABASE_RECOVERY_DB_PASSWORD`.
+
+Before forward-repair execution, add `RECOVERY_AUTHORITY_GITHUB_LOGIN` and `RECOVERY_VERIFIER_GITHUB_LOGIN` using the approved Shaun and Sidney GitHub usernames. Do not infer those usernames. Restrict the Environment to `main`, require Sidney's account as independent reviewer, prevent self-review and disable administrator bypass where supported. The workflow queries and validates this metadata before any database command. If a plan cannot enforce a required control, execution remains blocked until a documented compensating control is approved.
