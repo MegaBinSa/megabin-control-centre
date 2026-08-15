@@ -9,7 +9,7 @@
 - Synthetic Office/Driver users, application profiles, region/team scopes and positive/negative authorization smoke checks are proven.
 - Extend the deterministic seed/personas where a UAT scenario requires roles or regions beyond the proven Office/Driver pair.
 - Communications remain capture/allowlist only; provider sandboxes cannot reach real clients.
-- Monitoring/alert delivery passed in run 31878853824. Isolated logical restore passed in run 31877345920 with a 296-second RTO; independent verification remains pending. Component rollback/current restoration passed in run 31881010706. Before pilot, prove migration forward repair and resolve or explicitly accept the unmet one-hour RPO.
+- Monitoring/alert delivery passed in run 31878853824. Isolated logical restore passed in run 31877345920 with a 296-second RTO; independent verification remains pending. Component rollback/current restoration passed in run 31881010706. Isolated forward repair passed in run 31906816621; independent post-run review remains pending. Before pilot, resolve or explicitly accept the unmet one-hour RPO and evidence-retention gap.
 - Required fake providers are explicitly identified; selected staging sandboxes are isolated.
 
 ## End-to-end UAT catalogue
@@ -35,6 +35,10 @@ Each scenario records build/commit, environment, seed version, actor/role, expec
 The Phase 5C remote smoke suite is infrastructure acceptance evidence, not business UAT sign-off. It proves the environment can host the UAT catalogue safely with synthetic data and fake/capture providers.
 
 `config/synthetic-uat-catalogue.json` defines the six executable journey groups with stable IDs and mandatory evidence fields. `config/synthetic-uat-data.json` bounds preparation/recycling to synthetic provenance and preserves Phase 5C personas. Approved monitoring ownership/routing closes the UAT Ready gate, but all six journeys remain `Not Run`; Synthetic Internal UAT Passed is not claimed.
+
+Infrastructure and recovery assurance are now sufficient to begin these synthetic journeys without implying Pilot readiness. The last documented Staging application identity is `e2837def54f922649965298e27f97357977b0dd0`, while subsequent main commits include the Driver logout/cache correction. Therefore the exact next protected activity is `Deploy staging` from the current reviewed `main` after this evidence close-out merges: use its exact 40-character SHA as `source_sha`, `DEPLOY-STAGING` as `confirm_environment`, and `false` for `allow_destructive_migrations`. No GitHub Environment configuration change is required; the existing `staging` variables/secrets and fake/capture posture are prerequisites.
+
+After that deployment and smoke suite pass, execute `UAT-OFF-001` first because it creates and validates the bounded Office planning, roster, route, publication and handoff state required by the Driver journey. Record the deployed release identity and tester, validate both UAT contracts, confirm fake/capture posture, and prepare only `megabin-uat`/`uat:` records. The operator must retain the case evidence and stop on any live-provider or real-data indication.
 
 ## Minimum safe controlled pilot
 

@@ -1,18 +1,18 @@
 # Production Readiness Assessment
 
-**Status:** Authoritative assessment; updated with Phase 5C shared-staging evidence
+**Status:** Authoritative assessment; updated through Phase 5E forward-repair evidence
 
-**Assessment baseline:** Phase 5A repository assessment plus validated Staging deployment of `main` at `4e471bd250a2757ca67bb0e843c2201d144ac122`
+**Assessment baseline:** Phase 5A repository assessment plus validated shared-Staging and Phase 5E assurance evidence through `main` at `1f3a91ffe831e5039716a4fc5bc7fcc2a229d1e9`
 
-**Assessment date:** 2026-08-13
+**Assessment date:** 2026-08-15
 
 ## Executive conclusion
 
 MegaBin Control Centre is now a deployed shared-staging platform suitable for structured synthetic internal UAT. It is not ready for a controlled pilot or production. The modular monolith, immutable operational history, private-schema persistence, RLS/API boundary, provider adapters, idempotency conventions, offline action model, audit/outbox foundations, generated OpenAPI, broad synthetic tests and protected deployment path are reusable launch foundations.
 
-Shared Staging is proven end to end by [deployment run 31738092512](https://github.com/MegaBinSa/megabin-control-centre/actions/runs/31738092512): protected main-only release, migrations, hosted Data API configuration, application-owned persona authorization, Edge Functions, both frontends, release/CORS/auth boundaries, fake/capture providers, synthetic website intake and remote smoke checks all passed. Production providers remain intentionally inactive; real client migration, real-device operation, business UAT, monitoring ownership, recovery, privacy, retention, routine user/device management and support procedures remain unresolved. Browser geolocation cannot meet the stated all-hours vehicle-visibility requirement.
+Shared Staging is proven end to end by [deployment run 31738092512](https://github.com/MegaBinSa/megabin-control-centre/actions/runs/31738092512): protected main-only release, migrations, hosted Data API configuration, application-owned persona authorization, Edge Functions, both frontends, release/CORS/auth boundaries, fake/capture providers, synthetic website intake and remote smoke checks all passed. Phase 5E additionally proved alert delivery, isolated logical restore within the four-hour RTO, compatible component rollback/current restoration and isolated immutable database forward repair without writing to shared Staging. Production providers remain intentionally inactive; real client migration, real-device operation, business UAT, privacy, retention, routine user/device management and support procedures remain unresolved. Browser geolocation cannot meet the stated all-hours vehicle-visibility requirement.
 
-The project has reached **Shared Development/Staging**, with the technical prerequisites to begin structured synthetic internal UAT. The next phase should make that environment operationally observable and recoverable before provider activation, real data or pilot preparation.
+The project has reached **Synthetic Internal UAT Ready**. Shared Staging is observable and its core logical recovery, component rollback and forward-repair mechanisms have been rehearsed. The exact next activity is a protected deployment of the current reviewed `main` so UAT has a current release identity, followed by structured synthetic UAT beginning with `UAT-OFF-001`; this does not authorize a pilot.
 
 ## Classification and stage definitions
 
@@ -33,7 +33,7 @@ Percentages are deliberately avoided because external configuration and real-wor
 | Domain | Status | Evidence and major blocker | Next action |
 |---|---|---|---|
 | Architecture/domain boundaries | Ready foundation | Modular monolith, ownership, API/write boundaries and ADRs are established | Preserve boundaries during deployment work |
-| Database/migrations/RLS | Shared-staging and logical recovery validated | Hosted migrations, Data API schema, personas and authorization boundaries passed; isolated logical restore completed in 296 seconds; one-hour RPO, PITR and production sizing remain unproven | Obtain independent restore confirmation and close or accept the RPO gap |
+| Database/migrations/RLS | Shared-staging, logical recovery and forward repair validated | Hosted migrations, Data API schema, personas and authorization boundaries passed; isolated logical restore completed in 296 seconds; isolated immutable forward repair passed in run 31906816621; one-hour RPO, PITR and production sizing remain unproven | Obtain independent evidence confirmations and close or accept the RPO gap |
 | Office Web | Hosted in Staging; UAT required | Traceable Cloudflare deployment and authenticated smoke access passed | Run role-based synthetic UAT and usability review |
 | Driver PWA | Hosted in Staging; field validation required | Traceable deployment and authenticated financial-isolation smoke checks passed; device/browser/background behavior is not proven | Real-device, poor-network and support rehearsal |
 | Route planning/operations | Functionally ready; provider/calibration required | Deterministic baseline and protected immutable versions exist; live routing provider and operational calibration absent | Provider decision and route accuracy trial |
@@ -46,7 +46,7 @@ Percentages are deliberately avoided because external configuration and real-wor
 | Communications | Provider and policy required | Durable intents, fallback, templates and inbound foundation exist; only fake/capture mode is approved | Select providers, register identities/templates, staged test |
 | Client SKIP | UAT and policy required | One-occurrence exclusion and protected replanning exist; cutoff/SLA/ownership unresolved | Approve conservative pilot policy and rehearse |
 | CI/CD and hosting | Shared-staging and rollback validated | Protected main-only Supabase, Functions and Cloudflare deployment passed end to end; run 31881010706 proved compatible rollback and current restoration | Preserve gates; later design production approvals and equivalent rollback proof |
-| Monitoring/support/DR | Restore, alert and component rollback proofs passed; remaining assurance pending | Runs 31877345920, 31878853824 and 31881010706 proved isolated restore, alert delivery, component rollback and current restoration | Confirm restore independently; execute forward-repair evidence; close unmet RPO and retention gaps |
+| Monitoring/support/DR | Restore, alert, component rollback and forward-repair proofs passed; remaining assurance pending | Runs 31877345920, 31878853824, 31881010706 and 31906816621 proved isolated restore, alert delivery, component rollback/current restoration and isolated immutable forward repair | Confirm recovery evidence independently; close unmet RPO and retention gaps |
 | Security/privacy | Strong design; production approval required | Least-privilege architecture exists; MFA, scanning, privacy, retention and device policies incomplete | Security hardening and business/legal review |
 
 ## What is production-ready in structure
@@ -64,7 +64,7 @@ Percentages are deliberately avoided because external configuration and real-wor
 
 Local Supabase remains explicitly development posture. Shared Staging now uses an isolated Supabase project, protected environment-specific credentials, hosted Data API configuration, deployed Functions, separate HTTPS frontend origins, synthetic Auth users and fake/capture provider gates. Production remains absent by design and must use separate projects, credentials, domains, webhooks, secrets and provider modes.
 
-The protected Staging pipeline has proven migration preview/application/reconciliation, application-schema lint, deterministic seed, bounded persona provisioning, Function bundle/deployment, frontend deployment, release identity and remote smoke checks. Monitoring ownership/routing, recovery targets and objectives are approved. Recovery rehearsal #6 proved isolated logical restore and a 296-second observed RTO; Sidney's confirmation remains pending. Alert delivery and component rollback/current restoration also passed. The isolated forward-repair mechanism is implemented but remains Not Run pending Environment protection and approved reviewer/operator usernames. Before pilot, execute it and complete synthetic UAT. The Free-plan one-hour RPO and 12-month evidence retention remain unmet.
+The protected Staging pipeline has proven migration preview/application/reconciliation, application-schema lint, deterministic seed, bounded persona provisioning, Function bundle/deployment, frontend deployment, release identity and remote smoke checks. Monitoring ownership/routing, recovery targets and objectives are approved. Recovery rehearsal #6 proved isolated logical restore and a 296-second observed RTO; Sidney's confirmation remains pending. Alert delivery and component rollback/current restoration also passed. Run 31906816621 proved the protected isolated-target forward-repair path, including the expected committed semantic fault, an immutable repair migration, post-repair integrity/security and zero shared-Staging writes. Sidney's post-run confirmation remains pending. Complete synthetic UAT next. The Free-plan one-hour RPO and 12-month evidence retention remain unmet.
 
 Current Supabase guidance requires treating backups and stored objects separately and validating restores rather than equating backup availability with recovery. The chosen plan tier, retention, PITR option, compute requirements and outage during restore must be recorded during provisioning.
 
@@ -136,7 +136,7 @@ Business/legal review is required for POPIA-related processing of client identit
 
 Phase 5D adds stable alert IDs, severity, deduplication, response expectations and private scheduled-monitor evidence for frontend/runtime/onboarding availability, release identity, Auth/authorization and fake/capture posture. Controlled proof run 31878853824 demonstrated the intended synthetic failure and produced valid evidence after every normal check resolved; Shaun human-confirmed the GitHub Actions email at `infomegabin@gmail.com`. This proves the approved Staging alert route, not programmatic mailbox observation or a complete production monitoring service. Broader production monitoring must still cover database health, outbox/job backlog, provider failures, GPS lag, stale intelligence, accounting/communications and migration failures.
 
-Recovery has approved source/target, RPO/RTO and authorities plus fail-closed logical restore, rollback and forward-repair controls. [Run 31877345920](https://github.com/MegaBinSa/megabin-control-centre/actions/runs/31877345920) restored the Staging logical snapshot into the isolated project in 296 seconds and passed integrity/authorization checks. [Run 31881010706](https://github.com/MegaBinSa/megabin-control-centre/actions/runs/31881010706) deployed a compatible prior application release and restored current main with complete smoke verification and no database migration or downgrade. Sidney's independent restore verification and forward-repair rehearsal remain pending. Free-plan Staging has PITR disabled, no retained hourly snapshots and therefore does not achieve the one-hour RPO.
+Recovery has approved source/target, RPO/RTO and authorities plus fail-closed logical restore, rollback and forward-repair controls. [Run 31877345920](https://github.com/MegaBinSa/megabin-control-centre/actions/runs/31877345920) restored the Staging logical snapshot into the isolated project in 296 seconds and passed integrity/authorization checks. [Run 31881010706](https://github.com/MegaBinSa/megabin-control-centre/actions/runs/31881010706) deployed a compatible prior application release and restored current main with complete smoke verification and no database migration or downgrade. [Run 31906816621](https://github.com/MegaBinSa/megabin-control-centre/actions/runs/31906816621) applied the approved synthetic fault and separate forward repair only to the isolated target, then passed semantic, restored-data, authorization and RLS verification while shared Staging remained read-only. Sidney's independent restore and forward-repair evidence confirmations remain pending. Free-plan Staging has PITR disabled, no retained hourly snapshots and therefore does not achieve the one-hour RPO.
 
 ## Legacy coexistence principles
 
@@ -146,7 +146,7 @@ During pilot, existing spreadsheets and operational processes should remain a co
 
 ### To controlled pilot
 
-1. **Operational assurance and recovery:** independently verify the passed isolated restore; execute the migration forward-repair rehearsal/tabletop; resolve the unmet hourly-RPO and 12-month evidence-retention gaps. Alert delivery and component rollback are proven.
+1. **Operational assurance and recovery:** independently confirm the passed restore and forward-repair artifacts; resolve the unmet hourly-RPO and 12-month evidence-retention gaps. Alert delivery, component rollback and isolated forward repair are proven.
 2. **Structured synthetic UAT:** run the complete business-loop catalogue on the validated Staging release, recording actor, role, evidence and defects.
 3. **Security/privacy and operating-policy closure:** approve roles, MFA, tracking/privacy, retention, support and incident ownership.
 4. **Provider and tracking decisions:** choose pilot routing and GPS posture; choose only the other providers included in pilot scope.
@@ -158,9 +158,9 @@ During pilot, existing spreadsheets and operational processes should remain a co
 
 Close every P0/P1 applicable to the agreed launch scope; activate and validate live providers; migrate/reconcile authoritative data; complete training and user/device provisioning; approve financial, communications, SKIP, tracking and retention policies; test backup restore and deployment rollback; establish support/on-call ownership; freeze legacy writes; execute signed cutover/smoke/reconciliation steps; and retain a time-bounded read-only legacy fallback.
 
-## Recommended next phase after Phase 5D foundation
+## Current Phase 5E next activity
 
-**Phase 5E – Assurance Decision Closure and Rehearsal Execution.** Supply the human/external decisions Phase 5D correctly cannot invent: monitoring and escalation owners, recipients/destination, severity routing, RPO/RTO, recovery/verifying authorities, Supabase backup/PITR posture and an isolated restore target. Then execute alert-delivery, restore, component rollback, migration forward-repair and the six synthetic UAT journeys through the Phase 5D evidence contracts.
+The approved monitoring/recovery decisions are recorded, and alert delivery, restore, component rollback/current restoration and isolated forward repair have executed successfully. First deploy the current reviewed `main` through the existing protected Staging workflow because the last documented deployed identity predates the Driver logout/cache correction. Then execute the six synthetic UAT journeys through the Phase 5D evidence contracts, starting with `UAT-OFF-001` because it establishes the bounded operational state required by the Driver journey.
 
 Phase 5E should remain synthetic and must not connect production providers, import real client data, enable live messaging/holds or launch a pilot. Its exit criterion is actual, release-bound operational/recovery/UAT evidence—not merely configured tooling.
 
