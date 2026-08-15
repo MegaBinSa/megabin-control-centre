@@ -33,12 +33,3 @@ begin
   ) then raise exception 'recovered_synthetic_region_missing'; end if;
 end
 $$;
-
-insert into recovery_control.target_state (
-  singleton, target_project_ref, source_project_ref, disposable, last_rehearsal_at
-) values (
-  true, 'ivtaoqorcryzsempsogs', 'xniweqdmswzljcgkfglx', true, now()
-)
-on conflict (singleton) do update
-set disposable = excluded.disposable,
-    last_rehearsal_at = excluded.last_rehearsal_at;

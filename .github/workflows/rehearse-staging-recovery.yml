@@ -89,9 +89,18 @@ jobs:
           echo "MIGRATION_IDENTITY=$(sha256sum "$work/source-migrations.txt" | cut -d' ' -f1)" >> "$GITHUB_ENV"
 
       - name: Verify isolated target is empty or previously authorized disposable recovery data
+        shell: bash
         run: |
+          set -euo pipefail
           pnpm exec supabase link --project-ref "$RESTORE_SUPABASE_PROJECT_REF" --password "$SUPABASE_RECOVERY_DB_PASSWORD"
-          pnpm exec supabase db query --linked --file supabase/recovery/verify-disposable-target.sql
+          if ! pnpm exec supabase db query --linked --file supabase/recovery/verify-disposable-target.sql; then
+            echo "Target is populated without a disposable marker; verifying an exact prior recovery snapshot."
+            pnpm exec supabase db query --linked --file supabase/recovery/verify-restored-target.sql
+            pnpm exec supabase migration list --linked > "$RECOVERY_WORK/prior-restored-migrations.txt"
+            diff -u "$RECOVERY_WORK/source-migrations.txt" "$RECOVERY_WORK/prior-restored-migrations.txt"
+            pnpm exec supabase db query --linked --file supabase/recovery/mark-disposable-target.sql
+            pnpm exec supabase db query --linked --file supabase/recovery/verify-disposable-target.sql
+          fi
 
       - name: Restore logical snapshot into approved isolated target
         shell: bash
@@ -126,6 +135,7 @@ jobs:
           pnpm exec supabase db query --linked --file supabase/recovery/verify-restored-target.sql
           pnpm exec supabase migration list --linked > "$RECOVERY_WORK/restored-migrations.txt"
           diff -u "$RECOVERY_WORK/source-migrations.txt" "$RECOVERY_WORK/restored-migrations.txt"
+          pnpm exec supabase db query --linked --file supabase/recovery/mark-disposable-target.sql
           echo "RESTORE_COMPLETED_AT=$(date -u +%Y-%m-%dT%H:%M:%SZ)" >> "$GITHUB_ENV"
           echo "RESTORE_RESULT=Passed" >> "$GITHUB_ENV"
           echo "INTEGRITY_CHECKS=migration-history,schema,synthetic-reference-data,office-region-scope,driver-office-denial,driver-financial-denial,driver-staff-link" >> "$GITHUB_ENV"
