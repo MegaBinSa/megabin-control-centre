@@ -12,17 +12,29 @@ insert into app_private.user_roles(user_id,role_id)select'91000000-0000-4000-800
 insert into app_private.user_access_scopes(user_id,scope_kind,scope_id)values('91000000-0000-4000-8000-000000000001','global',null),('91000000-0000-4000-8000-000000000003','service_region',gen_random_uuid());
 update app_private.clients set lifecycle_status='active',activated_at=coalesce(activated_at,now())where client_id in('57000000-0000-0000-0000-000000000001','57000000-0000-0000-0000-000000000002');
 update app_private.client_services set lifecycle_status='active'where client_service_id in('59000000-0000-0000-0000-000000000001','59000000-0000-0000-0000-000000000002','59000000-0000-0000-0000-000000000003');
+create temporary table skip_test_clock on commit drop as
+select
+ occurrence_date,
+ (effective_from::timestamp+time '08:00')at time zone 'Africa/Johannesburg' as request_at,
+ occurrence_date+7 as future_occurrence_date
+from(
+ select
+  effective_from,
+  effective_from+mod(configured_collection_day-extract(isodow from effective_from)::integer+7,7)as occurrence_date
+ from app_private.service_configurations
+ where client_service_id='59000000-0000-0000-0000-000000000003'and effective_to is null
+)fixture;
 insert into app_private.client_contacts(client_contact_id,client_id,contact_name,mobile_e164,email,is_primary)values
  ('92000000-0000-4000-8000-000000000001','57000000-0000-0000-0000-000000000002','Single Service Contact','+27820000401','single@example.invalid',true),
  ('92000000-0000-4000-8000-000000000002','57000000-0000-0000-0000-000000000001','Multiple Service Contact','+27820000402','multiple@example.invalid',true);
-insert into app_private.operational_days(operational_day_id,service_date,service_region_id,timezone,lifecycle_status)values('93000000-0000-4000-8000-000000000001','2026-08-14','51000000-0000-0000-0000-000000000001','Africa/Johannesburg','locked');
-select is((api.communication_ingest_inbound('fake-communications','whatsapp','skip-1','+27820000401','2026-08-13T08:00:00+02',' SKIP ',gen_random_uuid())->>'recognized_command'),'skip','trimmed case-insensitive SKIP recognized');
+insert into app_private.operational_days(operational_day_id,service_date,service_region_id,timezone,lifecycle_status)select'93000000-0000-4000-8000-000000000001',occurrence_date,'51000000-0000-0000-0000-000000000001','Africa/Johannesburg','locked'from skip_test_clock;
+select is((api.communication_ingest_inbound('fake-communications','whatsapp','skip-1','+27820000401',(select request_at from skip_test_clock),' SKIP ',gen_random_uuid())->>'recognized_command'),'skip','trimmed case-insensitive SKIP recognized');
 select is((api.client_skip_consume_inbound((select inbound_message_id from app_private.inbound_messages where provider_message_id='skip-1'),gen_random_uuid())->>'lifecycle_status'),'qualified','single active service qualifies');
-select is((select service_date from app_private.collection_occurrences where client_service_id='59000000-0000-0000-0000-000000000003'),'2026-08-14'::date,'nearest future occurrence selected');
+select is((select service_date from app_private.collection_occurrences where client_service_id='59000000-0000-0000-0000-000000000003'),(select occurrence_date from skip_test_clock),'nearest future occurrence selected');
 select is((select operational_day_id from app_private.collection_occurrences where client_service_id='59000000-0000-0000-0000-000000000003'),'93000000-0000-4000-8000-000000000001'::uuid,'occurrence links operational day');
 select lives_ok($$select api.client_skip_consume_inbound((select inbound_message_id from app_private.inbound_messages where provider_message_id='skip-1'),gen_random_uuid())$$,'event retry is idempotent');
 select is((select count(*)from app_private.client_skip_requests),1::bigint,'event retry creates no duplicate request');
-select is((api.communication_ingest_inbound('fake-communications','sms','skip-2','+27820000402','2026-08-13T08:01:00+02','skip',gen_random_uuid())->>'recognized_command'),'skip','lowercase SKIP behaves identically');
+select is((api.communication_ingest_inbound('fake-communications','sms','skip-2','+27820000402',(select request_at+interval '1 minute'from skip_test_clock),'skip',gen_random_uuid())->>'recognized_command'),'skip','lowercase SKIP behaves identically');
 select is((api.client_skip_consume_inbound((select inbound_message_id from app_private.inbound_messages where provider_message_id='skip-2'),gen_random_uuid())->>'lifecycle_status'),'needs_review','multiple active services require review');
 select is((select match_state from app_private.client_skip_requests where inbound_message_id=(select inbound_message_id from app_private.inbound_messages where provider_message_id='skip-2')),'ambiguous_service','ambiguity is explicit');
 select is((api.client_skip_approve('91000000-0000-4000-8000-000000000001',(select client_skip_request_id from app_private.client_skip_requests where lifecycle_status='qualified'),1,'Approved one occurrence',gen_random_uuid())->>'lifecycle_status'),'applied','Office approval applies exclusion');
@@ -34,8 +46,8 @@ select is((select effective_to from app_private.service_configurations where cli
 select ok((select acknowledgement_intent_id is not null from app_private.client_skip_requests where lifecycle_status='applied'),'approval creates acknowledgement intent');
 select is((select count(*)from app_private.communication_intents where source_domain='client-skip'),1::bigint,'one decision creates one acknowledgement');
 select is((select count(*)from app_private.collection_occurrence_exclusions where lifecycle_status='active'),1::bigint,'approval result remains singular');
-insert into app_private.collection_occurrences(client_service_id,service_date,service_region_id,expected_collection_day,source_configuration_id,source_configuration_version)select client_service_id,'2026-08-21',service_region_id,configured_collection_day,service_configuration_id,updated_at::text from app_private.service_configurations where client_service_id='59000000-0000-0000-0000-000000000003' and effective_to is null;
-select is((select lifecycle_status from app_private.collection_occurrences where service_date='2026-08-21'),'expected','future occurrence remains eligible');
+insert into app_private.collection_occurrences(client_service_id,service_date,service_region_id,expected_collection_day,source_configuration_id,source_configuration_version)select sc.client_service_id,clock.future_occurrence_date,sc.service_region_id,sc.configured_collection_day,sc.service_configuration_id,sc.updated_at::text from app_private.service_configurations sc cross join skip_test_clock clock where sc.client_service_id='59000000-0000-0000-0000-000000000003'and sc.effective_to is null;
+select is((select lifecycle_status from app_private.collection_occurrences where service_date=(select future_occurrence_date from skip_test_clock)),'expected','future occurrence remains eligible');
 select throws_ok($$select api.client_skip_list('91000000-0000-4000-8000-000000000002','{}')$$,'42501',null,'Driver cannot read SKIP requests');
 select is((api.client_skip_list('91000000-0000-4000-8000-000000000003','{}')->'items'),'[]'::jsonb,'cross-region list is empty');
 select throws_ok('set local role authenticated;select * from app_private.client_skip_requests','42501',null,'browser direct table reads denied');
