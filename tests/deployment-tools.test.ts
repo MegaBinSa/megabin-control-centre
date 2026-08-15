@@ -243,6 +243,21 @@ describe("deployment safety tools", () => {
     expect(inspectSql("alter table x enable row level security;")).toEqual([]);
   });
 
+  it("imports migration safety from inline ESM without a CLI entry argument", () => {
+    const moduleUrl = pathToFileURL(resolve("scripts/migration-safety.mjs")).href;
+    const output = execFileSync(
+      process.execPath,
+      [
+        "--input-type=module",
+        "--eval",
+        `import { inspectSql } from ${JSON.stringify(moduleUrl)}; console.log(JSON.stringify(inspectSql("drop table app_private.clients;")));`
+      ],
+      { encoding: "utf8" }
+    );
+
+    expect(JSON.parse(output)).toEqual([{ file: "migration.sql", kind: "drop_table" }]);
+  });
+
   it("refuses reset outside a project-bound staging confirmation", () => {
     expect(() => assertStagingReset({ MEGABIN_ENVIRONMENT: "production" })).toThrow(
       "must be staging"
