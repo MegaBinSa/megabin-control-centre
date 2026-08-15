@@ -462,6 +462,39 @@ describe("deployment safety tools", () => {
     expect(workflow).not.toContain('supabase db query --linked --file "$RECOVERY_WORK/schema.sql"');
   });
 
+  it("verifies the recovered Office permission against the provisioned staging region", () => {
+    const workflow = readFileSync(".github/workflows/rehearse-staging-recovery.yml", "utf8");
+    const recoveryVerification = readFileSync(
+      "supabase/recovery/verify-restored-target.sql",
+      "utf8"
+    );
+    const disposableMarker = readFileSync("supabase/recovery/mark-disposable-target.sql", "utf8");
+    const stagingVerification = readFileSync("supabase/staging/verify-personas.sql", "utf8");
+    const personaProvisioning = readFileSync(
+      "supabase/migrations/20260813164331_staging_persona_provisioning.sql",
+      "utf8"
+    );
+    const stagingRegion = "51000000-0000-0000-0000-000000000001";
+
+    expect(recoveryVerification).toContain(`synthetic_region constant uuid := '${stagingRegion}'`);
+    expect(stagingVerification).toContain(`synthetic_region constant uuid := '${stagingRegion}'`);
+    expect(personaProvisioning).toContain(`v_region_id constant uuid := '${stagingRegion}'`);
+    expect(recoveryVerification).not.toContain("10000000-0000-0000-0000-000000000001");
+    expect(recoveryVerification).not.toContain("insert into recovery_control.target_state");
+    expect(disposableMarker).toContain("insert into recovery_control.target_state");
+    expect(disposableMarker).toContain("'ivtaoqorcryzsempsogs'");
+    expect(disposableMarker).toContain("'xniweqdmswzljcgkfglx'");
+
+    const reclaimVerification = workflow.indexOf("supabase/recovery/verify-restored-target.sql");
+    const reclaimMigrationDiff = workflow.indexOf(
+      'diff -u "$RECOVERY_WORK/source-migrations.txt" "$RECOVERY_WORK/prior-restored-migrations.txt"'
+    );
+    const firstDisposableMark = workflow.indexOf("supabase/recovery/mark-disposable-target.sql");
+    expect(reclaimVerification).toBeGreaterThan(-1);
+    expect(reclaimMigrationDiff).toBeGreaterThan(reclaimVerification);
+    expect(firstDisposableMark).toBeGreaterThan(reclaimMigrationDiff);
+  });
+
   it("authenticates the protected source runtime health request with the staging Office persona", () => {
     const workflow = readFileSync(".github/workflows/rehearse-staging-recovery.yml", "utf8");
     expect(workflow).toContain(

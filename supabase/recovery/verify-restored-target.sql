@@ -2,7 +2,7 @@ do $$
 declare
   office_id uuid;
   driver_id uuid;
-  synthetic_region uuid := '10000000-0000-0000-0000-000000000001';
+  synthetic_region constant uuid := '51000000-0000-0000-0000-000000000001';
   migration_count integer;
 begin
   select count(*) into migration_count from supabase_migrations.schema_migrations;
@@ -33,12 +33,3 @@ begin
   ) then raise exception 'recovered_synthetic_region_missing'; end if;
 end
 $$;
-
-insert into recovery_control.target_state (
-  singleton, target_project_ref, source_project_ref, disposable, last_rehearsal_at
-) values (
-  true, 'ivtaoqorcryzsempsogs', 'xniweqdmswzljcgkfglx', true, now()
-)
-on conflict (singleton) do update
-set disposable = excluded.disposable,
-    last_rehearsal_at = excluded.last_rehearsal_at;
