@@ -6,6 +6,12 @@ import { pathToFileURL } from "node:url";
 
 import { describe, expect, it, vi } from "vitest";
 
+import {
+  CORS_ALLOWED_HEADERS,
+  CORS_ALLOWED_METHODS,
+  configuredOrigins,
+  withApprovedCors
+} from "../supabase/functions/_shared/cors";
 import { validateEnvironment } from "../scripts/environment-contract.mjs";
 import { ensureSupabaseDataApiSchema } from "../scripts/ensure-supabase-data-api-schema.mjs";
 import { inspectSql } from "../scripts/migration-safety.mjs";
@@ -62,6 +68,17 @@ const staging = {
   CLOUDFLARE_API_TOKEN: "synthetic-token",
   FRONTEND_DEPLOYMENT_CONFIGURED: "true"
 };
+
+function browserCorsHeaders(init?: RequestInit): Record<string, string> {
+  const origin = new Headers(init?.headers).get("Origin");
+  return origin
+    ? {
+        "Access-Control-Allow-Origin": origin,
+        "Access-Control-Allow-Headers": CORS_ALLOWED_HEADERS.join(", "),
+        "Access-Control-Allow-Methods": CORS_ALLOWED_METHODS.join(", ")
+      }
+    : {};
+}
 
 describe("staging environment contract", () => {
   it("accepts safe synthetic staging configuration", () => {
@@ -278,7 +295,7 @@ describe("deployment safety tools", () => {
       if (init?.method === "OPTIONS") {
         return new Response(null, {
           status: 204,
-          headers: { "Access-Control-Allow-Origin": "*" }
+          headers: browserCorsHeaders(init)
         });
       }
       const origin = new Headers(init?.headers).get("Origin");
@@ -289,7 +306,7 @@ describe("deployment safety tools", () => {
             status: "healthy",
             runtime: { environment: "staging", buildId: "abc123", deploymentId: "synthetic-run" }
           },
-          { headers: { "Access-Control-Allow-Origin": "*" } }
+          { headers: browserCorsHeaders(init) }
         );
       if (url.includes("/master-data/clients") && !init?.headers)
         return new Response(null, { status: 401 });
@@ -299,7 +316,7 @@ describe("deployment safety tools", () => {
         return new Response(null, { status: 403 });
       if (url.includes("/accounting/status") && init?.headers)
         return new Response(null, { status: 403 });
-      return Response.json({ ok: true });
+      return Response.json({ ok: true }, { headers: browserCorsHeaders(init) });
     });
     const checks = await runSmoke(staging, fetchMock as unknown as typeof fetch);
     expect(checks.every((check) => check.passed)).toBe(true);
@@ -318,7 +335,7 @@ describe("deployment safety tools", () => {
       if (init?.method === "OPTIONS") {
         return new Response(null, {
           status: 204,
-          headers: { "Access-Control-Allow-Origin": "*" }
+          headers: browserCorsHeaders(init)
         });
       }
       const origin = new Headers(init?.headers).get("Origin");
@@ -328,7 +345,7 @@ describe("deployment safety tools", () => {
           {
             runtime: { environment: "staging", buildId: "abc123", deploymentId: "synthetic-run" }
           },
-          { headers: { "Access-Control-Allow-Origin": "*" } }
+          { headers: browserCorsHeaders(init) }
         );
       if (url.includes("/master-data/clients") && !init?.headers)
         return new Response(null, { status: 401 });
@@ -338,10 +355,73 @@ describe("deployment safety tools", () => {
         return new Response(null, { status: 403 });
       if (url.includes("/accounting/status") && init?.headers)
         return new Response(null, { status: 403 });
-      return Response.json({ ok: true });
+      return Response.json({ ok: true }, { headers: browserCorsHeaders(init) });
     });
     const checks = await runSmoke(staging, fetchMock as unknown as typeof fetch);
     expect(checks.find((check) => check.name === "driver_frontend")?.passed).toBe(false);
+  });
+
+  it("fails smoke when a generic preflight omits browser API headers", async () => {
+    const fetchMock = vi.fn(async (input: string | URL | Request, init?: RequestInit) => {
+      const url = String(input);
+      if (url.includes("/auth/v1/token")) return Response.json({ access_token: "synthetic" });
+      if (init?.method === "OPTIONS")
+        return new Response(null, {
+          status: 204,
+          headers: {
+            "Access-Control-Allow-Origin": new Headers(init.headers).get("Origin") ?? "",
+            "Access-Control-Allow-Headers": "authorization, content-type",
+            "Access-Control-Allow-Methods": "GET, POST, OPTIONS"
+          }
+        });
+      if (new Headers(init?.headers).get("Origin")?.includes("unapproved"))
+        return new Response(null, { status: 403 });
+      if (url.endsWith("/health/live"))
+        return Response.json(
+          {
+            runtime: { environment: "staging", buildId: "abc123", deploymentId: "synthetic-run" }
+          },
+          { headers: browserCorsHeaders(init) }
+        );
+      if (url.includes("/master-data/clients") && !init?.headers)
+        return new Response(null, { status: 401 });
+      if (url.includes("website-onboarding")) return new Response(null, { status: 404 });
+      if (url.includes("/accounting/health") || url.includes("/communications/provider-health"))
+        return new Response(null, { status: 403 });
+      if (url.includes("/accounting/status")) return new Response(null, { status: 403 });
+      return Response.json({ ok: true }, { headers: browserCorsHeaders(init) });
+    });
+
+    const checks = await runSmoke(staging, fetchMock as unknown as typeof fetch);
+    expect(checks.find((check) => check.name === "office_profile_cors_contract")?.passed).toBe(
+      false
+    );
+    expect(checks.find((check) => check.name === "driver_bootstrap_cors_contract")?.passed).toBe(
+      false
+    );
+  });
+
+  it("keeps authenticated browser CORS under the exact approved-origin boundary", async () => {
+    const origin = staging.MEGABIN_OFFICE_ORIGIN;
+    const request = new Request(`${staging.VITE_MASTER_DATA_API_URL}/api/v1/office/profile`, {
+      headers: { Origin: origin }
+    });
+    const response = withApprovedCors(request, Response.json({ ok: true }), [origin]);
+
+    expect(configuredOrigins(`${origin}, ${staging.MEGABIN_DRIVER_ORIGIN}`)).toEqual([
+      origin,
+      staging.MEGABIN_DRIVER_ORIGIN
+    ]);
+    expect(() => configuredOrigins("*")).toThrow("Wildcard CORS is forbidden");
+    expect(response.headers.get("Access-Control-Allow-Origin")).toBe(origin);
+    expect(response.headers.get("Access-Control-Allow-Origin")).not.toBe("*");
+    expect(response.headers.get("Access-Control-Allow-Headers")).toContain("x-correlation-id");
+    expect(response.headers.get("Access-Control-Allow-Headers")).toContain("idempotency-key");
+    expect(response.headers.get("Access-Control-Allow-Methods")).toContain("GET");
+
+    const runtimeSource = readFileSync("supabase/functions/platform-runtime/index.ts", "utf8");
+    expect(runtimeSource).toContain('{ auth: "user", cors: "disabled" }');
+    expect(runtimeSource).toContain("await authenticatedFetch(request)");
   });
 
   it("creates stable deduplicated monitoring evidence with approved ownership", () => {

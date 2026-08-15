@@ -45,7 +45,14 @@ export async function runSmoke(values, fetchImpl = fetch) {
     "allowed_cors_preflight",
     `${values.VITE_MASTER_DATA_API_URL}/api/v1/health/live`,
     204,
-    { method: "OPTIONS", headers: { Origin: values.MEGABIN_OFFICE_ORIGIN } }
+    {
+      method: "OPTIONS",
+      headers: {
+        Origin: values.MEGABIN_OFFICE_ORIGIN,
+        "Access-Control-Request-Method": "GET",
+        "Access-Control-Request-Headers": "authorization,content-type,x-correlation-id"
+      }
+    }
   );
   const allowedCorsResponse = await check(
     "allowed_cors_request",
@@ -61,7 +68,7 @@ export async function runSmoke(values, fetchImpl = fetch) {
   const allowedCorsHeader = allowedCorsResponse.headers.get("access-control-allow-origin");
   checks.push({
     name: "allowed_cors_header",
-    passed: allowedCorsHeader === values.MEGABIN_OFFICE_ORIGIN || allowedCorsHeader === "*",
+    passed: allowedCorsHeader === values.MEGABIN_OFFICE_ORIGIN,
     status: allowedCorsResponse.status
   });
   await check("unknown_cors_denial", `${values.VITE_MASTER_DATA_API_URL}/api/v1/health/live`, 403, {
@@ -76,14 +83,45 @@ export async function runSmoke(values, fetchImpl = fetch) {
     [401, 403]
   );
   if (officeToken) {
-    await check(
+    const officePreflight = await check(
+      "office_profile_cors_preflight",
+      `${values.VITE_MASTER_DATA_API_URL}/api/v1/office/profile`,
+      204,
+      {
+        method: "OPTIONS",
+        headers: {
+          Origin: values.MEGABIN_OFFICE_ORIGIN,
+          "Access-Control-Request-Method": "GET",
+          "Access-Control-Request-Headers": "authorization,content-type,x-correlation-id"
+        }
+      }
+    );
+    checks.push(
+      corsContract("office_profile_cors_contract", officePreflight, values.MEGABIN_OFFICE_ORIGIN, [
+        "authorization",
+        "content-type",
+        "x-correlation-id"
+      ])
+    );
+    const officeProfile = await check(
       "authenticated_office",
       `${values.VITE_MASTER_DATA_API_URL}/api/v1/office/profile`,
       200,
       {
-        headers: { Authorization: `Bearer ${officeToken}` }
+        headers: {
+          Origin: values.MEGABIN_OFFICE_ORIGIN,
+          Authorization: `Bearer ${officeToken}`,
+          "Content-Type": "application/json",
+          "X-Correlation-Id": crypto.randomUUID()
+        }
       }
     );
+    checks.push({
+      name: "authenticated_office_cors_header",
+      passed:
+        officeProfile.headers.get("access-control-allow-origin") === values.MEGABIN_OFFICE_ORIGIN,
+      status: officeProfile.status
+    });
     await check(
       "fake_routing_provider_health",
       `${values.VITE_MASTER_DATA_API_URL}/api/v1/route-providers/health?serviceRegionId=51000000-0000-0000-0000-000000000001`,
@@ -120,14 +158,46 @@ export async function runSmoke(values, fetchImpl = fetch) {
       values.STAGING_DRIVER_PASSWORD,
       fetchImpl
     );
-    await check(
+    const driverPreflight = await check(
+      "driver_bootstrap_cors_preflight",
+      `${values.VITE_DRIVER_API_URL}/api/v1/driver/route-operations`,
+      204,
+      {
+        method: "OPTIONS",
+        headers: {
+          Origin: values.MEGABIN_DRIVER_ORIGIN,
+          "Access-Control-Request-Method": "GET",
+          "Access-Control-Request-Headers": "authorization,content-type,x-correlation-id"
+        }
+      }
+    );
+    checks.push(
+      corsContract(
+        "driver_bootstrap_cors_contract",
+        driverPreflight,
+        values.MEGABIN_DRIVER_ORIGIN,
+        ["authorization", "content-type", "x-correlation-id"]
+      )
+    );
+    const driverBootstrap = await check(
       "authenticated_driver",
       `${values.VITE_DRIVER_API_URL}/api/v1/driver/route-operations`,
       200,
       {
-        headers: { Authorization: `Bearer ${driverToken}` }
+        headers: {
+          Origin: values.MEGABIN_DRIVER_ORIGIN,
+          Authorization: `Bearer ${driverToken}`,
+          "Content-Type": "application/json",
+          "X-Correlation-Id": crypto.randomUUID()
+        }
       }
     );
+    checks.push({
+      name: "authenticated_driver_cors_header",
+      passed:
+        driverBootstrap.headers.get("access-control-allow-origin") === values.MEGABIN_DRIVER_ORIGIN,
+      status: driverBootstrap.status
+    });
     await check(
       "driver_financial_denial",
       `${values.VITE_DRIVER_API_URL}/api/v1/accounting/status`,
@@ -190,6 +260,25 @@ export async function runSmoke(values, fetchImpl = fetch) {
     );
   }
   return checks;
+}
+
+function corsContract(name, response, expectedOrigin, expectedHeaders) {
+  const methods = (response.headers.get("access-control-allow-methods") ?? "")
+    .toLowerCase()
+    .split(",")
+    .map((value) => value.trim());
+  const headers = (response.headers.get("access-control-allow-headers") ?? "")
+    .toLowerCase()
+    .split(",")
+    .map((value) => value.trim());
+  return {
+    name,
+    passed:
+      response.headers.get("access-control-allow-origin") === expectedOrigin &&
+      methods.includes("get") &&
+      expectedHeaders.every((header) => headers.includes(header)),
+    status: response.status
+  };
 }
 
 async function signIn(values, email, password, fetchImpl) {
