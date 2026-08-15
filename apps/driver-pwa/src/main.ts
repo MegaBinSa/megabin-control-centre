@@ -13,6 +13,7 @@ import {
   trimPositionQueue,
   type QueuedAction
 } from "./storage.js";
+import { DriverSessionActivity } from "./session-activity.js";
 interface Stop {
   routeOperationStopId: string;
   sequenceNumber: number;
@@ -57,6 +58,7 @@ const auth = url && key ? createDriverAuth(url, key) : null,
     auth && base
       ? new MasterDataApiClient({ baseUrl: base, accessToken: () => auth.accessToken() })
       : null;
+const sessionActivity = new DriverSessionActivity();
 let manifest: Manifest | null = null,
   selected: Stop | null = null,
   online = navigator.onLine,
@@ -152,35 +154,37 @@ async function post(action: QueuedAction) {
   }>;
 }
 async function sync() {
-  if (!online || syncing || !auth) return;
-  syncing = true;
-  await render();
-  for (const action of await queuedActions()) {
-    if (!["queued", "failed"].includes(action.state)) continue;
-    action.state = "syncing";
-    await queueAction(action);
-    try {
-      const result = await post(action);
-      if (result.ok) {
-        action.state =
-          result.data?.outcome === "conflict"
-            ? "conflict"
-            : result.data?.outcome === "rejected"
-              ? "rejected"
-              : "synced";
-        if (result.data?.rejectionCode) action.rejectionCode = result.data.rejectionCode;
-      } else {
-        action.state = result.error?.code === "conflict" ? "conflict" : "failed";
-        if (result.error?.code) action.rejectionCode = result.error.code;
+  if (!online || !auth) return;
+  return sessionActivity.runSync(async () => {
+    syncing = true;
+    await render();
+    for (const action of await queuedActions()) {
+      if (!["queued", "failed"].includes(action.state)) continue;
+      action.state = "syncing";
+      await queueAction(action);
+      try {
+        const result = await post(action);
+        if (result.ok) {
+          action.state =
+            result.data?.outcome === "conflict"
+              ? "conflict"
+              : result.data?.outcome === "rejected"
+                ? "rejected"
+                : "synced";
+          if (result.data?.rejectionCode) action.rejectionCode = result.data.rejectionCode;
+        } else {
+          action.state = result.error?.code === "conflict" ? "conflict" : "failed";
+          if (result.error?.code) action.rejectionCode = result.error.code;
+        }
+      } catch {
+        action.state = "failed";
       }
-    } catch {
-      action.state = "failed";
+      await queueAction(action);
     }
-    await queueAction(action);
-  }
-  syncing = false;
-  await syncPositions();
-  await refresh();
+    syncing = false;
+    await syncPositions();
+    await refresh();
+  });
 }
 async function syncPositions() {
   if (!online || !api || !trackingDevice || trackingDevice.status !== "active") return;
@@ -478,13 +482,15 @@ async function queueComplete() {
 }
 function wireLogout() {
   document.querySelector("#logout")?.addEventListener("click", async () => {
-    await clearOperationalData();
-    if (trackingTimer !== null) window.clearInterval(trackingTimer);
-    trackingTimer = null;
-    trackingDevice = null;
-    await auth?.signOut();
-    manifest = null;
-    renderLogin();
+    await sessionActivity.endSession(async () => {
+      await clearOperationalData();
+      if (trackingTimer !== null) window.clearInterval(trackingTimer);
+      trackingTimer = null;
+      trackingDevice = null;
+      await auth?.signOut();
+      manifest = null;
+      renderLogin();
+    });
   });
 }
 function renderLogin() {
