@@ -64,6 +64,11 @@ let active: ModuleName = "Clients";
 let records: readonly Record<string, unknown>[] = [];
 let identity: OfficeIdentity | null = null;
 let errorMessage = "";
+const scopedQuery = (search?: string) =>
+  new URLSearchParams({
+    ...(identity?.serviceRegionIds[0] ? { serviceRegionId: identity.serviceRegionIds[0] } : {}),
+    ...(search ? { search } : {})
+  }).toString();
 const supabaseUrl = import.meta.env.VITE_SUPABASE_URL as string | undefined;
 const supabaseKey = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY as string | undefined;
 const auth = supabaseUrl && supabaseKey ? createOfficeAuth(supabaseUrl, supabaseKey) : null;
@@ -105,7 +110,7 @@ async function load(): Promise<void> {
   errorMessage = "";
   if (api)
     try {
-      records = (await api.list<Record<string, unknown>>(paths[active])).items;
+      records = (await api.list<Record<string, unknown>>(paths[active], scopedQuery())).items;
     } catch (cause) {
       errorMessage = cause instanceof Error ? cause.message : `Unable to load ${active}.`;
     }
@@ -220,6 +225,7 @@ function render(): void {
       appRoot,
       api,
       identity?.permissions.includes("geography.write") === true,
+      identity?.serviceRegionIds ?? [],
       async () => {
         await auth.signOut();
         identity = null;
@@ -228,39 +234,69 @@ function render(): void {
     );
   });
   document.querySelector("#roster-workspace")?.addEventListener("click", () => {
-    void renderRosterWorkspace(appRoot, api, identity?.permissions ?? [], async () => {
-      await auth.signOut();
-      identity = null;
-      render();
-    });
+    void renderRosterWorkspace(
+      appRoot,
+      api,
+      identity?.permissions ?? [],
+      identity?.serviceRegionIds ?? [],
+      async () => {
+        await auth.signOut();
+        identity = null;
+        render();
+      }
+    );
   });
   document.querySelector("#routes-workspace")?.addEventListener("click", () => {
-    void renderRoutesWorkspace(appRoot, api, identity?.permissions ?? [], async () => {
-      await auth.signOut();
-      identity = null;
-      render();
-    });
+    void renderRoutesWorkspace(
+      appRoot,
+      api,
+      identity?.permissions ?? [],
+      identity?.serviceRegionIds ?? [],
+      async () => {
+        await auth.signOut();
+        identity = null;
+        render();
+      }
+    );
   });
   document.querySelector("#route-operations-workspace")?.addEventListener("click", () => {
-    void renderRouteOperationsWorkspace(appRoot, api, identity?.permissions ?? [], async () => {
-      await auth.signOut();
-      identity = null;
-      render();
-    });
+    void renderRouteOperationsWorkspace(
+      appRoot,
+      api,
+      identity?.permissions ?? [],
+      identity?.serviceRegionIds ?? [],
+      async () => {
+        await auth.signOut();
+        identity = null;
+        render();
+      }
+    );
   });
   document.querySelector("#tracking-workspace")?.addEventListener("click", () => {
-    void renderTrackingWorkspace(appRoot, api, identity?.permissions ?? [], async () => {
-      await auth.signOut();
-      identity = null;
-      render();
-    });
+    void renderTrackingWorkspace(
+      appRoot,
+      api,
+      identity?.permissions ?? [],
+      identity?.serviceRegionIds ?? [],
+      async () => {
+        await auth.signOut();
+        identity = null;
+        render();
+      }
+    );
   });
   document.querySelector("#live-operations-workspace")?.addEventListener("click", () => {
-    void renderLiveOperationsWorkspace(appRoot, api, identity?.permissions ?? [], async () => {
-      await auth.signOut();
-      identity = null;
-      render();
-    });
+    void renderLiveOperationsWorkspace(
+      appRoot,
+      api,
+      identity?.permissions ?? [],
+      identity?.serviceRegionIds ?? [],
+      async () => {
+        await auth.signOut();
+        identity = null;
+        render();
+      }
+    );
   });
   document.querySelector("#website-intake-workspace")?.addEventListener("click", () => {
     void renderWebsiteIntakeWorkspace(appRoot, api, identity?.permissions ?? [], async () => {
@@ -389,12 +425,8 @@ function render(): void {
   });
   document.querySelector<HTMLInputElement>("#search")?.addEventListener("change", async (event) => {
     const input = event.currentTarget as HTMLInputElement;
-    records = (
-      await api.list<Record<string, unknown>>(
-        paths[active],
-        new URLSearchParams({ search: input.value }).toString()
-      )
-    ).items;
+    records = (await api.list<Record<string, unknown>>(paths[active], scopedQuery(input.value)))
+      .items;
     render();
   });
 }

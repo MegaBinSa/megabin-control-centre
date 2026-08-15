@@ -5,6 +5,7 @@ import type {
   PlannedRoute,
   RouteOptimizationAttempt
 } from "@megabin/route-planning";
+import { loadAuthorizedServiceRegions } from "./regions.js";
 const esc = (v: string) =>
   v.replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" })[c] ?? c);
 const req = <T extends Element>(s: string) => {
@@ -16,10 +17,10 @@ export async function renderRoutesWorkspace(
   root: HTMLElement,
   api: MasterDataApiClient,
   permissions: readonly string[],
+  serviceRegionIds: readonly string[],
   signOut: () => Promise<void>
 ): Promise<void> {
-  const regions = (await api.list<{ serviceRegionId: string; name: string }>("service-regions"))
-    .items;
+  const regions = await loadAuthorizedServiceRegions(api, serviceRegionIds);
   const today = new Date().toISOString().slice(0, 10);
   let model: RoutePlanDocument | null = null;
   let roster: DailyRosterModel | null = null;

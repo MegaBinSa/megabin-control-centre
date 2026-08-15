@@ -1,5 +1,6 @@
 import type { MasterDataApiClient } from "@megabin/api-client";
 import type { DailyRosterEntry, DailyRosterModel, ReadinessResult } from "@megabin/daily-roster";
+import { loadAuthorizedServiceRegions } from "./regions.js";
 const escapeText = (value: string) =>
   value.replace(
     /[&<>"]/g,
@@ -14,10 +15,10 @@ export async function renderRosterWorkspace(
   root: HTMLElement,
   api: MasterDataApiClient,
   permissions: readonly string[],
+  serviceRegionIds: readonly string[],
   signOut: () => Promise<void>
 ): Promise<void> {
-  const regions = (await api.list<{ serviceRegionId: string; name: string }>("service-regions"))
-    .items;
+  const regions = await loadAuthorizedServiceRegions(api, serviceRegionIds);
   const today = new Date().toISOString().slice(0, 10);
   let model: DailyRosterModel | null = null;
   let readiness: ReadinessResult | null = null;

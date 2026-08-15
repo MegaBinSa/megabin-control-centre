@@ -320,6 +320,18 @@ describe("deployment safety tools", () => {
     });
     const checks = await runSmoke(staging, fetchMock as unknown as typeof fetch);
     expect(checks.every((check) => check.passed)).toBe(true);
+    expect(checks.find((check) => check.name === "regional_office_master_data_read")?.passed).toBe(
+      true
+    );
+    expect(
+      fetchMock.mock.calls.some((call) => {
+        const url = new URL(String(call[0]));
+        return (
+          url.pathname.endsWith("/master-data/clients") &&
+          url.searchParams.get("serviceRegionId") === "51000000-0000-0000-0000-000000000001"
+        );
+      })
+    ).toBe(true);
     expect(
       fetchMock.mock.calls.some(
         (call) => String(call[0]).includes("website-onboarding") && call[1]?.method === "POST"
@@ -359,6 +371,44 @@ describe("deployment safety tools", () => {
     });
     const checks = await runSmoke(staging, fetchMock as unknown as typeof fetch);
     expect(checks.find((check) => check.name === "driver_frontend")?.passed).toBe(false);
+  });
+
+  it("fails smoke when the region-scoped Office Clients read is denied", async () => {
+    const fetchMock = vi.fn(async (input: string | URL | Request, init?: RequestInit) => {
+      const url = String(input);
+      if (url.includes("/auth/v1/token")) return Response.json({ access_token: "synthetic" });
+      if (init?.method === "OPTIONS")
+        return new Response(null, { status: 204, headers: browserCorsHeaders(init) });
+      if (new Headers(init?.headers).get("Origin")?.includes("unapproved"))
+        return new Response(null, { status: 403 });
+      if (url.endsWith("/health/live"))
+        return Response.json(
+          {
+            runtime: {
+              environment: "staging",
+              buildId: "abc123",
+              deploymentId: "synthetic-run"
+            }
+          },
+          { headers: browserCorsHeaders(init) }
+        );
+      if (url.includes("/master-data/clients"))
+        return new Response(null, {
+          status: init?.headers ? 403 : 401,
+          headers: browserCorsHeaders(init)
+        });
+      if (url.includes("website-onboarding")) return new Response(null, { status: 404 });
+      if (url.includes("/accounting/health") || url.includes("/communications/provider-health"))
+        return new Response(null, { status: 403 });
+      if (url.includes("/accounting/status")) return new Response(null, { status: 403 });
+      return Response.json({ ok: true }, { headers: browserCorsHeaders(init) });
+    });
+
+    const checks = await runSmoke(staging, fetchMock as unknown as typeof fetch);
+    expect(checks.find((check) => check.name === "authenticated_office")?.passed).toBe(true);
+    expect(checks.find((check) => check.name === "regional_office_master_data_read")?.passed).toBe(
+      false
+    );
   });
 
   it("fails smoke when a generic preflight omits browser API headers", async () => {

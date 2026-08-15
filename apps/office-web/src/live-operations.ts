@@ -1,5 +1,6 @@
 /* eslint-disable @typescript-eslint/no-non-null-assertion */
 import type { MasterDataApiClient } from "@megabin/api-client";
+import { loadAuthorizedServiceRegions } from "./regions.js";
 interface Route {
   routeOperationId: string;
   vehicleId: string;
@@ -38,10 +39,10 @@ export async function renderLiveOperationsWorkspace(
   root: HTMLElement,
   api: MasterDataApiClient,
   permissions: readonly string[],
+  serviceRegionIds: readonly string[],
   signOut: () => Promise<void>
 ) {
-  const regions = (await api.list<{ serviceRegionId: string; name: string }>("service-regions"))
-    .items;
+  const regions = await loadAuthorizedServiceRegions(api, serviceRegionIds);
   let regionId = regions[0]?.serviceRegionId ?? "",
     routes: Route[] = [],
     facts: Fact[] = [],

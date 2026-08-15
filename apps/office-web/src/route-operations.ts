@@ -1,4 +1,5 @@
 import type { MasterDataApiClient } from "@megabin/api-client";
+import { loadAuthorizedServiceRegions } from "./regions.js";
 
 interface Operation {
   readonly routeOperationId: string;
@@ -40,10 +41,10 @@ export async function renderRouteOperationsWorkspace(
   root: HTMLElement,
   api: MasterDataApiClient,
   permissions: readonly string[],
+  serviceRegionIds: readonly string[],
   signOut: () => Promise<void>
 ): Promise<void> {
-  const regions = (await api.list<{ serviceRegionId: string; name: string }>("service-regions"))
-    .items;
+  const regions = await loadAuthorizedServiceRegions(api, serviceRegionIds);
   let operations: readonly Operation[] = [];
   let error = "";
   let selectedRegion = regions[0]?.serviceRegionId ?? "";

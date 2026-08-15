@@ -7,6 +7,7 @@ import type {
   Position,
   TerritoryGeometry
 } from "@megabin/geography";
+import { loadAuthorizedServiceRegions } from "./regions.js";
 
 const escapeText = (value: string) =>
   value.replace(
@@ -108,10 +109,10 @@ export async function renderGeographyWorkspace(
   root: HTMLElement,
   api: MasterDataApiClient,
   canWrite: boolean,
+  serviceRegionIds: readonly string[],
   signOut: () => Promise<void>
 ): Promise<void> {
-  const regions = (await api.list<{ serviceRegionId: string; name: string }>("service-regions"))
-    .items;
+  const regions = await loadAuthorizedServiceRegions(api, serviceRegionIds);
   const regionId = regions[0]?.serviceRegionId;
   root.innerHTML = `<div class="shell"><aside><div class="brand">MegaBin Control Centre</div><nav><button id="master-data">Master data</button><button aria-current="page">Geography</button></nav></aside><main><header><div><h1>Geography</h1><p>Authoritative territory, depot and service-address configuration</p></div><button id="logout">Sign out</button></header>${regionId ? `<div class="geo-toolbar"><label>Service region<select id="region">${regions.map((region) => `<option value="${region.serviceRegionId}">${escapeText(region.name)}</option>`).join("")}</select></label><label><input id="depots" type="checkbox" checked> Depots</label><label><input id="addresses" type="checkbox"> Service addresses</label><button id="reviews">Assignment reviews</button></div><div class="geography-layout"><section class="geo-list"><h2>Territories</h2><div id="territories"></div>${canWrite ? '<button class="button" id="create-territory">Draw territory</button>' : ""}</section><section><div id="map"></div><div id="map-message" class="notice" hidden></div></section><section class="geo-details"><h2>Territory details</h2><div id="details">Select a territory on the map or list.</div></section></div><dialog id="territory-editor"><form id="territory-form"><h2>Territory editor</h2><input name="territoryId" type="hidden"><input name="expectedUpdatedAt" type="hidden"><label>Name<input name="name" required maxlength="120"></label><label>Priority<input name="priority" type="number" min="-10000" max="10000" value="0"></label><label>Default depot ID<input name="defaultDepotId"></label><label>Preferred days<input name="preferredCollectionDays" placeholder="1,3,5"></label><label>Eligible team IDs<input name="eligibleTeamIds" placeholder="UUID, UUID"></label><label>Service status<select name="serviceStatus"><option>active</option><option>limited</option><option>inactive</option></select></label><label>GeoJSON<textarea name="geometry" rows="10" required></textarea></label><div id="impact"></div><div class="actions"><button type="button" id="delete-draft">Delete draft</button><button type="button" id="cancel-edit">Cancel</button><button type="button" id="preview">Preview impact</button><button class="button">Save</button></div></form></dialog><dialog id="review-dialog"><h2>Geography assignment reviews</h2><div id="review-items"></div><button id="close-reviews">Close</button></dialog>` : '<div class="empty">Create a service region before configuring geography.</div>'}</main></div>`;
   document.querySelector("#logout")?.addEventListener("click", () => void signOut());

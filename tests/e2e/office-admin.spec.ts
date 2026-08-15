@@ -6,7 +6,9 @@ const token = `${btoa(JSON.stringify({ alg: "none" }))}.${btoa(JSON.stringify({ 
 async function syntheticSession(
   page: Page,
   permissions = ["master_data.read", "master_data.write", "clients.sensitive.read"],
-  onWrite?: (body: unknown) => void
+  onWrite?: (body: unknown) => void,
+  serviceRegionIds: readonly string[] = [],
+  onRead?: (url: string) => void
 ): Promise<void> {
   await page.route("http://supabase.phase1b.test/**", async (route) => {
     if (route.request().url().includes("/token"))
@@ -40,13 +42,15 @@ async function syntheticSession(
       return route.fulfill({
         json: {
           ok: true,
-          data: { userId, displayName: "Synthetic Office User", permissions, serviceRegionIds: [] }
+          data: { userId, displayName: "Synthetic Office User", permissions, serviceRegionIds }
         }
       });
-    if (route.request().method() === "GET")
+    if (route.request().method() === "GET") {
+      onRead?.(url);
       return route.fulfill({
         json: { ok: true, data: { items: [], page: 1, pageSize: 25, total: 0 } }
       });
+    }
     onWrite?.(route.request().postDataJSON());
     return route.fulfill({
       status: route.request().method() === "POST" ? 201 : 200,
@@ -63,6 +67,29 @@ test("Office login restores an authorized administration shell", async ({ page }
   await syntheticSession(page);
   await expect(page.getByText("Synthetic Office User")).toBeVisible();
   await expect(page.getByRole("button", { name: "Clients", exact: true })).toBeVisible();
+});
+
+test("region-scoped Office reads Clients within its authorized scope", async ({ page }) => {
+  const serviceRegionId = "51000000-0000-0000-0000-000000000001";
+  const reads: string[] = [];
+  await syntheticSession(
+    page,
+    ["master_data.read", "master_data.write", "clients.sensitive.read"],
+    undefined,
+    [serviceRegionId],
+    (url) => reads.push(url)
+  );
+
+  await expect(page.getByRole("heading", { name: "Clients" })).toBeVisible();
+  expect(
+    reads.some((value) => {
+      const url = new URL(value);
+      return (
+        url.pathname.endsWith("/master-data/clients") &&
+        url.searchParams.get("serviceRegionId") === serviceRegionId
+      );
+    })
+  ).toBe(true);
 });
 
 test("authorized Office user can create a synthetic client", async ({ page }) => {
