@@ -8,6 +8,7 @@ import {
   forwardRepairFixtures,
   inspectForwardRepairFixtures,
   validateEnvironmentProtection,
+  validateForwardRepairDispatchInputs,
   validateForwardRepairPlan
 } from "../scripts/forward-repair-contract.mjs";
 import { buildForwardRepairEvidence } from "../scripts/forward-repair-evidence.mjs";
@@ -64,6 +65,38 @@ describe("isolated forward-repair rehearsal contract", () => {
         validateForwardRepairPlan({ ...validValues(), ...patch }, objectives, fixtures)
       ).toThrow();
     }
+  });
+
+  it("rejects dispatch labels prepended to exact free-text input values", () => {
+    const values = validValues();
+    for (const patch of [
+      { SOURCE_SHA: `source_sha ${values.SOURCE_SHA}` },
+      {
+        BASELINE_RECOVERY_RUN_ID: `baseline_recovery_run_id ${values.BASELINE_RECOVERY_RUN_ID}`
+      },
+      {
+        CONFIRM_FORWARD_REPAIR: `confirm_forward_repair ${values.CONFIRM_FORWARD_REPAIR}`
+      }
+    ]) {
+      expect(() => validateForwardRepairDispatchInputs({ ...values, ...patch })).toThrow();
+    }
+  });
+
+  it("checks out the protected event SHA before validating raw dispatch inputs", () => {
+    const workflow = readFileSync(".github/workflows/rehearse-staging-forward-repair.yml", "utf8");
+    expect(workflow).toContain("ref: ${{ github.sha }}");
+    expect(workflow).not.toContain("ref: ${{ inputs.source_sha }}");
+    expect(workflow).toContain("SOURCE_SHA: ${{ inputs.source_sha }}");
+    expect(workflow.indexOf("Check out protected workflow release")).toBeLessThan(
+      workflow.indexOf("Validate exact dispatch input values")
+    );
+  });
+
+  it("writes failure evidence without depending on skipped pnpm setup", () => {
+    const workflow = readFileSync(".github/workflows/rehearse-staging-forward-repair.yml", "utf8");
+    expect(workflow).toContain("node scripts/forward-repair-evidence.mjs");
+    expect(workflow).not.toContain("run: pnpm forward-repair:evidence");
+    expect(workflow).toContain("if-no-files-found: warn");
   });
 
   it("requires enforced independent-review and main-only Environment protection", () => {

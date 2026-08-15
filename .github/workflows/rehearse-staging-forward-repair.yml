@@ -52,11 +52,28 @@ jobs:
       SUPABASE_RECOVERY_DB_URL: ${{ secrets.SUPABASE_RECOVERY_DB_URL }}
       FORWARD_REPAIR_EVIDENCE_PATH: forward-repair-rehearsal-evidence.json
     steps:
-      - name: Check out requested main release with full history
+      - name: Initialize fail-closed evidence state
+        shell: bash
+        run: |
+          echo "FORWARD_REPAIR_RESULT=Failed" >> "$GITHUB_ENV"
+          echo "FAULT_APPLICATION_RESULT=Not Run" >> "$GITHUB_ENV"
+          echo "FAULT_VERIFICATION_RESULT=Not Run" >> "$GITHUB_ENV"
+          echo "REPAIR_APPLICATION_RESULT=Not Run" >> "$GITHUB_ENV"
+          echo "POST_REPAIR_INVARIANT_RESULT=Not Run" >> "$GITHUB_ENV"
+
+      - name: Check out protected workflow release with full history
         uses: actions/checkout@v4
         with:
-          ref: ${{ inputs.source_sha }}
+          ref: ${{ github.sha }}
           fetch-depth: 0
+
+      - name: Validate exact dispatch input values
+        shell: bash
+        run: |
+          node --input-type=module <<'NODE'
+          import { validateForwardRepairDispatchInputs } from "./scripts/forward-repair-contract.mjs";
+          validateForwardRepairDispatchInputs(process.env);
+          NODE
 
       - uses: pnpm/action-setup@v4
         with:
@@ -68,15 +85,6 @@ jobs:
           cache: pnpm
 
       - run: pnpm install --frozen-lockfile
-
-      - name: Initialize fail-closed evidence state
-        shell: bash
-        run: |
-          echo "FORWARD_REPAIR_RESULT=Failed" >> "$GITHUB_ENV"
-          echo "FAULT_APPLICATION_RESULT=Not Run" >> "$GITHUB_ENV"
-          echo "FAULT_VERIFICATION_RESULT=Not Run" >> "$GITHUB_ENV"
-          echo "REPAIR_APPLICATION_RESULT=Not Run" >> "$GITHUB_ENV"
-          echo "POST_REPAIR_INVARIANT_RESULT=Not Run" >> "$GITHUB_ENV"
 
       - name: Validate-plan
         env:
@@ -252,7 +260,13 @@ jobs:
 
       - name: Write sanitized rehearsal evidence
         if: always()
-        run: pnpm forward-repair:evidence
+        shell: bash
+        run: |
+          if test -f scripts/forward-repair-evidence.mjs && test -f config/recovery-objectives.json; then
+            node scripts/forward-repair-evidence.mjs
+          else
+            echo "::warning::No evidence artifact was generated because the repository evidence writer was unavailable."
+          fi
 
       - name: Remove runner-local sensitive files
         if: always()
@@ -269,7 +283,7 @@ jobs:
         with:
           name: staging-forward-repair-rehearsal-${{ github.run_id }}
           path: forward-repair-rehearsal-evidence.json
-          if-no-files-found: error
+          if-no-files-found: warn
           retention-days: 90
 
       - name: Record forward-repair summary

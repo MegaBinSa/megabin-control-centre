@@ -23,6 +23,30 @@ function hash(content) {
   return createHash("sha256").update(content).digest("hex");
 }
 
+export function validateForwardRepairDispatchInputs(values) {
+  const sourceSha = requireValue("SOURCE_SHA", values.SOURCE_SHA);
+  if (!shaPattern.test(sourceSha)) throw new Error("SOURCE_SHA must be a full immutable SHA.");
+  if (!runIdPattern.test(values.BASELINE_RECOVERY_RUN_ID ?? ""))
+    throw new Error("A numeric baseline recovery run ID is required.");
+  if (values.SCENARIO !== forwardRepairScenario)
+    throw new Error("Only the approved forward-repair scenario is allowed.");
+
+  const source = requireValue("SOURCE_SUPABASE_PROJECT_REF", values.SOURCE_SUPABASE_PROJECT_REF);
+  const target = requireValue("RESTORE_SUPABASE_PROJECT_REF", values.RESTORE_SUPABASE_PROJECT_REF);
+  if (!projectRefPattern.test(source) || !projectRefPattern.test(target))
+    throw new Error("Approved Supabase project references are required.");
+  if (values.CONFIRM_FORWARD_REPAIR !== `FORWARD-REPAIR-REHEARSAL:${source}:${target}:${sourceSha}`)
+    throw new Error("Source, target and SHA-bound confirmation is required.");
+
+  return {
+    sourceSha,
+    baselineRecoveryRunId: values.BASELINE_RECOVERY_RUN_ID,
+    scenario: values.SCENARIO,
+    sourceProjectRef: source,
+    recoveryProjectRef: target
+  };
+}
+
 export function inspectForwardRepairFixtures(fixtureDirectory) {
   const inventory = readdirSync(fixtureDirectory)
     .filter((name) => name.endsWith(".sql"))
@@ -49,19 +73,13 @@ export function inspectForwardRepairFixtures(fixtureDirectory) {
 }
 
 export function validateForwardRepairPlan(values, objectives, fixtureDirectory) {
-  const sourceSha = requireValue("SOURCE_SHA", values.SOURCE_SHA);
-  if (!shaPattern.test(sourceSha)) throw new Error("SOURCE_SHA must be a full immutable SHA.");
+  const dispatch = validateForwardRepairDispatchInputs(values);
+  const sourceSha = dispatch.sourceSha;
   if (values.GITHUB_REF !== "refs/heads/main")
     throw new Error("Forward-repair rehearsal must be dispatched from main.");
-  if (values.SCENARIO !== forwardRepairScenario)
-    throw new Error("Only the approved forward-repair scenario is allowed.");
-  if (!runIdPattern.test(values.BASELINE_RECOVERY_RUN_ID ?? ""))
-    throw new Error("A numeric baseline recovery run ID is required.");
 
-  const source = requireValue("SOURCE_SUPABASE_PROJECT_REF", values.SOURCE_SUPABASE_PROJECT_REF);
-  const target = requireValue("RESTORE_SUPABASE_PROJECT_REF", values.RESTORE_SUPABASE_PROJECT_REF);
-  if (!projectRefPattern.test(source) || !projectRefPattern.test(target))
-    throw new Error("Approved Supabase project references are required.");
+  const source = dispatch.sourceProjectRef;
+  const target = dispatch.recoveryProjectRef;
   if (source !== objectives.sourceProjectRef || source !== values.STAGING_SUPABASE_PROJECT_REF)
     throw new Error("Source must exactly match approved shared Staging.");
   if (
@@ -72,9 +90,6 @@ export function validateForwardRepairPlan(values, objectives, fixtureDirectory) 
   if (source === target) throw new Error("Source and recovery target must differ.");
   if (target === values.PRODUCTION_SUPABASE_PROJECT_REF)
     throw new Error("Production cannot be a forward-repair target.");
-  if (values.CONFIRM_FORWARD_REPAIR !== `FORWARD-REPAIR-REHEARSAL:${source}:${target}:${sourceSha}`)
-    throw new Error("Source, target and SHA-bound confirmation is required.");
-
   const authorityLogin = requireValue(
     "RECOVERY_AUTHORITY_GITHUB_LOGIN",
     values.RECOVERY_AUTHORITY_GITHUB_LOGIN
