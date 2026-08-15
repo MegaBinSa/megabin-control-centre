@@ -2,7 +2,7 @@ do $$
 declare
   office_id uuid;
   driver_id uuid;
-  synthetic_region uuid := '10000000-0000-0000-0000-000000000001';
+  synthetic_region constant uuid := '51000000-0000-0000-0000-000000000001';
   migration_count integer;
 begin
   select count(*) into migration_count from supabase_migrations.schema_migrations;
