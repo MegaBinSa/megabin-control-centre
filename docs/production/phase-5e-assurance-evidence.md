@@ -1,6 +1,6 @@
 # Phase 5E Assurance Evidence
 
-**Status:** Recovery and alert-delivery rehearsals Passed; remaining protected rehearsals Not Run
+**Status:** Recovery, alert-delivery and component-rollback rehearsals Passed
 
 ## Approved decisions
 
@@ -16,7 +16,9 @@ Recovery rehearsal #6 passed on main SHA `dcd7383594ed6a89379da35de0b5f82accd706
 
 The controlled synthetic alert-delivery proof passed in [run 31878853824](https://github.com/MegaBinSa/megabin-control-centre/actions/runs/31878853824). All normal checks resolved, the requested `MBA-STG-MON-TEST-001` alert caused the intended workflow failure, and its evidence artifact was retained. Shaun separately confirmed receipt of the GitHub Actions failure email at `infomegabin@gmail.com`; mailbox receipt was human-confirmed, not programmatically verified.
 
-The one-hour RPO and 12-month evidence-retention targets remain unmet. Component rollback/current-release restoration, database forward-repair rehearsal/tabletop, and all six release-bound UAT journeys remain Not Run. No production system, live provider, real client data or active Staging database was changed by this documentation close-out.
+Component rollback/current-release restoration passed in [run 31881010706](https://github.com/MegaBinSa/megabin-control-centre/actions/runs/31881010706). The compatible prior application release `4e471bd250a2757ca67bb0e843c2201d144ac122` deployed and passed smoke verification; current main release `e2837def54f922649965298e27f97357977b0dd0` was then restored and passed the complete smoke suite. No database migration, downgrade or reset occurred. Bounded synthetic provisioning and website-intake smoke operations did run.
+
+The one-hour RPO and 12-month evidence-retention targets remain unmet. Database forward-repair rehearsal/tabletop and all six release-bound UAT journeys remain Not Run. No production system, live provider or real client data was involved.
 
 ## Current evidence state
 
@@ -27,6 +29,6 @@ The one-hour RPO and 12-month evidence-retention targets remain unmet. Component
 | One-hour RPO | Blocked | No PITR or retained hourly logical snapshot process |
 | Twelve-month assurance retention | Blocked | Current artifact expires after 90 days |
 | Synthetic alert delivery | Passed | Run 31878853824 and monitoring artifact; Shaun confirmed mailbox receipt |
-| Component rollback/restoration | Not Run | Protected rollback rehearsal not dispatched |
+| Component rollback/restoration | Passed | Run 31881010706; prior deployed and current release restored with smoke checks |
 | Database forward repair | Not Run | Rehearsal/tabletop not executed |
 | Six synthetic UAT journeys | Not Run | No release-bound execution records yet |
