@@ -1,5 +1,8 @@
-import { readFileSync, readdirSync } from "node:fs";
-import { dirname, relative, resolve } from "node:path";
+import { execFileSync } from "node:child_process";
+import { mkdtempSync, mkdirSync, readFileSync, readdirSync, rmSync, writeFileSync } from "node:fs";
+import { tmpdir } from "node:os";
+import { dirname, join, relative, resolve } from "node:path";
+import { pathToFileURL } from "node:url";
 
 import { describe, expect, it, vi } from "vitest";
 
@@ -514,12 +517,55 @@ describe("deployment safety tools", () => {
   it("restores current Staging after a compatible component rollback rehearsal", () => {
     const workflow = readFileSync(".github/workflows/rehearse-staging-rollback.yml", "utf8");
     expect(workflow).toContain("pnpm rollback:plan");
+    expect(workflow).toContain("fetch-depth: 0");
+    expect(workflow).toContain(
+      "git fetch --no-tags --prune origin +refs/heads/main:refs/remotes/origin/main"
+    );
+    expect(workflow).toContain('git cat-file -e "${PRIOR_RELEASE_SHA}^{commit}"');
+    expect(workflow).toContain('git cat-file -e "${CURRENT_RELEASE_SHA}^{commit}"');
+    expect(workflow).toContain('test "$(git rev-parse origin/main)" = "$CURRENT_RELEASE_SHA"');
+    expect(workflow).toContain('git merge-base --is-ancestor "$PRIOR_RELEASE_SHA" origin/main');
     expect(workflow).toContain("deploy-prior-compatible-release");
     expect(workflow).toContain("restore-current-release");
     expect(workflow).toContain("allow_destructive_migrations: false");
     expect(workflow).not.toContain("migration down");
     expect(workflow).not.toContain("db reset");
   });
+
+  it("requires full history before an older immutable release can pass ancestry validation", () => {
+    const root = mkdtempSync(join(tmpdir(), "megabin-rollback-history-"));
+    const origin = join(root, "origin.git");
+    const source = join(root, "source");
+    const shallow = join(root, "shallow");
+    const git = (args: string[], cwd = root) =>
+      execFileSync("git", args, { cwd, encoding: "utf8", stdio: "pipe" }).trim();
+
+    try {
+      mkdirSync(source);
+      git(["init", "--bare", origin]);
+      git(["init"], source);
+      git(["config", "user.name", "MegaBin Test"], source);
+      git(["config", "user.email", "synthetic@megabin.local"], source);
+      writeFileSync(join(source, "release.txt"), "prior\n");
+      git(["add", "release.txt"], source);
+      git(["commit", "-m", "prior"], source);
+      const prior = git(["rev-parse", "HEAD"], source);
+      writeFileSync(join(source, "release.txt"), "current\n");
+      git(["commit", "-am", "current"], source);
+      git(["branch", "-M", "main"], source);
+      git(["remote", "add", "origin", origin], source);
+      git(["push", "-u", "origin", "main"], source);
+
+      git(["clone", "--depth", "1", "--branch", "main", pathToFileURL(origin).href, shallow]);
+      expect(() => git(["merge-base", "--is-ancestor", prior, "origin/main"], shallow)).toThrow();
+
+      git(["fetch", "--unshallow", "--no-tags", "origin", "main"], shallow);
+      expect(git(["cat-file", "-e", `${prior}^{commit}`], shallow)).toBe("");
+      expect(git(["merge-base", "--is-ancestor", prior, "origin/main"], shallow)).toBe("");
+    } finally {
+      rmSync(root, { recursive: true, force: true });
+    }
+  }, 15_000);
 
   it("builds an explicit non-destructive rollback and forward-repair plan", () => {
     const prior = "1".repeat(40);

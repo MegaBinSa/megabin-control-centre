@@ -32,6 +32,8 @@ jobs:
       current: ${{ steps.identity.outputs.current }}
     steps:
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
       - uses: pnpm/action-setup@v4
         with:
           version: 11.16.0
@@ -50,10 +52,12 @@ jobs:
         shell: bash
         run: |
           pnpm rollback:plan
-          git fetch origin main
+          git fetch --no-tags --prune origin +refs/heads/main:refs/remotes/origin/main
+          git cat-file -e "${PRIOR_RELEASE_SHA}^{commit}"
+          git cat-file -e "${CURRENT_RELEASE_SHA}^{commit}"
+          test "$(git rev-parse origin/main)" = "$CURRENT_RELEASE_SHA"
           git merge-base --is-ancestor "$PRIOR_RELEASE_SHA" origin/main
           git merge-base --is-ancestor "$CURRENT_RELEASE_SHA" origin/main
-          test "$(git rev-parse origin/main)" = "$CURRENT_RELEASE_SHA"
           echo "prior=$PRIOR_RELEASE_SHA" >> "$GITHUB_OUTPUT"
           echo "current=$CURRENT_RELEASE_SHA" >> "$GITHUB_OUTPUT"
 
