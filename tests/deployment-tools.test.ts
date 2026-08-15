@@ -430,6 +430,22 @@ describe("deployment safety tools", () => {
     expect(workflow).not.toContain("db reset");
   });
 
+  it("authenticates the protected source runtime health request with the staging Office persona", () => {
+    const workflow = readFileSync(".github/workflows/rehearse-staging-recovery.yml", "utf8");
+    expect(workflow).toContain(
+      "SUPABASE_STAGING_PUBLISHABLE_KEY: ${{ secrets.SUPABASE_STAGING_PUBLISHABLE_KEY }}"
+    );
+    expect(workflow).toContain("STAGING_OFFICE_EMAIL: ${{ vars.STAGING_OFFICE_EMAIL }}");
+    expect(workflow).toContain("STAGING_OFFICE_PASSWORD: ${{ secrets.STAGING_OFFICE_PASSWORD }}");
+    expect(workflow).toContain('test -n "$SUPABASE_STAGING_PUBLISHABLE_KEY"');
+    expect(workflow).toContain('test -n "$STAGING_OFFICE_EMAIL"');
+    expect(workflow).toContain('test -n "$STAGING_OFFICE_PASSWORD"');
+    expect(workflow).toContain("/auth/v1/token?grant_type=password");
+    expect(workflow).toContain('--header "Authorization: Bearer ${source_access_token}"');
+    expect(workflow).toContain("/functions/v1/platform-runtime/api/v1/health/live");
+    expect(workflow).not.toContain("/functions/v1/platform-runtime/health/live");
+  });
+
   it("restores current Staging after a compatible component rollback rehearsal", () => {
     const workflow = readFileSync(".github/workflows/rehearse-staging-rollback.yml", "utf8");
     expect(workflow).toContain("pnpm rollback:plan");

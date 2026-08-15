@@ -33,6 +33,9 @@ jobs:
       SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
       SUPABASE_STAGING_DB_PASSWORD: ${{ secrets.SUPABASE_STAGING_DB_PASSWORD }}
       SUPABASE_RECOVERY_DB_PASSWORD: ${{ secrets.SUPABASE_RECOVERY_DB_PASSWORD }}
+      SUPABASE_STAGING_PUBLISHABLE_KEY: ${{ secrets.SUPABASE_STAGING_PUBLISHABLE_KEY }}
+      STAGING_OFFICE_EMAIL: ${{ vars.STAGING_OFFICE_EMAIL }}
+      STAGING_OFFICE_PASSWORD: ${{ secrets.STAGING_OFFICE_PASSWORD }}
       RECOVERY_POINT: ${{ inputs.recovery_point }}
       CONFIRM_RESTORE_REHEARSAL: ${{ inputs.confirm_restore }}
       RECOVERY_EVIDENCE_PATH: recovery-rehearsal-evidence.json
@@ -58,10 +61,22 @@ jobs:
           mkdir -p "$work"
           chmod 700 "$work"
           echo "RECOVERY_WORK=$work" >> "$GITHUB_ENV"
+          test -n "$SUPABASE_STAGING_PUBLISHABLE_KEY"
+          test -n "$STAGING_OFFICE_EMAIL"
+          test -n "$STAGING_OFFICE_PASSWORD"
           pnpm exec supabase link --project-ref "$SOURCE_SUPABASE_PROJECT_REF" --password "$SUPABASE_STAGING_DB_PASSWORD"
+          source_access_token="$(curl --fail --silent --show-error \
+            --request POST \
+            --header "apikey: ${SUPABASE_STAGING_PUBLISHABLE_KEY}" \
+            --header "Content-Type: application/json" \
+            --data "$(jq -cn --arg email "$STAGING_OFFICE_EMAIL" --arg password "$STAGING_OFFICE_PASSWORD" '{email:$email,password:$password}')" \
+            "https://${SOURCE_SUPABASE_PROJECT_REF}.supabase.co/auth/v1/token?grant_type=password" \
+            | jq -er '.access_token')"
           curl --fail --silent --show-error \
-            "https://${SOURCE_SUPABASE_PROJECT_REF}.supabase.co/functions/v1/platform-runtime/health/live" \
+            --header "Authorization: Bearer ${source_access_token}" \
+            "https://${SOURCE_SUPABASE_PROJECT_REF}.supabase.co/functions/v1/platform-runtime/api/v1/health/live" \
             > "$work/source-release.json"
+          unset source_access_token
           pnpm exec supabase migration list --linked > "$work/source-migrations.txt"
           pnpm exec supabase db dump --linked --schema app_private,api,public --file "$work/schema.sql"
           pnpm exec supabase db dump --linked --schema auth --data-only --file "$work/auth-data.sql"
