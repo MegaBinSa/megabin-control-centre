@@ -35,7 +35,8 @@
       "status": "Blocked",
       "automatedEvidence": [
         "recovery rehearsal run 31877345920; observed RTO 296 seconds",
-        "alert delivery proof run 31878853824; human mailbox receipt confirmed"
+        "alert delivery proof run 31878853824; human mailbox receipt confirmed",
+        "component rollback and current-release restoration run 31881010706"
       ],
       "humanApprovals": [
         "privacy/security/business decisions",
