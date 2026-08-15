@@ -1,6 +1,6 @@
 begin;
 
-select plan(12);
+select plan(13);
 
 insert into auth.users(id,email,email_confirmed_at,raw_user_meta_data,raw_app_meta_data) values
   ('b1000000-0000-4000-8000-000000000001','staging-office@megabin.local',now(),'{}','{}'),
@@ -27,6 +27,12 @@ select ok(
     'b1000000-0000-4000-8000-000000000001','master_data.read',
     '51000000-0000-0000-0000-000000000001'),
   'Office has positive permission in the synthetic region'
+);
+select ok(
+  app_private.user_has_region_permission(
+    'b1000000-0000-4000-8000-000000000001','clients.sensitive.read',
+    '51000000-0000-0000-0000-000000000001'),
+  'Office has sensitive Client read permission in the synthetic region'
 );
 select isnt(
   (select scope_kind from app_private.user_access_scopes

@@ -13,12 +13,15 @@ export const southAfricanPhone = z.string().transform((value, context) => {
   return normalized;
 });
 export const lifecycleStatus = z.enum(["pending", "active", "on_hold", "cancelled", "archived"]);
+const postgresUuid = z
+  .string()
+  .regex(/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i);
 export const pagination = z.object({
   page: z.coerce.number().int().positive().default(1),
   pageSize: z.coerce.number().int().min(1).max(100).default(25),
   search: z.string().trim().max(200).optional(),
   status: z.string().trim().max(40).optional(),
-  serviceRegionId: uuid.optional(),
+  serviceRegionId: postgresUuid.optional(),
   sort: z.enum(["createdAt", "updatedAt", "displayName"]).default("updatedAt"),
   direction: z.enum(["asc", "desc"]).default("desc")
 });

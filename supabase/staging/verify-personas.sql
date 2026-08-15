@@ -11,6 +11,9 @@ begin
   if not app_private.user_has_region_permission(office_id, 'master_data.read', synthetic_region) then
     raise exception 'office_positive_authorization_failed';
   end if;
+  if not app_private.user_has_region_permission(office_id, 'clients.sensitive.read', synthetic_region) then
+    raise exception 'office_sensitive_client_authorization_failed';
+  end if;
   if app_private.user_has_global_permission(office_id, 'master_data.read') then
     raise exception 'office_scope_is_not_region_bounded';
   end if;
@@ -36,6 +39,7 @@ end $$;
 select jsonb_build_object(
   'status', 'verified',
   'officeRegionPermission', true,
+  'officeSensitiveClientPermission', true,
   'officeGlobalScope', false,
   'driverOfficePermission', false,
   'driverStaffLinked', true

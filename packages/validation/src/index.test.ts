@@ -2,6 +2,11 @@ import { describe, expect, it } from "vitest";
 import { addressInput, clientInput, contactInput, pagination } from "./index.js";
 
 describe("master-data validation", () => {
+  it("accepts immutable PostgreSQL region UUIDs used by deterministic environments", () => {
+    expect(
+      pagination.parse({ serviceRegionId: "51000000-0000-0000-0000-000000000001" }).serviceRegionId
+    ).toBe("51000000-0000-0000-0000-000000000001");
+  });
   it("normalizes common South African mobile formats", () => {
     expect(
       contactInput.parse({

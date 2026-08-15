@@ -25,6 +25,26 @@ describe("master-data HTTP boundary", () => {
     expect(response?.status).toBe(201);
     expect(rpc.mock.calls[0]?.[1]?.p_body.mobile_e164).toBe("+27821234567");
   });
+  it("passes the browser service-region scope to the list RPC", async () => {
+    const serviceRegionId = "51000000-0000-0000-0000-000000000001";
+    const rpc = vi.fn().mockResolvedValue({
+      data: { items: [], page: 1, page_size: 25, total: 0 },
+      error: null
+    });
+    const handler = createMasterDataHandler({ actorId, id: () => actorId, rpc: { rpc } });
+    const response = await handler(
+      new Request(`http://test/api/v1/master-data/clients?serviceRegionId=${serviceRegionId}`)
+    );
+
+    expect(response?.status).toBe(200);
+    expect(rpc).toHaveBeenCalledWith(
+      "master_data_list",
+      expect.objectContaining({
+        p_resource: "clients",
+        p_query: expect.objectContaining({ service_region_id: serviceRegionId })
+      })
+    );
+  });
   it("publishes operations for every Phase 1B resource", () => {
     expect(Object.keys(masterDataOpenApiPaths())).toHaveLength(33);
   });

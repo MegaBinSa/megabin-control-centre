@@ -122,6 +122,25 @@ export async function runSmoke(values, fetchImpl = fetch) {
         officeProfile.headers.get("access-control-allow-origin") === values.MEGABIN_OFFICE_ORIGIN,
       status: officeProfile.status
     });
+    const regionalClients = await check(
+      "regional_office_master_data_read",
+      `${values.VITE_MASTER_DATA_API_URL}/api/v1/master-data/clients?serviceRegionId=51000000-0000-0000-0000-000000000001`,
+      200,
+      {
+        headers: {
+          Origin: values.MEGABIN_OFFICE_ORIGIN,
+          Authorization: `Bearer ${officeToken}`,
+          "Content-Type": "application/json",
+          "X-Correlation-Id": crypto.randomUUID()
+        }
+      }
+    );
+    checks.push({
+      name: "regional_office_master_data_cors_header",
+      passed:
+        regionalClients.headers.get("access-control-allow-origin") === values.MEGABIN_OFFICE_ORIGIN,
+      status: regionalClients.status
+    });
     await check(
       "fake_routing_provider_health",
       `${values.VITE_MASTER_DATA_API_URL}/api/v1/route-providers/health?serviceRegionId=51000000-0000-0000-0000-000000000001`,
