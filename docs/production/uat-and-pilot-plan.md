@@ -9,7 +9,7 @@
 - Synthetic Office/Driver users, application profiles, region/team scopes and positive/negative authorization smoke checks are proven.
 - Extend the deterministic seed/personas where a UAT scenario requires roles or regions beyond the proven Office/Driver pair.
 - Communications remain capture/allowlist only; provider sandboxes cannot reach real clients.
-- Monitoring and escalation ownership, recipient and GitHub Actions notification route are approved. Isolated logical restore passed in run 31877345920 with a 296-second observed RTO; independent verification remains pending. Before pilot, prove human alert receipt, deployment rollback and migration forward repair, and resolve or explicitly accept the unmet one-hour RPO.
+- Monitoring and escalation ownership, recipient and GitHub Actions notification route are approved; controlled alert proof run 31878853824 passed with Shaun's human mailbox confirmation. Isolated logical restore passed in run 31877345920 with a 296-second observed RTO; independent verification remains pending. Before pilot, prove deployment rollback and migration forward repair, and resolve or explicitly accept the unmet one-hour RPO.
 - Required fake providers are explicitly identified; selected staging sandboxes are isolated.
 
 ## End-to-end UAT catalogue
