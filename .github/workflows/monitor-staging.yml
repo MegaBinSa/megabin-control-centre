@@ -47,7 +47,7 @@ jobs:
       MEGABIN_MONITOR_EVIDENCE_PATH: monitoring-evidence.json
       MEGABIN_SYNTHETIC_ALERT_PROOF: ${{ inputs.synthetic_alert_proof }}
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       - uses: pnpm/action-setup@v4
         with:
           version: 11.16.0
