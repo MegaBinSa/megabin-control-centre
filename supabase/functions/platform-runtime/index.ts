@@ -7,6 +7,7 @@ import {
 } from "@megabin/integrations";
 import { FakeOptimizationProvider, FakeRoutingProvider } from "@megabin/route-planning";
 import type { ActorReference } from "@megabin/domain-types";
+import { configuredOrigins, withApprovedCors } from "../_shared/cors.ts";
 import {
   createRuntimeHandler,
   createMasterDataHandler,
@@ -40,32 +41,10 @@ function environment(): "local" | "staging" | "production" {
 }
 
 function allowedOrigins(runtimeEnvironment: "local" | "staging" | "production"): string[] {
-  const configured = (Deno.env.get("MEGABIN_ALLOWED_ORIGINS") ?? "")
-    .split(",")
-    .map((value) => value.trim())
-    .filter(Boolean);
-  if (configured.includes("*")) throw new Error("Wildcard CORS is forbidden.");
+  const configured = configuredOrigins(Deno.env.get("MEGABIN_ALLOWED_ORIGINS") ?? "");
   return runtimeEnvironment === "local"
     ? [...configured, "http://127.0.0.1:4174", "http://127.0.0.1:4175"]
     : configured;
-}
-
-function withCors(request: Request, response: Response, origins: readonly string[]): Response {
-  const origin = request.headers.get("Origin");
-  if (!origin || !origins.includes(origin)) return response;
-  const headers = new Headers(response.headers);
-  headers.set("Access-Control-Allow-Origin", origin);
-  headers.set(
-    "Access-Control-Allow-Headers",
-    "authorization, content-type, idempotency-key, x-correlation-id"
-  );
-  headers.set("Access-Control-Allow-Methods", "GET, POST, PATCH, DELETE, OPTIONS");
-  headers.set("Vary", "Origin");
-  return new Response(response.body, {
-    status: response.status,
-    statusText: response.statusText,
-    headers
-  });
 }
 
 function jwtSubject(request: Request): string | null {
@@ -82,25 +61,10 @@ function jwtSubject(request: Request): string | null {
   }
 }
 
-export default {
-  fetch: withSupabase({ auth: "user" }, async (request, context) => {
+const authenticatedFetch = withSupabase(
+  { auth: "user", cors: "disabled" },
+  async (request, context) => {
     const runtimeEnvironment = environment();
-    const origins = allowedOrigins(runtimeEnvironment);
-    const requestOrigin = request.headers.get("Origin");
-    if (requestOrigin && !origins.includes(requestOrigin)) {
-      return Response.json(
-        { ok: false, error: { code: "permission_denied", message: "Origin denied." } },
-        { status: 403 }
-      );
-    }
-    if (request.method === "OPTIONS") {
-      return requestOrigin
-        ? withCors(request, new Response(null, { status: 204 }), origins)
-        : Response.json(
-            { ok: false, error: { code: "permission_denied", message: "Origin denied." } },
-            { status: 403 }
-          );
-    }
     const response = await (async () => {
       const rpc = (
         context.supabaseAdmin as unknown as {
@@ -285,6 +249,40 @@ export default {
       });
       return handler(request);
     })();
-    return withCors(request, response, origins);
-  })
+    return response;
+  }
+);
+
+export default {
+  async fetch(request: Request): Promise<Response> {
+    const origins = allowedOrigins(environment());
+    const requestOrigin = request.headers.get("Origin");
+    if (requestOrigin && !origins.includes(requestOrigin)) {
+      return Response.json(
+        { ok: false, error: { code: "permission_denied", message: "Origin denied." } },
+        { status: 403 }
+      );
+    }
+    if (request.method === "OPTIONS") {
+      return requestOrigin
+        ? withApprovedCors(request, new Response(null, { status: 204 }), origins)
+        : Response.json(
+            { ok: false, error: { code: "permission_denied", message: "Origin denied." } },
+            { status: 403 }
+          );
+    }
+    try {
+      return withApprovedCors(request, await authenticatedFetch(request), origins);
+    } catch {
+      console.error("platform_runtime_request_failed");
+      return withApprovedCors(
+        request,
+        Response.json(
+          { ok: false, error: { code: "internal_error", message: "Request failed." } },
+          { status: 500 }
+        ),
+        origins
+      );
+    }
+  }
 };
