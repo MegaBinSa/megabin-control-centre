@@ -18,7 +18,7 @@ The controlled synthetic alert-delivery proof passed in [run 31878853824](https:
 
 Component rollback/current-release restoration passed in [run 31881010706](https://github.com/MegaBinSa/megabin-control-centre/actions/runs/31881010706). The compatible prior application release `4e471bd250a2757ca67bb0e843c2201d144ac122` deployed and passed smoke verification; current main release `e2837def54f922649965298e27f97357977b0dd0` was then restored and passed the complete smoke suite. No database migration, downgrade or reset occurred. Bounded synthetic provisioning and website-intake smoke operations did run.
 
-The one-hour RPO and 12-month evidence-retention targets remain unmet. Database forward-repair rehearsal/tabletop and all six release-bound UAT journeys remain Not Run. No production system, live provider or real client data was involved.
+The one-hour RPO and 12-month evidence-retention targets remain unmet. The protected database forward-repair mechanism is implemented for the isolated recovery target, but execution remains Not Run pending GitHub Environment protection and approved Shaun/Sidney usernames. All six release-bound UAT journeys also remain Not Run. No production system, live provider or real client data was involved.
 
 ## Current evidence state
 
@@ -30,5 +30,5 @@ The one-hour RPO and 12-month evidence-retention targets remain unmet. Database 
 | Twelve-month assurance retention | Blocked | Current artifact expires after 90 days |
 | Synthetic alert delivery | Passed | Run 31878853824 and monitoring artifact; Shaun confirmed mailbox receipt |
 | Component rollback/restoration | Passed | Run 31881010706; prior deployed and current release restored with smoke checks |
-| Database forward repair | Not Run | Rehearsal/tabletop not executed |
+| Database forward repair | Not Run | Protected isolated-target mechanism implemented; Environment protection/usernames and execution pending |
 | Six synthetic UAT journeys | Not Run | No release-bound execution records yet |

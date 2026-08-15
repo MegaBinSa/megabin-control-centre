@@ -89,6 +89,7 @@ Material changes to the architecture require an ADR. An ADR may clarify the blue
 | [Cutover readiness](../production/cutover-readiness.md) | Production gates, coexistence, cutover, rollback, and support outline |
 | [Phase 5C staging deployment evidence](../production/staging-deployment-evidence.md) | Validated release, protected deployment controls, remote smoke proof, and remaining assurance gaps |
 | [Recovery objectives register](../production/recovery-objectives-register.md) | Explicit RPO/RTO, backup/PITR, authority and isolated-target decisions |
+| [Forward-repair rehearsal](../production/forward-repair-rehearsal.md) | Protected isolated-target semantic-failure and immutable forward-repair mechanism |
 | [Readiness gates](../production/readiness-gates.md) | Evidence-based Staging, UAT, Pilot and Production gates |
 | [Phase 5D assurance evidence](../production/phase-5d-assurance-evidence.md) | Verification obtained, evidence not obtained, and explicit blockers |
 | [Phase 5E assurance evidence](../production/phase-5e-assurance-evidence.md) | Approved decisions, executable rehearsal controls, and truthful execution boundary |

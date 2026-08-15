@@ -1,0 +1,285 @@
+name: Rehearse staging database forward repair
+
+on:
+  workflow_dispatch:
+    inputs:
+      source_sha:
+        description: Exact current main SHA whose migration baseline will be verified
+        required: true
+        type: string
+      baseline_recovery_run_id:
+        description: Successful isolated recovery rehearsal run used as baseline provenance
+        required: true
+        type: string
+      scenario:
+        description: Approved bounded forward-repair scenario
+        required: true
+        type: choice
+        options:
+          - FR-SEMANTIC-INVARIANT-001
+      confirm_forward_repair:
+        description: Type FORWARD-REPAIR-REHEARSAL:<source-ref>:<recovery-ref>:<source-sha>
+        required: true
+        type: string
+
+permissions:
+  actions: read
+  checks: read
+  contents: read
+  deployments: read
+
+concurrency:
+  group: megabin-staging-recovery-rehearsal
+  cancel-in-progress: false
+
+jobs:
+  rehearse-forward-repair:
+    runs-on: ubuntu-latest
+    environment: staging-recovery
+    env:
+      SOURCE_SHA: ${{ inputs.source_sha }}
+      BASELINE_RECOVERY_RUN_ID: ${{ inputs.baseline_recovery_run_id }}
+      SCENARIO: ${{ inputs.scenario }}
+      CONFIRM_FORWARD_REPAIR: ${{ inputs.confirm_forward_repair }}
+      SOURCE_SUPABASE_PROJECT_REF: ${{ vars.SOURCE_SUPABASE_PROJECT_REF }}
+      STAGING_SUPABASE_PROJECT_REF: ${{ vars.STAGING_SUPABASE_PROJECT_REF }}
+      RESTORE_SUPABASE_PROJECT_REF: ${{ vars.RESTORE_SUPABASE_PROJECT_REF }}
+      SUPABASE_RECOVERY_PROJECT_REF: ${{ vars.SUPABASE_RECOVERY_PROJECT_REF }}
+      RECOVERY_AUTHORITY_GITHUB_LOGIN: ${{ vars.RECOVERY_AUTHORITY_GITHUB_LOGIN }}
+      RECOVERY_VERIFIER_GITHUB_LOGIN: ${{ vars.RECOVERY_VERIFIER_GITHUB_LOGIN }}
+      SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+      SUPABASE_STAGING_DB_PASSWORD: ${{ secrets.SUPABASE_STAGING_DB_PASSWORD }}
+      SUPABASE_RECOVERY_DB_URL: ${{ secrets.SUPABASE_RECOVERY_DB_URL }}
+      FORWARD_REPAIR_EVIDENCE_PATH: forward-repair-rehearsal-evidence.json
+    steps:
+      - name: Check out requested main release with full history
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ inputs.source_sha }}
+          fetch-depth: 0
+
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 11.16.0
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: .node-version
+          cache: pnpm
+
+      - run: pnpm install --frozen-lockfile
+
+      - name: Initialize fail-closed evidence state
+        shell: bash
+        run: |
+          echo "FORWARD_REPAIR_RESULT=Failed" >> "$GITHUB_ENV"
+          echo "FAULT_APPLICATION_RESULT=Not Run" >> "$GITHUB_ENV"
+          echo "FAULT_VERIFICATION_RESULT=Not Run" >> "$GITHUB_ENV"
+          echo "REPAIR_APPLICATION_RESULT=Not Run" >> "$GITHUB_ENV"
+          echo "POST_REPAIR_INVARIANT_RESULT=Not Run" >> "$GITHUB_ENV"
+
+      - name: Validate-plan
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$GITHUB_REF" = "refs/heads/main"
+          git fetch --no-tags --prune origin +refs/heads/main:refs/remotes/origin/main
+          git cat-file -e "${SOURCE_SHA}^{commit}"
+          test "$(git rev-parse origin/main)" = "$SOURCE_SHA"
+          test "$(git rev-parse HEAD)" = "$SOURCE_SHA"
+          echo "VERIFIED_ORIGIN_MAIN_SHA=$SOURCE_SHA" >> "$GITHUB_ENV"
+
+          checks="$(gh api "repos/${GITHUB_REPOSITORY}/commits/${SOURCE_SHA}/check-runs" \
+            --jq '[.check_runs[] | select(.name == "quality" or .name == "database") | {name, conclusion, started_at}] | sort_by(.name, .started_at) | group_by(.name) | map(last)')"
+          echo "$checks" | jq -e 'length == 2 and all(.conclusion == "success")'
+
+          baseline="$(gh api "repos/${GITHUB_REPOSITORY}/actions/runs/${BASELINE_RECOVERY_RUN_ID}")"
+          echo "$baseline" | jq -e \
+            '.name == "Rehearse staging recovery" and .conclusion == "success"'
+
+          for workflow in deploy-staging.yml rehearse-staging-recovery.yml; do
+            active="$(gh run list --workflow "$workflow" --limit 20 --json status,databaseId \
+              --jq '[.[] | select(.status == "queued" or .status == "in_progress")] | length')"
+            test "$active" = "0"
+          done
+
+          environment_json="$RUNNER_TEMP/staging-recovery-environment.json"
+          policies_json="$RUNNER_TEMP/staging-recovery-branch-policies.json"
+          gh api "repos/${GITHUB_REPOSITORY}/environments/staging-recovery" > "$environment_json"
+          gh api --paginate \
+            "repos/${GITHUB_REPOSITORY}/environments/staging-recovery/deployment-branch-policies" \
+            --jq '.branch_policies' | jq -s 'add' > "$policies_json"
+          node --input-type=module - "$environment_json" "$policies_json" <<'NODE'
+          import { readFileSync } from "node:fs";
+          import { validateEnvironmentProtection } from "./scripts/forward-repair-contract.mjs";
+          const environment = JSON.parse(readFileSync(process.argv[2], "utf8"));
+          const policies = JSON.parse(readFileSync(process.argv[3], "utf8"));
+          validateEnvironmentProtection(
+            environment,
+            policies,
+            process.env.RECOVERY_VERIFIER_GITHUB_LOGIN
+          );
+          NODE
+
+          pnpm forward-repair:validate > "$RUNNER_TEMP/forward-repair-plan.json"
+          fault_sha="$(jq -er '.fixtures[] | select(.version == "20990101000001") | .sha256' "$RUNNER_TEMP/forward-repair-plan.json")"
+          repair_sha="$(jq -er '.fixtures[] | select(.version == "20990101000002") | .sha256' "$RUNNER_TEMP/forward-repair-plan.json")"
+          echo "FAULT_MIGRATION_SHA256=$fault_sha" >> "$GITHUB_ENV"
+          echo "REPAIR_MIGRATION_SHA256=$repair_sha" >> "$GITHUB_ENV"
+
+      - name: Verify-isolated-baseline
+        shell: bash
+        run: |
+          set -euo pipefail
+          test -n "$SUPABASE_RECOVERY_DB_URL"
+          case "$SUPABASE_RECOVERY_DB_URL" in
+            *"$RESTORE_SUPABASE_PROJECT_REF"*) ;;
+            *) echo "Recovery database URL does not identify the approved target." >&2; exit 1 ;;
+          esac
+          case "$SUPABASE_RECOVERY_DB_URL" in
+            *"$SOURCE_SUPABASE_PROJECT_REF"*) echo "Recovery database URL identifies shared Staging." >&2; exit 1 ;;
+          esac
+
+          work="$RUNNER_TEMP/megabin-forward-repair-${GITHUB_RUN_ID}"
+          mkdir -p "$work/project/supabase/migrations"
+          chmod 700 "$work"
+          echo "FORWARD_REPAIR_WORK=$work" >> "$GITHUB_ENV"
+
+          pnpm exec supabase link \
+            --project-ref "$SOURCE_SUPABASE_PROJECT_REF" \
+            --password "$SUPABASE_STAGING_DB_PASSWORD"
+          pnpm exec supabase migration list --linked > "$work/source-before.txt"
+          pnpm exec supabase db push --linked --dry-run
+          source_identity="$(sha256sum "$work/source-before.txt" | cut -d' ' -f1)"
+          echo "SOURCE_MIGRATION_IDENTITY_BEFORE=$source_identity" >> "$GITHUB_ENV"
+
+          find supabase/migrations -maxdepth 1 -type f -name '*.sql' -printf '%f\n' \
+            | sed 's/_.*//' | sort > "$work/expected-baseline-versions.txt"
+          psql "$SUPABASE_RECOVERY_DB_URL" --no-psqlrc --tuples-only --no-align \
+            --command 'select version from supabase_migrations.schema_migrations order by version' \
+            > "$work/recovery-before-versions.txt"
+          diff -u "$work/expected-baseline-versions.txt" "$work/recovery-before-versions.txt"
+          recovery_identity="$(sha256sum "$work/recovery-before-versions.txt" | cut -d' ' -f1)"
+          echo "RECOVERY_MIGRATION_IDENTITY_BEFORE=$recovery_identity" >> "$GITHUB_ENV"
+
+          psql "$SUPABASE_RECOVERY_DB_URL" --no-psqlrc --set ON_ERROR_STOP=1 \
+            --file supabase/recovery/verify-disposable-target.sql
+          psql "$SUPABASE_RECOVERY_DB_URL" --no-psqlrc --set ON_ERROR_STOP=1 \
+            --file supabase/recovery/verify-restored-target.sql
+          psql "$SUPABASE_RECOVERY_DB_URL" --no-psqlrc --set ON_ERROR_STOP=1 \
+            --file supabase/rehearsal/forward-repair/verify-baseline.sql
+
+          cp supabase/config.toml "$work/project/supabase/config.toml"
+          cp supabase/migrations/*.sql "$work/project/supabase/migrations/"
+          cp supabase/rehearsal/forward-repair/fixtures/20990101000001_forward_repair_fault.sql \
+            "$work/project/supabase/migrations/"
+
+      - name: Apply-expected-fault
+        shell: bash
+        run: |
+          set -euo pipefail
+          pnpm exec supabase db push --db-url "$SUPABASE_RECOVERY_DB_URL" \
+            --workdir "$FORWARD_REPAIR_WORK/project" --dry-run
+          pnpm exec supabase db push --db-url "$SUPABASE_RECOVERY_DB_URL" \
+            --workdir "$FORWARD_REPAIR_WORK/project" --yes
+          echo "FAULT_APPLICATION_RESULT=Succeeded" >> "$GITHUB_ENV"
+          echo "FAULT_APPLIED_AT=$(date -u +%Y-%m-%dT%H:%M:%SZ)" >> "$GITHUB_ENV"
+
+          psql "$SUPABASE_RECOVERY_DB_URL" --no-psqlrc --tuples-only --no-align \
+            --command 'select version from supabase_migrations.schema_migrations order by version' \
+            > "$FORWARD_REPAIR_WORK/recovery-after-fault-versions.txt"
+          echo "RECOVERY_MIGRATION_IDENTITY_AFTER_FAULT=$(sha256sum "$FORWARD_REPAIR_WORK/recovery-after-fault-versions.txt" | cut -d' ' -f1)" >> "$GITHUB_ENV"
+
+          set +e
+          psql "$SUPABASE_RECOVERY_DB_URL" --no-psqlrc --set ON_ERROR_STOP=1 \
+            --file supabase/rehearsal/forward-repair/verify-invariant.sql \
+            > "$FORWARD_REPAIR_WORK/expected-fault.txt" 2>&1
+          verification_status=$?
+          set -e
+          test "$verification_status" -ne 0
+          test "$(grep -Ec 'ERROR:.*MBA-FR-EXPECTED-001' "$FORWARD_REPAIR_WORK/expected-fault.txt")" = "1"
+          test "$(grep -Ec 'ERROR:' "$FORWARD_REPAIR_WORK/expected-fault.txt")" = "1"
+          echo "FAULT_VERIFICATION_RESULT=ExpectedFailure:MBA-FR-EXPECTED-001" >> "$GITHUB_ENV"
+
+      - name: Apply-forward-repair
+        shell: bash
+        run: |
+          set -euo pipefail
+          fixture_fault="supabase/rehearsal/forward-repair/fixtures/20990101000001_forward_repair_fault.sql"
+          temporary_fault="$FORWARD_REPAIR_WORK/project/supabase/migrations/20990101000001_forward_repair_fault.sql"
+          test "$(sha256sum "$fixture_fault" | cut -d' ' -f1)" = "$FAULT_MIGRATION_SHA256"
+          test "$(sha256sum "$temporary_fault" | cut -d' ' -f1)" = "$FAULT_MIGRATION_SHA256"
+          cp supabase/rehearsal/forward-repair/fixtures/20990101000002_forward_repair_fix.sql \
+            "$FORWARD_REPAIR_WORK/project/supabase/migrations/"
+          test "$(sha256sum "$temporary_fault" | cut -d' ' -f1)" = "$FAULT_MIGRATION_SHA256"
+          test "$(sha256sum "$FORWARD_REPAIR_WORK/project/supabase/migrations/20990101000002_forward_repair_fix.sql" | cut -d' ' -f1)" = "$REPAIR_MIGRATION_SHA256"
+
+          pnpm exec supabase db push --db-url "$SUPABASE_RECOVERY_DB_URL" \
+            --workdir "$FORWARD_REPAIR_WORK/project" --dry-run
+          pnpm exec supabase db push --db-url "$SUPABASE_RECOVERY_DB_URL" \
+            --workdir "$FORWARD_REPAIR_WORK/project" --yes
+          echo "REPAIR_APPLICATION_RESULT=Succeeded" >> "$GITHUB_ENV"
+          echo "REPAIR_APPLIED_AT=$(date -u +%Y-%m-%dT%H:%M:%SZ)" >> "$GITHUB_ENV"
+
+      - name: Verify-and-evidence
+        shell: bash
+        run: |
+          set -euo pipefail
+          psql "$SUPABASE_RECOVERY_DB_URL" --no-psqlrc --set ON_ERROR_STOP=1 \
+            --file supabase/rehearsal/forward-repair/verify-invariant.sql
+          psql "$SUPABASE_RECOVERY_DB_URL" --no-psqlrc --set ON_ERROR_STOP=1 \
+            --file supabase/rehearsal/forward-repair/verify-final-target.sql
+          echo "POST_REPAIR_INVARIANT_RESULT=Passed" >> "$GITHUB_ENV"
+
+          {
+            cat "$FORWARD_REPAIR_WORK/expected-baseline-versions.txt"
+            printf '%s\n' 20990101000001 20990101000002
+          } | sort > "$FORWARD_REPAIR_WORK/expected-final-versions.txt"
+          psql "$SUPABASE_RECOVERY_DB_URL" --no-psqlrc --tuples-only --no-align \
+            --command 'select version from supabase_migrations.schema_migrations order by version' \
+            > "$FORWARD_REPAIR_WORK/recovery-after-repair-versions.txt"
+          diff -u "$FORWARD_REPAIR_WORK/expected-final-versions.txt" \
+            "$FORWARD_REPAIR_WORK/recovery-after-repair-versions.txt"
+          echo "RECOVERY_MIGRATION_IDENTITY_AFTER_REPAIR=$(sha256sum "$FORWARD_REPAIR_WORK/recovery-after-repair-versions.txt" | cut -d' ' -f1)" >> "$GITHUB_ENV"
+
+          pnpm exec supabase migration list --linked > "$FORWARD_REPAIR_WORK/source-after.txt"
+          diff -u "$FORWARD_REPAIR_WORK/source-before.txt" "$FORWARD_REPAIR_WORK/source-after.txt"
+          echo "SOURCE_MIGRATION_IDENTITY_AFTER=$(sha256sum "$FORWARD_REPAIR_WORK/source-after.txt" | cut -d' ' -f1)" >> "$GITHUB_ENV"
+          echo "INTEGRITY_VERIFICATION=restored-data,office-region-scope,driver-office-denial,driver-financial-denial,driver-staff-link,critical-rls" >> "$GITHUB_ENV"
+          echo "FORWARD_REPAIR_RESULT=Passed" >> "$GITHUB_ENV"
+
+      - name: Write sanitized rehearsal evidence
+        if: always()
+        run: pnpm forward-repair:evidence
+
+      - name: Remove runner-local sensitive files
+        if: always()
+        shell: bash
+        run: |
+          if test -n "${FORWARD_REPAIR_WORK:-}" && test -d "$FORWARD_REPAIR_WORK"; then
+            find "$FORWARD_REPAIR_WORK" -type f -exec shred -u {} \; 2>/dev/null || true
+            rm -rf -- "$FORWARD_REPAIR_WORK"
+          fi
+
+      - name: Publish bounded forward-repair evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: staging-forward-repair-rehearsal-${{ github.run_id }}
+          path: forward-repair-rehearsal-evidence.json
+          if-no-files-found: error
+          retention-days: 90
+
+      - name: Record forward-repair summary
+        if: always()
+        run: |
+          echo "### Isolated Staging forward-repair rehearsal" >> "$GITHUB_STEP_SUMMARY"
+          echo "- Scenario: FR-SEMANTIC-INVARIANT-001" >> "$GITHUB_STEP_SUMMARY"
+          echo "- Shared Staging posture: read-only migration identity checks" >> "$GITHUB_STEP_SUMMARY"
+          echo "- Isolated target: $RESTORE_SUPABASE_PROJECT_REF" >> "$GITHUB_STEP_SUMMARY"
+          echo "- Database posture: forward migrations only; no down migration or reset" >> "$GITHUB_STEP_SUMMARY"
+          echo "- Target cleanup: none; isolated target remains intact for review" >> "$GITHUB_STEP_SUMMARY"
+          echo "- Independent verifier: configured Environment reviewer; post-run confirmation remains required" >> "$GITHUB_STEP_SUMMARY"
+          echo "- Evidence retention: 90 workflow days; 12-month target remains unmet" >> "$GITHUB_STEP_SUMMARY"
