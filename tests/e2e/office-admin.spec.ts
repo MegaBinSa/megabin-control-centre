@@ -786,6 +786,173 @@ test("Office Route Operations hands off and reassigns a published route", async 
   await expect(page.getByText("Assignment revision 2")).toBeVisible();
 });
 
+test("Office cancels only eligible Route Operations with a reason and refreshes history", async ({
+  page
+}) => {
+  const regionId = "f2100000-0000-4000-8000-000000000001";
+  const statuses = ["prepared", "assigned", "available", "accepted", "in_progress", "completed"];
+  let cancelledOperationId = "";
+  let cancellationRequests = 0;
+  let listRequests = 0;
+  const operations = () =>
+    statuses.map((status, index) => ({
+      routeOperationId: `f3100000-0000-4000-8000-${String(index + 1).padStart(12, "0")}`,
+      lifecycleStatus:
+        cancelledOperationId === `f3100000-0000-4000-8000-${String(index + 1).padStart(12, "0")}`
+          ? "cancelled"
+          : status,
+      assignmentRevision: 1,
+      manifestRevision: 1,
+      currentTeamId: `team-${index + 1}`,
+      currentVehicleId: `vehicle-${index + 1}`,
+      acceptedAt: status === "accepted" || status === "in_progress" ? "2026-08-17T06:00:00Z" : null,
+      startedAt: status === "in_progress" ? "2026-08-17T06:05:00Z" : null,
+      manifest: {
+        team: { name: `Synthetic ${status} team` },
+        vehicle: { displayName: `Synthetic vehicle ${index + 1}` },
+        staff: [{ displayName: "Synthetic Driver" }]
+      }
+    }));
+
+  await syntheticSession(page, [
+    "master_data.read",
+    "route_operations.read",
+    "route_operations.control"
+  ]);
+  await page.route("**/api/v1/master-data/service-regions*", (route) =>
+    route.fulfill({
+      json: {
+        ok: true,
+        data: {
+          items: [{ serviceRegionId: regionId, name: "Synthetic Region" }],
+          page: 1,
+          pageSize: 25,
+          total: 1
+        }
+      }
+    })
+  );
+  await page.route("**/api/v1/route-operations?*", (route) => {
+    listRequests += 1;
+    return route.fulfill({ json: { ok: true, data: operations() } });
+  });
+  await page.route("**/api/v1/route-operations/*/execution", (route) =>
+    route.fulfill({
+      json: {
+        ok: true,
+        data: {
+          progress: {
+            completedStops: 0,
+            notServicedStops: 0,
+            remainingStops: 1,
+            totalStops: 1,
+            plannedDrums: 2,
+            actualDrumsServiced: 0,
+            openIssueCount: 0,
+            capacityState: "normal"
+          },
+          stops: []
+        }
+      }
+    })
+  );
+  await page.route("**/api/v1/route-operations/*/cancel", async (route) => {
+    cancellationRequests += 1;
+    expect(route.request().postDataJSON()).toEqual({ reason: "Wrong UAT service date" });
+    cancelledOperationId = new URL(route.request().url()).pathname.split("/").at(-2) ?? "";
+    return route.fulfill({ json: { ok: true, data: { lifecycleStatus: "cancelled" } } });
+  });
+
+  await page.getByRole("button", { name: "Route Operations" }).click();
+  await page.getByLabel("Service date").fill("2026-08-17");
+  await page.getByRole("button", { name: "Load operations" }).click();
+  await expect(page.getByRole("button", { name: /Cancel operation for/ })).toHaveCount(3);
+
+  await page.getByRole("button", { name: "Cancel operation for Synthetic prepared team" }).click();
+  await page.getByLabel("Cancellation explanation").fill("   ");
+  await page.getByRole("button", { name: "Confirm cancellation" }).click();
+  await expect(page.getByLabel("Cancellation explanation")).toHaveJSProperty(
+    "validationMessage",
+    "Cancellation reason is required."
+  );
+  expect(cancellationRequests).toBe(0);
+
+  await page.getByLabel("Cancellation explanation").fill("Wrong UAT service date");
+  await page.getByRole("button", { name: "Confirm cancellation" }).click();
+  await expect(page.getByText("cancelled", { exact: true })).toBeVisible();
+  await expect(page.getByText("Synthetic prepared team")).toBeVisible();
+  await expect(
+    page.getByRole("button", { name: "Cancel operation for Synthetic prepared team" })
+  ).toHaveCount(0);
+  expect(cancellationRequests).toBe(1);
+  expect(listRequests).toBeGreaterThanOrEqual(2);
+});
+
+test("Office Route Operations cancellation remains unavailable without control permission", async ({
+  page
+}) => {
+  const regionId = "f2200000-0000-4000-8000-000000000001";
+  await syntheticSession(page, ["master_data.read", "route_operations.read"]);
+  await page.route("**/api/v1/master-data/service-regions*", (route) =>
+    route.fulfill({
+      json: {
+        ok: true,
+        data: {
+          items: [{ serviceRegionId: regionId, name: "Synthetic Region" }],
+          page: 1,
+          pageSize: 25,
+          total: 1
+        }
+      }
+    })
+  );
+  await page.route("**/api/v1/route-operations?*", (route) =>
+    route.fulfill({
+      json: {
+        ok: true,
+        data: [
+          {
+            routeOperationId: "f3200000-0000-4000-8000-000000000001",
+            lifecycleStatus: "available",
+            assignmentRevision: 1,
+            manifestRevision: 1,
+            currentTeamId: "team-a",
+            currentVehicleId: "vehicle-a",
+            acceptedAt: null,
+            startedAt: null,
+            manifest: { team: { name: "Synthetic Team A" } }
+          }
+        ]
+      }
+    })
+  );
+  await page.route("**/api/v1/route-operations/*/execution", (route) =>
+    route.fulfill({
+      json: {
+        ok: true,
+        data: {
+          progress: {
+            completedStops: 0,
+            notServicedStops: 0,
+            remainingStops: 0,
+            totalStops: 0,
+            plannedDrums: 0,
+            actualDrumsServiced: 0,
+            openIssueCount: 0,
+            capacityState: "normal"
+          },
+          stops: []
+        }
+      }
+    })
+  );
+
+  await page.getByRole("button", { name: "Route Operations" }).click();
+  await page.getByLabel("Service date").fill("2026-08-17");
+  await page.getByRole("button", { name: "Load operations" }).click();
+  await expect(page.getByRole("button", { name: /Cancel operation/ })).toHaveCount(0);
+});
+
 test("future Driver browser API harness reads, accepts, and starts its operation", async ({
   page
 }) => {

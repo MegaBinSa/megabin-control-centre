@@ -8,13 +8,16 @@
       "journey": "Office operational planning",
       "preconditions": [
         "Synthetic Office persona is provisioned",
-        "Deterministic synthetic service and geography data exist"
+        "Deterministic synthetic service and geography data exist",
+        "The target Client and Client Service are active",
+        "The selected service date matches configured_collection_day and has at least one due service"
       ],
       "persona": "office",
       "steps": [
         "Authenticate and confirm scoped profile",
         "Review permitted client/service and geography",
         "Prepare roster and route plan",
+        "Before publication confirm assignedStopCount is at least 1 and retain stop identity and planned drum count as evidence",
         "Review candidate, publish and hand off",
         "Inspect Route Operations, Live Operations and Needs Attention",
         "Confirm Driver financial isolation"
@@ -33,6 +36,8 @@
       "journey": "Driver route execution and offline synchronization",
       "preconditions": [
         "Synthetic Driver is assigned a not-started Route Operation",
+        "The assigned manifest contains at least one retained UAT stop",
+        "Any unsuitable prior operation is preserved as evidence and cancelled rather than deleted",
         "Test device supports offline rehearsal"
       ],
       "persona": "driver",
