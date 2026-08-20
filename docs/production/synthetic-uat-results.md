@@ -1,10 +1,10 @@
 # Synthetic UAT Results
 
-**Status:** UAT-OFF-001 preparation blocked by a zero-stop Sunday operation; no journey has Passed
+**Status:** UAT-OFF-001 blocked at the master-data edit boundary; no journey has Passed
 
 | Case | Journey | Result | Evidence/blocker |
 |---|---|---|---|
-| `UAT-OFF-001` | Office operational planning | Blocked | Release `1ee517f55e9b9eb9fc833730dc8228ba853218c0` resolved browser CORS and region-scoped master-data reads. A Sunday `2026-08-16` route was validly published and handed off with zero due stops. Route Operation `bd07d795-294c-4051-86f9-f4b6fa2e0c0c` is retained as zero-stop UAT evidence and must be cancelled, not deleted, before preparing a Monday operation with at least one assigned stop. |
+| `UAT-OFF-001` | Office operational planning | Blocked | Browser authentication, region-scoped reads and the cancellation control passed. Activating seeded `Synthetic Client One` is blocked because the generic editor echoed nullable `organisationName` through the create validator and sent the PostgreSQL offset-form `updatedAt` through an overly narrow concurrency timestamp validator. Route Operation `bd07d795-294c-4051-86f9-f4b6fa2e0c0c` remains retained zero-stop evidence. Review, merge and deploy the PATCH-serialization fix before resuming; no manual Staging correction is permitted. |
 | `UAT-DRV-001` | Driver execution/offline synchronization | Not Run | Protected execution and device/network evidence required |
 | `UAT-WEB-001` | Website onboarding | Not Run | Protected execution required |
 | `UAT-SKP-001` | Client SKIP/replan | Not Run | Protected execution required |

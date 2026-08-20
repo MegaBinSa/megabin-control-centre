@@ -3,6 +3,7 @@ import {
   pagination,
   resourceName,
   schemaForResource,
+  updateSchemaForResource,
   type ResourceName
 } from "@megabin/validation";
 import { z, ZodError } from "zod";
@@ -101,7 +102,12 @@ export function createMasterDataHandler(
       if (!idempotencyKey)
         return error("validation_failed", "Idempotency-Key is required.", 400, correlationId);
       const raw = await request.json();
-      const body = action === "archive" ? raw : schemaForResource(resource).parse(raw);
+      const body =
+        action === "archive"
+          ? raw
+          : request.method === "PATCH"
+            ? updateSchemaForResource(resource).parse(raw)
+            : schemaForResource(resource).parse(raw);
       const rpcName =
         action === "archive"
           ? "master_data_archive"
@@ -255,7 +261,7 @@ export function masterDataOpenApiPaths(): Record<string, unknown> {
               required: true,
               content: {
                 "application/json": {
-                  schema: z.toJSONSchema(schemaForResource(resource), { io: "input" })
+                  schema: z.toJSONSchema(updateSchemaForResource(resource), { io: "input" })
                 }
               }
             },

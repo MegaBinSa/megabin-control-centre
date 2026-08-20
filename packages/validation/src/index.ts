@@ -26,7 +26,8 @@ export const pagination = z.object({
   direction: z.enum(["asc", "desc"]).default("desc")
 });
 
-const common = z.object({ expectedUpdatedAt: z.iso.datetime().optional() });
+export const optimisticConcurrencyTimestamp = z.iso.datetime({ offset: true });
+const common = z.object({ expectedUpdatedAt: optimisticConcurrencyTimestamp.optional() });
 export const clientInput = common
   .extend({
     clientType: z.enum(["individual", "organisation"]),
@@ -170,6 +171,79 @@ export const vehicleInput = common.extend({
   isActive: z.boolean().default(true)
 });
 
+const updateCommon = { expectedUpdatedAt: optimisticConcurrencyTimestamp };
+const nullable = <T extends z.ZodType>(schema: T) => schema.optional().nullable();
+
+export const clientUpdateInput = z.object({
+  ...updateCommon,
+  clientType: z.enum(["individual", "organisation"]).optional(),
+  displayName: z.string().trim().min(1).max(200).optional(),
+  organisationName: nullable(z.string().trim().max(200)),
+  lifecycleStatus: lifecycleStatus.optional()
+});
+export const contactUpdateInput = z.object({
+  ...updateCommon,
+  clientId: uuid.optional(),
+  contactName: z.string().trim().min(1).max(160).optional(),
+  mobileE164: nullable(z.string().regex(/^\+27[6-8][0-9]{8}$/)),
+  email: nullable(email),
+  preferredLanguage: z.enum(["english", "afrikaans"]).optional(),
+  isPrimary: z.boolean().optional(),
+  isActive: z.boolean().optional()
+});
+export const addressUpdateInput = z
+  .object({
+    ...updateCommon,
+    addressLine1: z.string().trim().min(1).max(200).optional(),
+    addressLine2: nullable(z.string().trim().max(200)),
+    suburb: z.string().trim().min(1).max(120).optional(),
+    city: z.string().trim().min(1).max(120).optional(),
+    postalCode: nullable(z.string().trim().max(20)),
+    latitude: nullable(z.number().min(-90).max(90)),
+    longitude: nullable(z.number().min(-180).max(180)),
+    validationStatus: z.enum(["unvalidated", "valid", "invalid", "needs_review"]).optional(),
+    geocodingStatus: z.enum(["not_geocoded", "pending", "geocoded", "failed"]).optional(),
+    manualReviewRequired: z.boolean().optional(),
+    accessNotes: nullable(z.string().max(2000)),
+    securityInstructions: nullable(z.string().max(2000)),
+    dangerousAnimal: z.boolean().optional(),
+    stairsElevationNotes: nullable(z.string().max(1000))
+  })
+  .refine(
+    (value) =>
+      (value.latitude === undefined && value.longitude === undefined) ||
+      (value.latitude === null && value.longitude === null) ||
+      (typeof value.latitude === "number" && typeof value.longitude === "number"),
+    { message: "Latitude and longitude must be supplied together." }
+  );
+export const serviceUpdateInput = z.object({
+  ...updateCommon,
+  clientId: uuid.optional(),
+  serviceAddressId: uuid.optional(),
+  lifecycleStatus: lifecycleStatus.optional(),
+  serviceStartDate: nullable(isoDate),
+  serviceEndDate: nullable(isoDate),
+  cadenceCode: z.enum(["weekly", "fortnightly", "monthly", "custom"]).optional()
+});
+
+const genericUpdateSchemas = {
+  "service-configurations": configurationInput.partial().extend(updateCommon),
+  "service-regions": serviceRegionInput.partial().extend(updateCommon),
+  depots: depotInput.partial().extend(updateCommon),
+  territories: territoryInput.partial().extend(updateCommon),
+  teams: teamInput.partial().extend(updateCommon),
+  staff: z.object({
+    ...updateCommon,
+    userId: nullable(uuid),
+    displayName: z.string().trim().min(1).max(160).optional(),
+    mobileE164: nullable(z.string().regex(/^\+27[6-8][0-9]{8}$/)),
+    operationalRole: z.enum(["driver", "assistant", "supervisor", "other"]).optional(),
+    defaultTeamId: nullable(uuid),
+    isActive: z.boolean().optional()
+  }),
+  vehicles: vehicleInput.partial().extend(updateCommon)
+} satisfies Record<string, z.ZodType>;
+
 export const resourceNames = [
   "clients",
   "client-contacts",
@@ -200,6 +274,18 @@ export function schemaForResource(resource: ResourceName): z.ZodType {
       teams: teamInput,
       staff: staffInput,
       vehicles: vehicleInput
+    } satisfies Record<ResourceName, z.ZodType>
+  )[resource];
+}
+
+export function updateSchemaForResource(resource: ResourceName): z.ZodType {
+  return (
+    {
+      clients: clientUpdateInput,
+      "client-contacts": contactUpdateInput,
+      "service-addresses": addressUpdateInput,
+      "client-services": serviceUpdateInput,
+      ...genericUpdateSchemas
     } satisfies Record<ResourceName, z.ZodType>
   )[resource];
 }

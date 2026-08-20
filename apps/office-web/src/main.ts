@@ -28,6 +28,7 @@ import { renderAccountingWorkspace } from "./accounting.js";
 import { renderFinancialEligibilityWorkspace } from "./financial-eligibility.js";
 import { renderCommunicationsWorkspace } from "./communications.js";
 import { renderClientSkipWorkspace } from "./client-skips.js";
+import { buildMasterDataUpdate, editableMasterDataRecord } from "./master-data-edit.js";
 
 const modules = [
   "Clients",
@@ -64,6 +65,7 @@ let active: ModuleName = "Clients";
 let records: readonly Record<string, unknown>[] = [];
 let identity: OfficeIdentity | null = null;
 let errorMessage = "";
+let originalEditValues: Record<string, unknown> = {};
 const scopedQuery = (search?: string) =>
   new URLSearchParams({
     ...(identity?.serviceRegionIds[0] ? { serviceRegionId: identity.serviceRegionIds[0] } : {}),
@@ -380,14 +382,9 @@ function render(): void {
       (editForm.elements.namedItem("expectedUpdatedAt") as HTMLInputElement).value = String(
         record.updatedAt ?? ""
       );
+      originalEditValues = editableMasterDataRecord(record);
       (editForm.elements.namedItem("patch") as HTMLTextAreaElement).value = JSON.stringify(
-        Object.fromEntries(
-          Object.entries(record).filter(
-            ([key]) =>
-              !key.endsWith("Id") &&
-              !["createdAt", "updatedAt", "archivedAt", "location", "boundary"].includes(key)
-          )
-        ),
+        originalEditValues,
         null,
         2
       );
@@ -399,10 +396,15 @@ function render(): void {
     event.preventDefault();
     const form = new FormData(event.currentTarget as HTMLFormElement);
     try {
-      await api.update(paths[active], String(form.get("id")), {
-        ...(JSON.parse(String(form.get("patch"))) as object),
-        expectedUpdatedAt: String(form.get("expectedUpdatedAt"))
-      });
+      await api.update(
+        paths[active],
+        String(form.get("id")),
+        buildMasterDataUpdate(
+          originalEditValues,
+          JSON.parse(String(form.get("patch"))) as Record<string, unknown>,
+          form.get("expectedUpdatedAt")
+        )
+      );
       editDialog?.close();
       await load();
     } catch (cause) {
