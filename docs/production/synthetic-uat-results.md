@@ -4,7 +4,7 @@
 
 | Case | Journey | Result | Evidence/blocker |
 |---|---|---|---|
-| `UAT-OFF-001` | Office operational planning | Blocked | Browser authentication, region-scoped reads and the cancellation control passed. Activating seeded `Synthetic Client One` is blocked because the generic editor echoed nullable `organisationName` through the create validator and sent the PostgreSQL offset-form `updatedAt` through an overly narrow concurrency timestamp validator. Route Operation `bd07d795-294c-4051-86f9-f4b6fa2e0c0c` remains retained zero-stop evidence. Review, merge and deploy the PATCH-serialization fix before resuming; no manual Staging correction is permitted. |
+| `UAT-OFF-001` | Office operational planning | Blocked | Browser authentication, region-scoped reads and the cancellation control passed. Release `7f22ec197f898ce23dc184df35863db1fa95f850` fixed PATCH serialization, but Client activation then reached PostgreSQL and was rejected by `clients_status_timestamps` because the generic update RPC did not set `activated_at`. Correlation `487cb75c-a54f-4e5a-be82-1d3a04ed1b12` produced no committed audit/event record. Route Operation `bd07d795-294c-4051-86f9-f4b6fa2e0c0c` remains retained zero-stop evidence. Review, merge and deploy the lifecycle-invariant fix before resuming; no manual Staging correction is permitted. |
 | `UAT-DRV-001` | Driver execution/offline synchronization | Not Run | Protected execution and device/network evidence required |
 | `UAT-WEB-001` | Website onboarding | Not Run | Protected execution required |
 | `UAT-SKP-001` | Client SKIP/replan | Not Run | Protected execution required |

@@ -195,7 +195,7 @@ test("activate seeded nullable client with optimistic concurrency and authoritat
   page
 }) => {
   const seededClient = {
-    clientId: "52000000-0000-0000-0000-000000000001",
+    clientId: "57000000-0000-0000-0000-000000000001",
     clientType: "individual",
     displayName: "Synthetic Client One",
     organisationName: null,
