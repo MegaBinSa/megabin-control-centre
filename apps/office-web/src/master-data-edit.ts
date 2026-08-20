@@ -1,5 +1,32 @@
 const readOnlyKeys = new Set(["createdAt", "updatedAt", "archivedAt", "location", "boundary"]);
 
+const entityIdKeys = {
+  clients: "clientId",
+  "client-contacts": "clientContactId",
+  "service-addresses": "serviceAddressId",
+  "client-services": "clientServiceId",
+  "service-configurations": "serviceConfigurationId",
+  "service-regions": "serviceRegionId",
+  depots: "depotId",
+  territories: "territoryId",
+  teams: "teamId",
+  staff: "staffId",
+  vehicles: "vehicleId"
+} as const;
+
+export type EditableMasterDataResource = keyof typeof entityIdKeys;
+
+export function masterDataEntityId(
+  resource: EditableMasterDataResource,
+  record: Readonly<Record<string, unknown>>
+): string {
+  const key = entityIdKeys[resource];
+  const value = record[key];
+  if (typeof value !== "string" || value.length === 0)
+    throw new Error(`The ${resource} record is missing its ${key}.`);
+  return value;
+}
+
 export function editableMasterDataRecord(
   record: Readonly<Record<string, unknown>>
 ): Record<string, unknown> {

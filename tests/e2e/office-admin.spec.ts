@@ -249,6 +249,68 @@ test("activate seeded nullable client with optimistic concurrency and authoritat
   expect(listRequests).toBeGreaterThanOrEqual(2);
 });
 
+test("activate seeded Client Service through its own aggregate ID", async ({ page }) => {
+  const clientServiceId = "59000000-0000-0000-0000-000000000001";
+  const seededService = {
+    // Preserve the hosted JSONB key order that exposed the parent-ID selection defect.
+    clientId: "57000000-0000-0000-0000-000000000001",
+    cadenceCode: "weekly",
+    serviceEndDate: null,
+    updatedAt: "2026-08-20T10:15:12.123456+00:00",
+    archivedAt: null,
+    createdAt: "2026-08-13T10:00:00+00:00",
+    lifecycleStatus: "pending",
+    serviceStartDate: "2026-08-13",
+    clientServiceId,
+    serviceAddressId: "58000000-0000-0000-0000-000000000001"
+  };
+  let lifecycleStatus = "pending";
+  let patchUrl = "";
+  let patchBody: unknown;
+  let listRequests = 0;
+  await syntheticSession(page, undefined, undefined, ["51000000-0000-0000-0000-000000000001"]);
+  await page.route(/\/api\/v1\/master-data\/client-services\/[^/?]+$/, async (route) => {
+    patchUrl = route.request().url();
+    patchBody = route.request().postDataJSON();
+    lifecycleStatus = "active";
+    return route.fulfill({
+      json: {
+        ok: true,
+        data: { ...seededService, lifecycleStatus, updatedAt: new Date().toISOString() }
+      }
+    });
+  });
+  await page.route(/\/api\/v1\/master-data\/client-services(?:\?.*)?$/, async (route) => {
+    listRequests += 1;
+    return route.fulfill({
+      json: {
+        ok: true,
+        data: {
+          items: [{ ...seededService, lifecycleStatus }],
+          page: 1,
+          pageSize: 25,
+          total: 1
+        }
+      }
+    });
+  });
+
+  await page.getByRole("button", { name: "Client Services" }).click();
+  await page.getByRole("button", { name: "Edit" }).click();
+  const editor = page.getByLabel("Editable values (JSON)");
+  const edited = JSON.parse(await editor.inputValue()) as Record<string, unknown>;
+  await editor.fill(JSON.stringify({ ...edited, lifecycleStatus: "active" }, null, 2));
+  await page.getByRole("button", { name: "Save" }).click();
+
+  await expect(page.getByText("active", { exact: true })).toBeVisible();
+  expect(new URL(patchUrl).pathname).toBe(`/api/v1/master-data/client-services/${clientServiceId}`);
+  expect(patchBody).toEqual({
+    lifecycleStatus: "active",
+    expectedUpdatedAt: "2026-08-20T10:15:12.123456+00:00"
+  });
+  expect(listRequests).toBeGreaterThanOrEqual(2);
+});
+
 test("edit a vehicle", async ({ page }) => {
   await syntheticSession(page);
   await page.route("**/api/v1/master-data/vehicles*", (route) =>

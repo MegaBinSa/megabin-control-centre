@@ -1,5 +1,5 @@
 begin;
-select plan(18);
+select plan(21);
 
 insert into auth.users(id,email,raw_user_meta_data,raw_app_meta_data)
 values ('8f000000-0000-4000-8000-000000000001','office-lifecycle@example.invalid','{}','{}');
@@ -164,6 +164,62 @@ select is(
   (select count(*) from app_private.outbox_events where aggregate_id='59000000-0000-0000-0000-000000000001' and occurred_at >= transaction_timestamp()),
   0::bigint,
   'Client Service activation does not invent an undocumented lifecycle event'
+);
+
+insert into app_private.service_regions(service_region_id,region_code,name,default_timezone)
+values ('8f100000-0000-4000-8000-000000000001','OUT-OF-SCOPE','Out of Scope Region','Africa/Johannesburg');
+insert into app_private.clients(client_id,client_type,display_name,lifecycle_status)
+values ('8f200000-0000-4000-8000-000000000001','individual','Out of Scope Client','pending');
+insert into app_private.service_addresses(service_address_id,address_line_1,suburb,city)
+values ('8f300000-0000-4000-8000-000000000001','20 Out of Scope Street','Synthetic','Pretoria');
+insert into app_private.client_services(
+  client_service_id,client_id,service_address_id,lifecycle_status,cadence_code
+) values (
+  '8f400000-0000-4000-8000-000000000001',
+  '8f200000-0000-4000-8000-000000000001',
+  '8f300000-0000-4000-8000-000000000001',
+  'pending',
+  'weekly'
+);
+insert into app_private.service_configurations(
+  service_configuration_id,client_service_id,service_region_id,configured_drum_count,
+  operational_drum_unit_count,configured_collection_day,effective_from
+) values (
+  '8f500000-0000-4000-8000-000000000001',
+  '8f400000-0000-4000-8000-000000000001',
+  '8f100000-0000-4000-8000-000000000001',
+  2,2,1,current_date
+);
+
+select throws_ok(
+  $$select api.master_data_update(
+    '8f000000-0000-4000-8000-000000000001',
+    'client-services',
+    '8f400000-0000-4000-8000-000000000001',
+    jsonb_build_object(
+      'lifecycle_status','active',
+      'expected_updated_at',(
+        select updated_at from app_private.client_services
+        where client_service_id='8f400000-0000-4000-8000-000000000001'
+      )
+    ),
+    'deny-out-of-region-client-service',
+    repeat('d',64),
+    '8f000000-0000-4000-8000-000000000005'
+  )$$,
+  '42501',
+  null,
+  'same Office actor cannot update an equivalent out-of-region Client Service'
+);
+select is(
+  (select lifecycle_status from app_private.client_services where client_service_id='8f400000-0000-4000-8000-000000000001'),
+  'pending',
+  'out-of-region Client Service remains unchanged'
+);
+select is(
+  (select count(*) from app_private.business_audit_facts where target_id='8f400000-0000-4000-8000-000000000001'),
+  0::bigint,
+  'denied out-of-region update creates no audit fact'
 );
 
 select * from finish();
