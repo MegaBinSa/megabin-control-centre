@@ -28,7 +28,12 @@ import { renderAccountingWorkspace } from "./accounting.js";
 import { renderFinancialEligibilityWorkspace } from "./financial-eligibility.js";
 import { renderCommunicationsWorkspace } from "./communications.js";
 import { renderClientSkipWorkspace } from "./client-skips.js";
-import { buildMasterDataUpdate, editableMasterDataRecord } from "./master-data-edit.js";
+import {
+  buildMasterDataUpdate,
+  editableMasterDataRecord,
+  masterDataEntityId,
+  type EditableMasterDataResource
+} from "./master-data-edit.js";
 
 const modules = [
   "Clients",
@@ -44,7 +49,7 @@ const modules = [
   "Vehicles"
 ] as const;
 type ModuleName = (typeof modules)[number];
-const paths: Record<ModuleName, string> = {
+const paths = {
   Clients: "clients",
   "Client Contacts": "client-contacts",
   "Service Addresses": "service-addresses",
@@ -56,7 +61,7 @@ const paths: Record<ModuleName, string> = {
   Teams: "teams",
   Staff: "staff",
   Vehicles: "vehicles"
-};
+} as const satisfies Record<ModuleName, EditableMasterDataResource>;
 const apiBase = (import.meta.env.VITE_MASTER_DATA_API_URL as string | undefined)?.replace(
   /\/$/,
   ""
@@ -377,8 +382,8 @@ function render(): void {
     button.addEventListener("click", () => {
       const record = records[Number(button.dataset.edit)];
       if (!record || !editForm) return;
-      const id = record.id ?? Object.entries(record).find(([key]) => key.endsWith("Id"))?.[1];
-      (editForm.elements.namedItem("id") as HTMLInputElement).value = String(id ?? "");
+      const id = masterDataEntityId(paths[active], record);
+      (editForm.elements.namedItem("id") as HTMLInputElement).value = id;
       (editForm.elements.namedItem("expectedUpdatedAt") as HTMLInputElement).value = String(
         record.updatedAt ?? ""
       );
