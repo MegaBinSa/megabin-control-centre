@@ -7,7 +7,7 @@ import {
 describe("master-data edit serialization", () => {
   it("creates a lifecycle-only patch from the seeded nullable client shape", () => {
     const seededClient = {
-      clientId: "52000000-0000-0000-0000-000000000001",
+      clientId: "57000000-0000-0000-0000-000000000001",
       clientType: "individual",
       displayName: "Synthetic Client One",
       organisationName: null,
@@ -31,11 +31,11 @@ describe("master-data edit serialization", () => {
 
   it("does not echo unchanged nullable Client Service fields", () => {
     const original = editableMasterDataRecord({
-      clientServiceId: "55000000-0000-0000-0000-000000000001",
-      clientId: "52000000-0000-0000-0000-000000000001",
-      serviceAddressId: "54000000-0000-0000-0000-000000000001",
+      clientServiceId: "59000000-0000-0000-0000-000000000001",
+      clientId: "57000000-0000-0000-0000-000000000001",
+      serviceAddressId: "58000000-0000-0000-0000-000000000001",
       lifecycleStatus: "pending",
-      serviceStartDate: null,
+      serviceStartDate: "2026-08-13",
       serviceEndDate: null,
       cadenceCode: "weekly",
       updatedAt: "2026-08-20T06:15:12+00:00"
