@@ -191,6 +191,64 @@ const client = {
   updatedAt: "2026-08-11T00:00:00.000Z"
 };
 
+test("activate seeded nullable client with optimistic concurrency and authoritative refresh", async ({
+  page
+}) => {
+  const seededClient = {
+    clientId: "52000000-0000-0000-0000-000000000001",
+    clientType: "individual",
+    displayName: "Synthetic Client One",
+    organisationName: null,
+    lifecycleStatus: "pending",
+    createdAt: "2026-08-13T10:00:00+00:00",
+    updatedAt: "2026-08-20T06:15:12.123456+00:00"
+  };
+  let lifecycleStatus = "pending";
+  let listRequests = 0;
+  let patchBody: unknown;
+  await syntheticSession(page);
+  await page.route(/\/api\/v1\/master-data\/clients\/[^/?]+$/, async (route) => {
+    patchBody = route.request().postDataJSON();
+    lifecycleStatus = "active";
+    return route.fulfill({
+      json: {
+        ok: true,
+        data: { ...seededClient, lifecycleStatus, updatedAt: new Date().toISOString() }
+      }
+    });
+  });
+  await page.route(/\/api\/v1\/master-data\/clients(?:\?.*)?$/, async (route) => {
+    listRequests += 1;
+    return route.fulfill({
+      json: {
+        ok: true,
+        data: {
+          items: [{ ...seededClient, lifecycleStatus }],
+          page: 1,
+          pageSize: 25,
+          total: 1
+        }
+      }
+    });
+  });
+
+  await page.getByRole("button", { name: "Clients", exact: true }).click();
+  await expect(page.getByText("Synthetic Client One")).toBeVisible();
+  await page.getByRole("button", { name: "Edit" }).click();
+  const editor = page.getByLabel("Editable values (JSON)");
+  const edited = JSON.parse(await editor.inputValue()) as Record<string, unknown>;
+  expect(edited.organisationName).toBeNull();
+  await editor.fill(JSON.stringify({ ...edited, lifecycleStatus: "active" }, null, 2));
+  await page.getByRole("button", { name: "Save" }).click();
+
+  await expect(page.getByText("active", { exact: true })).toBeVisible();
+  expect(patchBody).toEqual({
+    lifecycleStatus: "active",
+    expectedUpdatedAt: "2026-08-20T06:15:12.123456+00:00"
+  });
+  expect(listRequests).toBeGreaterThanOrEqual(2);
+});
+
 test("edit a vehicle", async ({ page }) => {
   await syntheticSession(page);
   await page.route("**/api/v1/master-data/vehicles*", (route) =>

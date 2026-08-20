@@ -45,6 +45,44 @@ describe("master-data HTTP boundary", () => {
       })
     );
   });
+  it("accepts a lifecycle-only client patch with offset concurrency metadata", async () => {
+    const rpc = vi.fn().mockResolvedValue({
+      data: {
+        client_id: actorId,
+        organisation_name: null,
+        lifecycle_status: "active",
+        updated_at: "2026-08-20T06:16:00+00:00"
+      },
+      error: null
+    });
+    const handler = createMasterDataHandler({ actorId, id: () => actorId, rpc: { rpc } });
+    const response = await handler(
+      new Request(`http://test/api/v1/master-data/clients/${actorId}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json", "Idempotency-Key": "activate-client" },
+        body: JSON.stringify({
+          lifecycleStatus: "active",
+          expectedUpdatedAt: "2026-08-20T06:15:12.123456+00:00"
+        })
+      })
+    );
+
+    expect(response?.status).toBe(200);
+    expect(rpc).toHaveBeenCalledWith(
+      "master_data_update",
+      expect.objectContaining({
+        p_resource: "clients",
+        p_body: {
+          lifecycle_status: "active",
+          expected_updated_at: "2026-08-20T06:15:12.123456+00:00"
+        }
+      })
+    );
+    expect(await response?.json()).toMatchObject({
+      ok: true,
+      data: { organisationName: null, lifecycleStatus: "active" }
+    });
+  });
   it("publishes operations for every Phase 1B resource", () => {
     expect(Object.keys(masterDataOpenApiPaths())).toHaveLength(33);
   });
