@@ -8,20 +8,26 @@ const token = `${btoa(JSON.stringify({ alg: "none" }))}.${btoa(JSON.stringify({ 
 async function driverSession(
   page: Page,
   actionOutcome: "accepted" | "conflict" = "accepted",
-  tracking = false
+  tracking = false,
+  failedSignInAttempts = 0
 ) {
+  let authAttempts = 0;
+  let lifecycleStatus = "available";
+  const submittedActionTypes: string[] = [];
   await page.route("http://supabase.phase3a.test/**", (route) =>
-    route.fulfill({
-      json: route.request().url().includes("/token")
-        ? {
-            access_token: token,
-            refresh_token: "driver-refresh",
-            expires_in: 3600,
-            token_type: "bearer",
-            user: { id: userId, role: "authenticated", email: "driver@phase3a.test" }
-          }
-        : { id: userId, role: "authenticated", email: "driver@phase3a.test" }
-    })
+    route.request().url().includes("/token") && authAttempts++ < failedSignInAttempts
+      ? route.fulfill({ status: 400, json: { error: "invalid_grant" } })
+      : route.fulfill({
+          json: route.request().url().includes("/token")
+            ? {
+                access_token: token,
+                refresh_token: "driver-refresh",
+                expires_in: 3600,
+                token_type: "bearer",
+                user: { id: userId, role: "authenticated", email: "driver@phase3a.test" }
+              }
+            : { id: userId, role: "authenticated", email: "driver@phase3a.test" }
+        })
   );
   await page.route("http://api.phase3a.test/**", async (route) => {
     const path = new URL(route.request().url()).pathname;
@@ -59,7 +65,7 @@ async function driverSession(
           data: {
             routeOperationId: operationId,
             routeDate: "2026-08-20",
-            lifecycleStatus: "available",
+            lifecycleStatus,
             assignmentRevision: 1,
             manifestRevision: 1,
             team: { name: "Driver Team A" },
@@ -90,22 +96,64 @@ async function driverSession(
       return route.fulfill({
         json: { ok: true, data: { stale: false, cancelled: false, superseded: false } }
       });
+    if (path.endsWith("/actions")) {
+      const body = route.request().postDataJSON() as { actionType: string; actionId: string };
+      submittedActionTypes.push(body.actionType);
+      if (actionOutcome === "conflict")
+        return route.fulfill({
+          json: {
+            ok: true,
+            data: {
+              actionId: body.actionId,
+              outcome: "conflict",
+              rejectionCode: "idempotency_key_reused"
+            }
+          }
+        });
+      if (body.actionType === "accept" && lifecycleStatus === "available") {
+        lifecycleStatus = "accepted";
+        return route.fulfill({
+          json: { ok: true, data: { actionId: body.actionId, outcome: "accepted" } }
+        });
+      }
+      if (body.actionType === "start" && lifecycleStatus === "accepted") {
+        lifecycleStatus = "in_progress";
+        return route.fulfill({
+          json: { ok: true, data: { actionId: body.actionId, outcome: "accepted" } }
+        });
+      }
+      return route.fulfill({
+        json: {
+          ok: true,
+          data: {
+            actionId: body.actionId,
+            outcome: "rejected",
+            rejectionCode: "invalid_lifecycle_transition"
+          }
+        }
+      });
+    }
+    if (path.endsWith("/complete")) lifecycleStatus = "completed";
     return route.fulfill({
       json: {
         ok: true,
         data: {
           actionId: crypto.randomUUID(),
-          outcome: actionOutcome,
-          ...(actionOutcome === "conflict" ? { rejectionCode: "idempotency_key_reused" } : {})
+          outcome: "accepted"
         }
       }
     });
   });
   await page.goto("http://127.0.0.1:4175");
-  await page.getByLabel("Email").fill("driver@phase3a.test");
-  await page.getByLabel("Password").fill("synthetic-password");
-  await page.getByRole("button", { name: "Sign in" }).click();
+  for (let attempt = 0; attempt <= failedSignInAttempts; attempt++) {
+    await page.getByLabel("Email").fill("driver@phase3a.test");
+    await page.getByLabel("Password").fill("synthetic-password");
+    await page.getByRole("button", { name: "Sign in" }).click();
+    if (attempt < failedSignInAttempts)
+      await expect(page.getByText("Sign in failed.")).toBeVisible();
+  }
   await expect(page.getByText("Driver Team A")).toBeVisible();
+  return { submittedActionTypes };
 }
 
 test("Driver works from the cached manifest and retains offline actions", async ({
@@ -180,11 +228,92 @@ test("GPS permission denial leaves route execution functional", async ({ page, c
   await expect(page.getByRole("button", { name: "Start route" })).toBeEnabled();
 });
 
+test("Driver reconciles a delayed duplicate Accept and can start normally", async ({ page }) => {
+  const session = await driverSession(page);
+  await page.getByRole("button", { name: "Accept route" }).click();
+  await expect(page.getByText(/Status: accepted/)).toBeVisible();
+  await expect(page.getByRole("button", { name: "Accept route" })).toHaveCount(0);
+  await expect(page.getByRole("button", { name: "Start route" })).toBeVisible();
+
+  // Recreate the distinct second click captured by the pre-fix UI while its refresh was delayed.
+  await page.evaluate(
+    async ({ operationId }) => {
+      const database = await new Promise<IDBDatabase>((resolve, reject) => {
+        const request = indexedDB.open("megabin-driver-v1", 2);
+        request.onsuccess = () => resolve(request.result);
+        request.onerror = () => reject(request.error);
+      });
+      const duplicateId = "2e7ada54-e208-4ab4-8af4-ec32cdc4108e";
+      await new Promise<void>((resolve, reject) => {
+        const request = database
+          .transaction("queue", "readwrite")
+          .objectStore("queue")
+          .put({
+            actionId: duplicateId,
+            routeOperationId: operationId,
+            kind: "route",
+            endpoint: `/driver/route-operations/${operationId}/actions`,
+            body: {
+              actionId: duplicateId,
+              routeOperationId: operationId,
+              assignmentRevision: 1,
+              manifestRevision: 1,
+              deviceTimestamp: new Date().toISOString(),
+              clientSequence: 2,
+              idempotencyKey: duplicateId,
+              correlationId: "36712364-b521-4351-ad6e-ceb669030d3f",
+              actionType: "accept",
+              payloadVersion: 1,
+              payload: {}
+            },
+            clientSequence: 2,
+            state: "queued"
+          });
+        request.onsuccess = () => resolve();
+        request.onerror = () => reject(request.error);
+      });
+      database.close();
+    },
+    { operationId }
+  );
+
+  await page.getByRole("button", { name: "Sync now" }).click();
+  await expect(page.getByText(/0 pending/)).toBeVisible();
+  await expect(page.getByText(/require attention/)).toHaveCount(0);
+  await expect(page.getByRole("button", { name: "Accept route" })).toHaveCount(0);
+  await page.getByRole("button", { name: "Start route" }).click();
+  await expect(page.getByText(/Status: in_progress/)).toBeVisible();
+  await expect(page.getByText(/0 pending/)).toBeVisible();
+
+  const states = await page.evaluate(async () => {
+    const database = await new Promise<IDBDatabase>((resolve, reject) => {
+      const request = indexedDB.open("megabin-driver-v1", 2);
+      request.onsuccess = () => resolve(request.result);
+      request.onerror = () => reject(request.error);
+    });
+    return new Promise<string[]>((resolve, reject) => {
+      const request = database.transaction("queue").objectStore("queue").getAll();
+      request.onsuccess = () => resolve(request.result.map((action) => action.state));
+      request.onerror = () => reject(request.error);
+    }).finally(() => database.close());
+  });
+  expect(states.sort()).toEqual(["reconciled", "synced", "synced"]);
+  expect(session.submittedActionTypes).toEqual(["accept", "accept", "start"]);
+});
+
+test("successful Driver sign-in clears a prior authentication failure banner", async ({ page }) => {
+  await driverSession(page, "accepted", false, 1);
+  await expect(page.getByText("Sign in failed.")).toHaveCount(0);
+});
+
 test("Driver keeps a conflicting action visible for attention", async ({ page, context }) => {
   await driverSession(page, "conflict");
   await context.setOffline(true);
   await page.getByRole("button", { name: "Accept route" }).click();
   await context.setOffline(false);
   await page.getByRole("button", { name: "Sync now" }).click();
-  await expect(page.getByText("1 action(s) need attention and remain queued.")).toBeVisible();
+  await expect(page.getByText(/0 pending/)).toBeVisible();
+  await expect(
+    page.getByText("1 action(s) require attention and are not being retried automatically.")
+  ).toBeVisible();
 });

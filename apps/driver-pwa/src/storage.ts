@@ -1,4 +1,11 @@
-export type QueueState = "queued" | "syncing" | "synced" | "failed" | "conflict" | "rejected";
+export type QueueState =
+  | "queued"
+  | "syncing"
+  | "synced"
+  | "reconciled"
+  | "failed"
+  | "conflict"
+  | "rejected";
 export interface QueuedAction {
   readonly actionId: string;
   readonly routeOperationId: string;

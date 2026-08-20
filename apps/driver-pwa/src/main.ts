@@ -14,6 +14,12 @@ import {
   type QueuedAction
 } from "./storage.js";
 import { DriverSessionActivity } from "./session-activity.js";
+import {
+  actionIsPending,
+  actionIsResolved,
+  actionNeedsAttention,
+  reconcileAlreadyAchievedRouteAction
+} from "./action-reconciliation.js";
 interface Stop {
   routeOperationStopId: string;
   sequenceNumber: number;
@@ -67,6 +73,7 @@ let manifest: Manifest | null = null,
   trackingStatus = "Tracking unavailable",
   trackingDevice: { deviceId: string; status: string } | null = null,
   trackingTimer: number | null = null;
+const actionLocks = new Set<string>();
 const outcomes = [
   ["cleaned", "Cleaned"],
   ["client_requested_skip", "Client requested skip"],
@@ -147,11 +154,12 @@ async function post(action: QueuedAction) {
     },
     body: JSON.stringify(action.body)
   });
-  return response.json() as Promise<{
+  const result = (await response.json()) as {
     ok: boolean;
     data?: { outcome?: string; rejectionCode?: string };
     error?: { code: string };
-  }>;
+  };
+  return { ...result, status: response.status };
 }
 async function sync() {
   if (!online || !auth) return;
@@ -173,7 +181,12 @@ async function sync() {
                 : "synced";
           if (result.data?.rejectionCode) action.rejectionCode = result.data.rejectionCode;
         } else {
-          action.state = result.error?.code === "conflict" ? "conflict" : "failed";
+          action.state =
+            result.error?.code === "conflict"
+              ? "conflict"
+              : result.status >= 500 || result.status === 429
+                ? "failed"
+                : "rejected";
           if (result.error?.code) action.rejectionCode = result.error.code;
         }
       } catch {
@@ -290,8 +303,8 @@ async function refresh() {
   if (online && api) {
     try {
       const cached = (await getData<Manifest>("manifest")) ?? null;
-      const unresolved = (await queuedActions()).some((action) => action.state !== "synced");
-      if (cached && unresolved) {
+      const hasPendingActions = (await queuedActions()).some(actionIsPending);
+      if (cached && hasPendingActions) {
         manifest = cached;
         const freshness = await api.routeOperationFreshness<{
           stale: boolean;
@@ -312,6 +325,10 @@ async function refresh() {
         );
         manifest = { ...fresh, stops: execution.stops };
         await putData("manifest", manifest);
+        for (const action of await queuedActions()) {
+          const reconciled = reconcileAlreadyAchievedRouteAction(action, manifest.lifecycleStatus);
+          if (reconciled.state !== action.state) await queueAction(reconciled);
+        }
       } else manifest = null;
     } catch {
       manifest = (await getData<Manifest>("manifest")) ?? null;
@@ -342,13 +359,27 @@ async function render() {
     return;
   }
   const queue = await queuedActions(),
-    pending = queue.filter((a) => a.state !== "synced").length,
+    pending = queue.filter(actionIsPending).length,
     p = progress(),
-    issues = queue.filter((a) => ["failed", "conflict", "rejected"].includes(a.state));
+    issues = queue.filter(actionNeedsAttention),
+    retryingRouteActions = new Set(
+      queue
+        .filter((action) => action.kind === "route" && !actionIsResolved(action))
+        .map((action) => String(action.body.actionType))
+    );
   const gpsPending = (await queuedPositions()).filter(
     (position) => position.state !== "synced"
   ).length;
-  root!.innerHTML = `<header><b>MegaBin Driver</b><span class="status ${online ? "" : "offline"}"><i class="dot"></i>${syncing ? "Syncing" : issues.length ? "Sync issue" : online ? "Online" : "Offline"} · ${pending} pending</span></header><main>${message ? `<div class="notice">${escape(message)}</div>` : ""}${issues.length ? `<div class="notice">${issues.length} action(s) need attention and remain queued.</div>` : ""}<section class="card"><h1>${escape(manifest.team?.name ?? "Assigned route")}</h1><p>${escape(manifest.routeDate)} · ${escape(manifest.vehicle?.displayName ?? "Vehicle")}</p><p>Status: <b>${escape(manifest.lifecycleStatus)}</b> · Manifest ${manifest.manifestRevision}</p><div class="metrics"><div class="metric"><b>${p.done}/${p.total}</b><br>stops</div><div class="metric"><b>${p.actual}/${p.planned}</b><br>drums</div><div class="metric"><b>${p.remaining}</b><br>remaining</div></div><div class="actions"><button id="accept" class="primary">Accept route</button><button id="start" class="primary">Start route</button><button id="capacity">Near capacity</button><button id="complete">Complete route</button><button id="sync">Sync now</button><button id="logout">Logout</button></div></section><section class="card"><h2>Next stop</h2>${manifest.stops.find((s) => !s.execution) ? `Stop ${manifest.stops.find((s) => !s.execution)!.sequenceNumber}` : "All stops recorded"}</section><section class="card"><h2>Stops</h2>${manifest.stops.map((s) => `<button class="stop ${s.execution?.executionStatus === "completed" ? "done" : s.execution ? "issue" : ""}" data-stop="${s.routeOperationStopId}"><b>${s.sequenceNumber}. ${escape(s.address.line1 ?? s.address.address_line_1 ?? "Service address")}</b><br>${s.plannedDrumUnits} planned drums · ${escape(s.execution?.outcomeCode ?? "Pending")}</button>`).join("")}</section></main>`;
+  const canAccept =
+      manifest.lifecycleStatus === "available" &&
+      !retryingRouteActions.has("accept") &&
+      !actionLocks.has("route:accept"),
+    canStart =
+      manifest.lifecycleStatus === "accepted" &&
+      !retryingRouteActions.has("start") &&
+      !actionLocks.has("route:start"),
+    isExecuting = manifest.lifecycleStatus === "in_progress";
+  root!.innerHTML = `<header><b>MegaBin Driver</b><span class="status ${online ? "" : "offline"}"><i class="dot"></i>${syncing ? "Syncing" : issues.length ? "Sync issue" : online ? "Online" : "Offline"} · ${pending} pending</span></header><main>${message ? `<div class="notice">${escape(message)}</div>` : ""}${issues.length ? `<div class="notice">${issues.length} action(s) require attention and are not being retried automatically.</div>` : ""}<section class="card"><h1>${escape(manifest.team?.name ?? "Assigned route")}</h1><p>${escape(manifest.routeDate)} · ${escape(manifest.vehicle?.displayName ?? "Vehicle")}</p><p>Status: <b>${escape(manifest.lifecycleStatus)}</b> · Manifest ${manifest.manifestRevision}</p><div class="metrics"><div class="metric"><b>${p.done}/${p.total}</b><br>stops</div><div class="metric"><b>${p.actual}/${p.planned}</b><br>drums</div><div class="metric"><b>${p.remaining}</b><br>remaining</div></div><div class="actions">${canAccept ? '<button id="accept" class="primary">Accept route</button>' : ""}${canStart ? '<button id="start" class="primary">Start route</button>' : ""}${isExecuting && !actionLocks.has("capacity") ? '<button id="capacity">Near capacity</button>' : ""}${isExecuting && !actionLocks.has("complete") ? '<button id="complete">Complete route</button>' : ""}<button id="sync">Sync now</button><button id="logout">Logout</button></div></section><section class="card"><h2>Next stop</h2>${manifest.stops.find((s) => !s.execution) ? `Stop ${manifest.stops.find((s) => !s.execution)!.sequenceNumber}` : "All stops recorded"}</section><section class="card"><h2>Stops</h2>${manifest.stops.map((s) => `<button class="stop ${s.execution?.executionStatus === "completed" ? "done" : s.execution ? "issue" : ""}" data-stop="${s.routeOperationStopId}" ${isExecuting && !s.execution ? "" : "disabled"}><b>${s.sequenceNumber}. ${escape(s.address.line1 ?? s.address.address_line_1 ?? "Service address")}</b><br>${s.plannedDrumUnits} planned drums · ${escape(s.execution?.outcomeCode ?? "Pending")}</button>`).join("")}</section></main>`;
   root!
     .querySelector("main")
     ?.insertAdjacentHTML(
@@ -371,7 +402,8 @@ async function render() {
 }
 function renderStop() {
   if (!selected) return;
-  root!.innerHTML = `<header><button id="back">← Route</button><b>Stop ${selected.sequenceNumber}</b></header><main><section class="card"><h1>${escape(selected.address.line1 ?? selected.address.address_line_1)}</h1><p>Planned drums: <b>${selected.plannedDrumUnits}</b></p><p>${escape(selected.serviceFlags.accessInstructions ?? "")}</p>${selected.serviceFlags.dangerousAnimal ? '<p class="safety">Dangerous animal warning</p>' : ""}<div class="actions"><button id="previous" type="button">Previous</button><button id="next" type="button">Next</button></div><form id="result"><label>Outcome<select name="outcome">${outcomes.map(([v, l]) => `<option value="${v}">${l}</option>`).join("")}</select></label><label>Actual drums serviced<input name="actual" type="number" min="0" value="${selected.plannedDrumUnits}"></label><label>Reason / note<textarea name="reason"></textarea></label><button class="primary">Save outcome</button></form></section></main>`;
+  const stopLock = `stop:${selected.routeOperationStopId}`;
+  root!.innerHTML = `<header><button id="back">← Route</button><b>Stop ${selected.sequenceNumber}</b></header><main><section class="card"><h1>${escape(selected.address.line1 ?? selected.address.address_line_1)}</h1><p>Planned drums: <b>${selected.plannedDrumUnits}</b></p><p>${escape(selected.serviceFlags.accessInstructions ?? "")}</p>${selected.serviceFlags.dangerousAnimal ? '<p class="safety">Dangerous animal warning</p>' : ""}<div class="actions"><button id="previous" type="button">Previous</button><button id="next" type="button">Next</button></div><form id="result"><label>Outcome<select name="outcome">${outcomes.map(([v, l]) => `<option value="${v}">${l}</option>`).join("")}</select></label><label>Actual drums serviced<input name="actual" type="number" min="0" value="${selected.plannedDrumUnits}"></label><label>Reason / note<textarea name="reason"></textarea></label><button class="primary" ${actionLocks.has(stopLock) ? "disabled" : ""}>Save outcome</button></form></section></main>`;
   document.querySelector("#back")?.addEventListener("click", () => render());
   const move = (offset: number) => {
     const index = manifest!.stops.findIndex(
@@ -384,6 +416,10 @@ function renderStop() {
   document.querySelector("#next")?.addEventListener("click", () => move(1));
   document.querySelector<HTMLFormElement>("#result")?.addEventListener("submit", async (e) => {
     e.preventDefault();
+    if (!manifest || !selected || manifest.lifecycleStatus !== "in_progress") return;
+    const stop = selected,
+      lock = `stop:${stop.routeOperationStopId}`;
+    if (actionLocks.has(lock)) return;
     const f = new FormData(e.currentTarget as HTMLFormElement),
       outcome = String(f.get("outcome")),
       reason = String(f.get("reason")).trim();
@@ -400,85 +436,125 @@ function renderStop() {
       message = "A reason is required for this outcome.";
       return renderStop();
     }
-    const seq = await nextSequence(),
-      id = crypto.randomUUID();
-    await enqueue(
-      "stop",
-      `/driver/route-operations/${manifest!.routeOperationId}/stops/${selected!.routeOperationStopId}/result`,
-      {
-        actionId: id,
-        routeOperationId: manifest!.routeOperationId,
-        routeOperationStopId: selected!.routeOperationStopId,
-        assignmentRevision: manifest!.assignmentRevision,
-        manifestRevision: manifest!.manifestRevision,
-        deviceTimestamp: new Date().toISOString(),
-        clientSequence: seq,
-        idempotencyKey: id,
-        correlationId: crypto.randomUUID(),
-        outcome,
-        actualDrumCount: outcome === "cleaned" ? Number(f.get("actual")) : null,
-        reason: reason || null,
-        payloadVersion: 1
-      }
-    );
-    selected = null;
+    actionLocks.add(lock);
+    renderStop();
+    try {
+      const seq = await nextSequence(),
+        id = crypto.randomUUID();
+      await enqueue(
+        "stop",
+        `/driver/route-operations/${manifest.routeOperationId}/stops/${stop.routeOperationStopId}/result`,
+        {
+          actionId: id,
+          routeOperationId: manifest.routeOperationId,
+          routeOperationStopId: stop.routeOperationStopId,
+          assignmentRevision: manifest.assignmentRevision,
+          manifestRevision: manifest.manifestRevision,
+          deviceTimestamp: new Date().toISOString(),
+          clientSequence: seq,
+          idempotencyKey: id,
+          correlationId: crypto.randomUUID(),
+          outcome,
+          actualDrumCount: outcome === "cleaned" ? Number(f.get("actual")) : null,
+          reason: reason || null,
+          payloadVersion: 1
+        }
+      );
+      selected = null;
+    } finally {
+      actionLocks.delete(lock);
+      if (selected) renderStop();
+    }
   });
 }
 async function queueRoute(actionType: "accept" | "start") {
-  const seq = await nextSequence(),
-    id = crypto.randomUUID();
-  await enqueue("route", `/driver/route-operations/${manifest!.routeOperationId}/actions`, {
-    actionId: id,
-    routeOperationId: manifest!.routeOperationId,
-    assignmentRevision: manifest!.assignmentRevision,
-    manifestRevision: manifest!.manifestRevision,
-    deviceTimestamp: new Date().toISOString(),
-    clientSequence: seq,
-    idempotencyKey: id,
-    correlationId: crypto.randomUUID(),
-    actionType,
-    payloadVersion: 1,
-    payload: {}
-  });
+  if (
+    !manifest ||
+    (actionType === "accept" && manifest.lifecycleStatus !== "available") ||
+    (actionType === "start" && manifest.lifecycleStatus !== "accepted")
+  )
+    return;
+  const lock = `route:${actionType}`;
+  if (actionLocks.has(lock)) return;
+  actionLocks.add(lock);
+  await render();
+  try {
+    const seq = await nextSequence(),
+      id = crypto.randomUUID();
+    await enqueue("route", `/driver/route-operations/${manifest.routeOperationId}/actions`, {
+      actionId: id,
+      routeOperationId: manifest.routeOperationId,
+      assignmentRevision: manifest.assignmentRevision,
+      manifestRevision: manifest.manifestRevision,
+      deviceTimestamp: new Date().toISOString(),
+      clientSequence: seq,
+      idempotencyKey: id,
+      correlationId: crypto.randomUUID(),
+      actionType,
+      payloadVersion: 1,
+      payload: {}
+    });
+  } finally {
+    actionLocks.delete(lock);
+    await render();
+  }
 }
 async function queueCapacity() {
-  const seq = await nextSequence(),
-    id = crypto.randomUUID();
-  await enqueue("capacity", `/driver/route-operations/${manifest!.routeOperationId}/capacity`, {
-    actionId: id,
-    routeOperationId: manifest!.routeOperationId,
-    assignmentRevision: manifest!.assignmentRevision,
-    manifestRevision: manifest!.manifestRevision,
-    deviceTimestamp: new Date().toISOString(),
-    clientSequence: seq,
-    idempotencyKey: id,
-    correlationId: crypto.randomUUID(),
-    capacityState: "near_capacity",
-    payloadVersion: 1
-  });
+  if (!manifest || manifest.lifecycleStatus !== "in_progress" || actionLocks.has("capacity"))
+    return;
+  actionLocks.add("capacity");
+  await render();
+  try {
+    const seq = await nextSequence(),
+      id = crypto.randomUUID();
+    await enqueue("capacity", `/driver/route-operations/${manifest.routeOperationId}/capacity`, {
+      actionId: id,
+      routeOperationId: manifest.routeOperationId,
+      assignmentRevision: manifest.assignmentRevision,
+      manifestRevision: manifest.manifestRevision,
+      deviceTimestamp: new Date().toISOString(),
+      clientSequence: seq,
+      idempotencyKey: id,
+      correlationId: crypto.randomUUID(),
+      capacityState: "near_capacity",
+      payloadVersion: 1
+    });
+  } finally {
+    actionLocks.delete("capacity");
+    await render();
+  }
 }
 async function queueComplete() {
+  if (!manifest || manifest.lifecycleStatus !== "in_progress" || actionLocks.has("complete"))
+    return;
   if (progress().remaining) {
     message = "Complete every stop before completing the route.";
     return render();
   }
-  if ((await queuedActions()).some((action) => action.state !== "synced")) {
+  if ((await queuedActions()).some((action) => !actionIsResolved(action))) {
     message = "Sync or resolve all pending actions before completing the route.";
     return render();
   }
-  const seq = await nextSequence(),
-    id = crypto.randomUUID();
-  await enqueue("complete", `/driver/route-operations/${manifest!.routeOperationId}/complete`, {
-    actionId: id,
-    routeOperationId: manifest!.routeOperationId,
-    assignmentRevision: manifest!.assignmentRevision,
-    manifestRevision: manifest!.manifestRevision,
-    deviceTimestamp: new Date().toISOString(),
-    clientSequence: seq,
-    idempotencyKey: id,
-    correlationId: crypto.randomUUID(),
-    payloadVersion: 1
-  });
+  actionLocks.add("complete");
+  await render();
+  try {
+    const seq = await nextSequence(),
+      id = crypto.randomUUID();
+    await enqueue("complete", `/driver/route-operations/${manifest.routeOperationId}/complete`, {
+      actionId: id,
+      routeOperationId: manifest.routeOperationId,
+      assignmentRevision: manifest.assignmentRevision,
+      manifestRevision: manifest.manifestRevision,
+      deviceTimestamp: new Date().toISOString(),
+      clientSequence: seq,
+      idempotencyKey: id,
+      correlationId: crypto.randomUUID(),
+      payloadVersion: 1
+    });
+  } finally {
+    actionLocks.delete("complete");
+    await render();
+  }
 }
 function wireLogout() {
   document.querySelector("#logout")?.addEventListener("click", async () => {
@@ -500,6 +576,7 @@ function renderLogin() {
     const f = new FormData(e.currentTarget as HTMLFormElement);
     try {
       await auth?.signIn(String(f.get("email")), String(f.get("password")));
+      message = "";
       await refresh();
     } catch {
       message = "Sign in failed.";
