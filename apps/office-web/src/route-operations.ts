@@ -74,6 +74,30 @@ export async function renderRouteOperationsWorkspace(
     </main></div>`;
     const region = root.querySelector<HTMLSelectElement>("#region");
     const date = root.querySelector<HTMLInputElement>("#date");
+    const persistContext = () => {
+      if (!region?.value || !date?.value) return;
+      requestGeneration += 1;
+      selectedRegion = region.value;
+      selectedDate = date.value;
+      updateOfficeLocation(
+        {
+          route: "route-operations",
+          serviceRegionId: selectedRegion,
+          serviceDate: selectedDate
+        },
+        "replace"
+      );
+      operations = [];
+      root.querySelector("section.panel:nth-of-type(2)")?.replaceChildren(
+        Object.assign(document.createElement("div"), {
+          className: "empty",
+          textContent: "Date or region changed. Load to inspect route operations."
+        })
+      );
+    };
+    date?.addEventListener("input", persistContext);
+    date?.addEventListener("change", persistContext);
+    region?.addEventListener("change", persistContext);
     const load = async () => {
       if (!region?.value || !date?.value) return;
       const request = ++requestGeneration;

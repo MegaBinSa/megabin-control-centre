@@ -48,6 +48,22 @@ export async function renderRosterWorkspace(
   let requestGeneration = 0;
   const current = (request: number) =>
     request === requestGeneration && isOfficeMountCurrent(shell.mount);
+  const persistContext = () => {
+    requestGeneration += 1;
+    const c = context();
+    updateOfficeLocation(
+      { route: "daily-roster", serviceRegionId: c.serviceRegionId, serviceDate: c.serviceDate },
+      "replace"
+    );
+    model = null;
+    readiness = null;
+    element("#roster-content").innerHTML =
+      '<div class="empty">Date or region changed. Refresh to load this roster.</div>';
+  };
+  const dateInput = element<HTMLInputElement>("#roster-date");
+  dateInput.addEventListener("input", persistContext);
+  dateInput.addEventListener("change", persistContext);
+  element<HTMLSelectElement>("#roster-region").addEventListener("change", persistContext);
   const load = async () => {
     const request = ++requestGeneration;
     const c = context();
