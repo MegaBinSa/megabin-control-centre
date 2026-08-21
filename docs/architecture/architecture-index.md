@@ -40,6 +40,7 @@ Material changes to the architecture require an ADR. An ADR may clarify the blue
 | [Background-job runtime](background-job-runtime.md) | Bounded job execution and durable-state adapter contract |
 | [Health endpoints](health-endpoints.md) | Liveness, readiness, and safe platform health response |
 | [Master-data API](master-data-api.md) | Phase 1B authenticated administration contracts and write boundary |
+| [Office Web navigation](office-web-navigation.md) | Stable workspace routes, History navigation, auth-refresh separation, dirty forms, and stale-request isolation |
 | [Geography administration](geography-administration.md) | Phase 1C PostGIS, map boundary, priority, impact, and review contracts |
 | [Daily Roster](daily-roster.md) | Phase 1D operational-day, availability, substitution, validation, and locking contracts |
 | [Route Planning](route-planning.md) | Phase 2A route aggregate, eligibility, deterministic baseline, versioning, and publication |

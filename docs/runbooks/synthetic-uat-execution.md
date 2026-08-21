@@ -9,4 +9,8 @@
 6. Set `Passed`, `Failed`, `Blocked` or `Not Run`. Passed/Failed require actual outcome, evidence, timestamp, release identity and tester. Link defects/blockers.
 7. Recycle only records rooted in the documented synthetic namespace after retention/evidence needs are satisfied.
 
+## Office browser checkpoint
+
+Before continuing `UAT-OFF-001`, record the deployed release identity and prove that reload restores the active Office module and selected region/date. Wait for the explicit loading state to clear before interpreting roster or route-plan status. A roster or plan response is valid only for the region/date visible in the URL and controls. Stop and record a blocker if another date briefly appears, routine session renewal returns the operator to Clients, or an in-flight request repaints a different workspace. Never repeat a mutating action merely because navigation reset or loading obscured its result.
+
 The six baseline journeys are Office planning, Driver offline execution, website onboarding, Client SKIP, financial/accounting isolation, and vehicle tracking/intelligence. The catalogue is intentionally MegaBin-specific rather than a generic test-management framework. Phase 5D repository verification validates the contracts; no business journey is marked Passed until it actually runs on shared Staging.

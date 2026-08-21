@@ -111,7 +111,6 @@ export async function renderTrackingWorkspace(
         )
       );
     root.querySelector("#logout")?.addEventListener("click", () => void signOut());
-    root.querySelector("#back")?.addEventListener("click", () => location.reload());
   };
   await load();
   window.setInterval(() => void load(), 30000);

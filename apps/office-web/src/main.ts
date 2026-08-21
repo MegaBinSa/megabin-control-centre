@@ -34,6 +34,16 @@ import {
   masterDataEntityId,
   type EditableMasterDataResource
 } from "./master-data-edit.js";
+import {
+  beginOfficeMount,
+  hasUnsavedOfficeForm,
+  installDirtyFormTracking,
+  isOfficeMountCurrent,
+  readOfficeLocation,
+  shouldBootstrapOfficeSession,
+  updateOfficeLocation,
+  type OfficeLocation
+} from "./office-shell.js";
 
 const modules = [
   "Clients",
@@ -62,15 +72,21 @@ const paths = {
   Staff: "staff",
   Vehicles: "vehicles"
 } as const satisfies Record<ModuleName, EditableMasterDataResource>;
+const moduleByRoute = Object.fromEntries(
+  Object.entries(paths).map(([module, route]) => [route, module])
+) as Record<EditableMasterDataResource, ModuleName>;
 const apiBase = (import.meta.env.VITE_MASTER_DATA_API_URL as string | undefined)?.replace(
   /\/$/,
   ""
 );
-let active: ModuleName = "Clients";
+let active: ModuleName =
+  moduleByRoute[readOfficeLocation().route as EditableMasterDataResource] ?? "Clients";
 let records: readonly Record<string, unknown>[] = [];
 let identity: OfficeIdentity | null = null;
 let errorMessage = "";
 let originalEditValues: Record<string, unknown> = {};
+let masterRequestGeneration = 0;
+let masterLoading = false;
 const scopedQuery = (search?: string) =>
   new URLSearchParams({
     ...(identity?.serviceRegionIds[0] ? { serviceRegionId: identity.serviceRegionIds[0] } : {}),
@@ -111,20 +127,88 @@ const createFields: Record<ModuleName, string> = {
 const app = document.querySelector<HTMLDivElement>("#app");
 if (!app) throw new Error("Office Web root is missing.");
 const appRoot = app;
+installDirtyFormTracking(appRoot);
+let renderedLocation = readOfficeLocation();
 
-async function load(): Promise<void> {
-  records = [];
-  errorMessage = "";
-  if (api)
-    try {
-      records = (await api.list<Record<string, unknown>>(paths[active], scopedQuery())).items;
-    } catch (cause) {
-      errorMessage = cause instanceof Error ? cause.message : `Unable to load ${active}.`;
-    }
-  render();
+function confirmNavigation(): boolean {
+  return (
+    !hasUnsavedOfficeForm(appRoot) || confirm("Discard the unsaved changes in the open editor?")
+  );
 }
 
-function render(): void {
+function navigate(location: OfficeLocation, mode: "push" | "replace" = "push"): void {
+  if (mode === "push" && !confirmNavigation()) return;
+  updateOfficeLocation(location, mode);
+  renderedLocation = location;
+  void renderCurrentLocation();
+}
+
+appRoot.addEventListener(
+  "click",
+  (event) => {
+    const target = event.target;
+    if (!(target instanceof Element)) return;
+    const button = target.closest<HTMLButtonElement>("button");
+    if (!button) return;
+    const route =
+      button.id === "daily-roster" || button.id === "roster"
+        ? "daily-roster"
+        : button.id === "routes"
+          ? "route-planning"
+          : ["master", "master-data", "back"].includes(button.id)
+            ? "clients"
+            : null;
+    if (!route) return;
+    event.preventDefault();
+    event.stopImmediatePropagation();
+    const current = readOfficeLocation();
+    navigate(
+      route === "clients"
+        ? { route }
+        : {
+            route,
+            ...(current.serviceRegionId ? { serviceRegionId: current.serviceRegionId } : {}),
+            ...(current.serviceDate ? { serviceDate: current.serviceDate } : {})
+          }
+    );
+  },
+  true
+);
+
+window.addEventListener("popstate", () => {
+  const next = readOfficeLocation();
+  if (!confirmNavigation()) {
+    updateOfficeLocation(renderedLocation, "push");
+    return;
+  }
+  renderedLocation = next;
+  void renderCurrentLocation();
+});
+
+async function load(search?: string): Promise<void> {
+  const request = ++masterRequestGeneration;
+  const mount = beginOfficeMount();
+  records = [];
+  errorMessage = "";
+  masterLoading = true;
+  render(false);
+  if (api)
+    try {
+      const nextRecords = (
+        await api.list<Record<string, unknown>>(paths[active], scopedQuery(search))
+      ).items;
+      if (request !== masterRequestGeneration || !isOfficeMountCurrent(mount)) return;
+      records = nextRecords;
+    } catch (cause) {
+      if (request !== masterRequestGeneration || !isOfficeMountCurrent(mount)) return;
+      errorMessage = cause instanceof Error ? cause.message : `Unable to load ${active}.`;
+    }
+  masterLoading = false;
+  render(false);
+}
+
+function render(invalidateMount = true): void {
+  if (invalidateMount) beginOfficeMount();
   if (!auth || !api) {
     appRoot.innerHTML =
       '<main class="login"><h1>MegaBin Control Centre</h1><div class="notice">Configure VITE_SUPABASE_URL, VITE_SUPABASE_PUBLISHABLE_KEY and VITE_MASTER_DATA_API_URL.</div></main>';
@@ -170,7 +254,7 @@ function render(): void {
     <header><div><h1>${active}</h1><p>Authoritative master-data administration · ${escapeText(identity.displayName)}</p></div><div class="header-actions">${canWrite ? `<button class="button" id="create">Add ${active.replace(/s$/, "")}</button>` : ""}<button id="logout">Sign out</button></div></header>
     ${errorMessage ? `<div class="error">${escapeText(errorMessage)}</div>` : ""}
     <div class="toolbar"><input id="search" type="search" placeholder="Search ${active.toLowerCase()}"/><select aria-label="Status"><option>All statuses</option><option>Active</option><option>Inactive / archived</option></select></div>
-    <section class="panel">${rows ? `<table><thead><tr><th>Name / address</th><th>Region / city</th><th>Status</th><th>Actions</th></tr></thead><tbody>${rows}</tbody></table>` : `<div class="empty">No ${active.toLowerCase()} to display.</div>`}</section>
+    <section class="panel">${masterLoading ? '<div class="empty">Loading master data…</div>' : rows ? `<table><thead><tr><th>Name / address</th><th>Region / city</th><th>Status</th><th>Actions</th></tr></thead><tbody>${rows}</tbody></table>` : `<div class="empty">No ${active.toLowerCase()} to display.</div>`}</section>
     <dialog id="create-dialog"><form id="create-form"><h2>Add ${active.replace(/s$/, "")}</h2>${createFields[active]}<div class="actions"><button type="button" id="cancel">Cancel</button><button class="button" type="submit">Save</button></div></form></dialog>
     <dialog id="edit-dialog"><form id="edit-form"><h2>Edit ${active.replace(/s$/, "")}</h2><input name="id" type="hidden"><input name="expectedUpdatedAt" type="hidden"><label>Editable values (JSON)<textarea name="patch" rows="12" required></textarea></label><div class="actions"><button type="button" id="archive">Archive</button><button type="button" id="edit-cancel">Cancel</button><button class="button">Save</button></div></form></dialog>
   </main></div>`;
@@ -223,134 +307,45 @@ function render(): void {
       ?.insertAdjacentHTML("beforeend", '<button id="client-skip-workspace">Client SKIP</button>');
   document.querySelectorAll<HTMLButtonElement>("[data-module]").forEach((button) =>
     button.addEventListener("click", () => {
-      active = button.dataset.module as ModuleName;
-      void load();
+      const module = button.dataset.module as ModuleName;
+      navigate({ route: paths[module] });
     })
   );
   document.querySelector("#geography-workspace")?.addEventListener("click", () => {
-    void renderGeographyWorkspace(
-      appRoot,
-      api,
-      identity?.permissions.includes("geography.write") === true,
-      identity?.serviceRegionIds ?? [],
-      async () => {
-        await auth.signOut();
-        identity = null;
-        render();
-      }
-    );
+    navigate({ route: "geography" });
   });
   document.querySelector("#roster-workspace")?.addEventListener("click", () => {
-    void renderRosterWorkspace(
-      appRoot,
-      api,
-      identity?.permissions ?? [],
-      identity?.serviceRegionIds ?? [],
-      async () => {
-        await auth.signOut();
-        identity = null;
-        render();
-      }
-    );
+    navigate({ route: "daily-roster" });
   });
   document.querySelector("#routes-workspace")?.addEventListener("click", () => {
-    void renderRoutesWorkspace(
-      appRoot,
-      api,
-      identity?.permissions ?? [],
-      identity?.serviceRegionIds ?? [],
-      async () => {
-        await auth.signOut();
-        identity = null;
-        render();
-      }
-    );
+    navigate({ route: "route-planning" });
   });
   document.querySelector("#route-operations-workspace")?.addEventListener("click", () => {
-    void renderRouteOperationsWorkspace(
-      appRoot,
-      api,
-      identity?.permissions ?? [],
-      identity?.serviceRegionIds ?? [],
-      async () => {
-        await auth.signOut();
-        identity = null;
-        render();
-      }
-    );
+    navigate({ route: "route-operations" });
   });
   document.querySelector("#tracking-workspace")?.addEventListener("click", () => {
-    void renderTrackingWorkspace(
-      appRoot,
-      api,
-      identity?.permissions ?? [],
-      identity?.serviceRegionIds ?? [],
-      async () => {
-        await auth.signOut();
-        identity = null;
-        render();
-      }
-    );
+    navigate({ route: "live-vehicles" });
   });
   document.querySelector("#live-operations-workspace")?.addEventListener("click", () => {
-    void renderLiveOperationsWorkspace(
-      appRoot,
-      api,
-      identity?.permissions ?? [],
-      identity?.serviceRegionIds ?? [],
-      async () => {
-        await auth.signOut();
-        identity = null;
-        render();
-      }
-    );
+    navigate({ route: "live-operations" });
   });
   document.querySelector("#website-intake-workspace")?.addEventListener("click", () => {
-    void renderWebsiteIntakeWorkspace(appRoot, api, identity?.permissions ?? [], async () => {
-      await auth.signOut();
-      identity = null;
-      render();
-    });
+    navigate({ route: "website-intake" });
   });
   document.querySelector("#client-migration-workspace")?.addEventListener("click", () => {
-    void renderClientMigrationWorkspace(appRoot, api, identity?.permissions ?? [], async () => {
-      await auth.signOut();
-      identity = null;
-      render();
-    });
+    navigate({ route: "client-migration" });
   });
   document.querySelector("#accounting-workspace")?.addEventListener("click", () => {
-    void renderAccountingWorkspace(appRoot, api, identity?.permissions ?? [], async () => {
-      await auth.signOut();
-      identity = null;
-      render();
-    });
+    navigate({ route: "accounting" });
   });
   document.querySelector("#financial-eligibility-workspace")?.addEventListener("click", () => {
-    void renderFinancialEligibilityWorkspace(
-      appRoot,
-      api,
-      identity?.permissions ?? [],
-      async () => {
-        await auth.signOut();
-        identity = null;
-        render();
-      }
-    );
+    navigate({ route: "financial-eligibility" });
   });
   document.querySelector("#communications-workspace")?.addEventListener("click", () => {
-    void renderCommunicationsWorkspace(appRoot, api, identity?.permissions ?? [], async () => {
-      await auth.signOut();
-      identity = null;
-      render();
-    });
+    navigate({ route: "communications" });
   });
   document.querySelector("#client-skip-workspace")?.addEventListener("click", () => {
-    void renderClientSkipWorkspace(appRoot, api, identity?.permissions ?? [], async () => {
-      await auth.signOut();
-      identity = null;
-      render();
-    });
+    navigate({ route: "client-skip" });
   });
   const dialog = document.querySelector<HTMLDialogElement>("#create-dialog");
   document.querySelector("#create")?.addEventListener("click", () => dialog?.showModal());
@@ -432,9 +427,7 @@ function render(): void {
   });
   document.querySelector<HTMLInputElement>("#search")?.addEventListener("change", async (event) => {
     const input = event.currentTarget as HTMLInputElement;
-    records = (await api.list<Record<string, unknown>>(paths[active], scopedQuery(input.value)))
-      .items;
-    render();
+    await load(input.value);
   });
 }
 
@@ -467,6 +460,111 @@ function escapeText(value: string): string {
   );
 }
 
+async function signOutFromWorkspace(): Promise<void> {
+  if (!auth) return;
+  await auth.signOut();
+}
+
+async function renderCurrentLocation(): Promise<void> {
+  if (!api || !identity) {
+    render();
+    return;
+  }
+  const location = readOfficeLocation();
+  renderedLocation = location;
+  const masterModule = moduleByRoute[location.route as EditableMasterDataResource];
+  if (masterModule) {
+    active = masterModule;
+    if (!identity.permissions.includes("clients.sensitive.read") && active === "Clients") {
+      navigate({ route: "service-addresses" }, "replace");
+      return;
+    }
+    await load();
+    return;
+  }
+
+  const mount = beginOfficeMount();
+  const workspaceRoot = document.createElement("div");
+  workspaceRoot.dataset.officeMount = String(mount);
+  workspaceRoot.innerHTML = '<main class="login"><p>Loading workspace…</p></main>';
+  appRoot.replaceChildren(workspaceRoot);
+  const permissions = identity.permissions;
+  const regions = identity.serviceRegionIds;
+  switch (location.route) {
+    case "geography":
+      await renderGeographyWorkspace(
+        workspaceRoot,
+        api,
+        permissions.includes("geography.write"),
+        regions,
+        signOutFromWorkspace
+      );
+      break;
+    case "daily-roster":
+      await renderRosterWorkspace(workspaceRoot, api, permissions, regions, signOutFromWorkspace, {
+        mount,
+        location
+      });
+      break;
+    case "route-planning":
+      await renderRoutesWorkspace(workspaceRoot, api, permissions, regions, signOutFromWorkspace, {
+        mount,
+        location
+      });
+      break;
+    case "route-operations":
+      await renderRouteOperationsWorkspace(
+        workspaceRoot,
+        api,
+        permissions,
+        regions,
+        signOutFromWorkspace,
+        { mount, location }
+      );
+      break;
+    case "live-vehicles":
+      await renderTrackingWorkspace(workspaceRoot, api, permissions, regions, signOutFromWorkspace);
+      break;
+    case "live-operations":
+      await renderLiveOperationsWorkspace(
+        workspaceRoot,
+        api,
+        permissions,
+        regions,
+        signOutFromWorkspace
+      );
+      break;
+    case "website-intake":
+      await renderWebsiteIntakeWorkspace(workspaceRoot, api, permissions, signOutFromWorkspace);
+      break;
+    case "client-migration":
+      await renderClientMigrationWorkspace(workspaceRoot, api, permissions, signOutFromWorkspace);
+      break;
+    case "accounting":
+      await renderAccountingWorkspace(workspaceRoot, api, permissions, signOutFromWorkspace);
+      break;
+    case "financial-eligibility":
+      await renderFinancialEligibilityWorkspace(
+        workspaceRoot,
+        api,
+        permissions,
+        signOutFromWorkspace
+      );
+      break;
+    case "communications":
+      await renderCommunicationsWorkspace(workspaceRoot, api, permissions, signOutFromWorkspace);
+      break;
+    case "client-skip":
+      await renderClientSkipWorkspace(workspaceRoot, api, permissions, signOutFromWorkspace);
+      break;
+    default:
+      navigate({ route: "clients" }, "replace");
+  }
+  // A later navigation invalidates this mount. Renderers with asynchronous
+  // initialization must not claim the root after that point.
+  void isOfficeMountCurrent(mount);
+}
+
 async function restore(): Promise<void> {
   if (!auth || !api || !(await auth.session())) {
     identity = null;
@@ -475,16 +573,22 @@ async function restore(): Promise<void> {
   }
   try {
     identity = await api.profile<OfficeIdentity>();
-    if (!identity.permissions.includes("clients.sensitive.read") && active === "Clients")
-      active = "Service Addresses";
-    await load();
+    await renderCurrentLocation();
   } catch (cause) {
     errorMessage = cause instanceof Error ? cause.message : "Session expired.";
     identity = null;
     render();
   }
 }
-auth?.onChange(() => {
-  void restore();
+auth?.onChange((event, session) => {
+  if (event === "SIGNED_OUT" || !session) {
+    identity = null;
+    records = [];
+    render();
+    return;
+  }
+  // INITIAL_SESSION and SIGNED_IN may establish the shell. TOKEN_REFRESHED and
+  // USER_UPDATED only maintain authentication and must not remount navigation.
+  if (shouldBootstrapOfficeSession(event, identity !== null)) void restore();
 });
 void restore();
