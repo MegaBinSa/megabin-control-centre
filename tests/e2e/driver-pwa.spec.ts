@@ -333,6 +333,80 @@ test("Driver keeps a conflicting action visible for attention", async ({ page, c
   await page.getByRole("button", { name: "Sync now" }).click();
   await expect(page.getByText(/0 pending/)).toBeVisible();
   await expect(
-    page.getByText("1 action(s) require attention and are not being retried automatically.")
+    page.getByText(
+      "1 action(s) for this route require attention and are not being retried automatically."
+    )
   ).toBeVisible();
+  await expect(page.getByRole("button", { name: "Accept route" })).toHaveCount(0);
+});
+
+test("historical rejected work does not block a fresh assigned operation", async ({ page }) => {
+  const session = await driverSession(page);
+  const historicalOperationId = "621cf930-d80d-4b6a-a4e7-44a4896a57bc";
+  const historicalActionId = "38f3ab68-2498-4b6f-8956-06060cefe886";
+
+  await page.evaluate(
+    async ({ historicalActionId, historicalOperationId }) => {
+      const database = await new Promise<IDBDatabase>((resolve, reject) => {
+        const request = indexedDB.open("megabin-driver-v1", 2);
+        request.onsuccess = () => resolve(request.result);
+        request.onerror = () => reject(request.error);
+      });
+      await new Promise<void>((resolve, reject) => {
+        const request = database
+          .transaction("queue", "readwrite")
+          .objectStore("queue")
+          .put({
+            actionId: historicalActionId,
+            routeOperationId: historicalOperationId,
+            kind: "route",
+            endpoint: `/driver/route-operations/${historicalOperationId}/actions`,
+            body: {
+              actionId: historicalActionId,
+              routeOperationId: historicalOperationId,
+              actionType: "start"
+            },
+            clientSequence: 3,
+            state: "rejected",
+            rejectionCode: "invalid_lifecycle_transition"
+          });
+        request.onsuccess = () => resolve();
+        request.onerror = () => reject(request.error);
+      });
+      database.close();
+    },
+    { historicalActionId, historicalOperationId }
+  );
+  await page.reload();
+
+  await expect(
+    page.getByText(
+      "1 historical action(s) from another route require attention. They do not block this route."
+    )
+  ).toBeVisible();
+  await expect(page.getByText(/Online · 0 pending/)).toBeVisible();
+  await page.getByRole("button", { name: "Accept route" }).click();
+  await expect(page.getByText(/Status: accepted/)).toBeVisible();
+  await expect(page.getByRole("button", { name: "Start route" })).toBeVisible();
+  await page.getByRole("button", { name: "Start route" }).click();
+  await expect(page.getByText(/Status: in_progress/)).toBeVisible();
+  await expect(page.getByText(/0 pending/)).toBeVisible();
+
+  const historical = await page.evaluate(async (historicalActionId) => {
+    const database = await new Promise<IDBDatabase>((resolve, reject) => {
+      const request = indexedDB.open("megabin-driver-v1", 2);
+      request.onsuccess = () => resolve(request.result);
+      request.onerror = () => reject(request.error);
+    });
+    return new Promise<{ routeOperationId: string; state: string }>((resolve, reject) => {
+      const request = database.transaction("queue").objectStore("queue").get(historicalActionId);
+      request.onsuccess = () => resolve(request.result);
+      request.onerror = () => reject(request.error);
+    }).finally(() => database.close());
+  }, historicalActionId);
+  expect(historical).toMatchObject({
+    routeOperationId: historicalOperationId,
+    state: "rejected"
+  });
+  expect(session.submittedActionTypes).toEqual(["accept", "start"]);
 });

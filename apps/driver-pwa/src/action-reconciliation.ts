@@ -11,6 +11,32 @@ export const actionNeedsAttention = (action: Pick<QueuedAction, "state">) =>
 export const actionIsResolved = (action: Pick<QueuedAction, "state">) =>
   resolvedStates.has(action.state);
 
+export function actionControlKey(action: QueuedAction): string | null {
+  if (action.kind === "route") return `route:${String(action.body.actionType)}`;
+  if (action.kind === "stop") return `stop:${String(action.body.routeOperationStopId)}`;
+  if (action.kind === "capacity") return "capacity";
+  if (action.kind === "complete") return "complete";
+  return null;
+}
+
+export function operationQueueState(actions: QueuedAction[], routeOperationId: string) {
+  const current = actions.filter((action) => action.routeOperationId === routeOperationId);
+  return {
+    current,
+    pending: current.filter(actionIsPending),
+    attention: current.filter(actionNeedsAttention),
+    historicalAttention: actions.filter(
+      (action) => action.routeOperationId !== routeOperationId && actionNeedsAttention(action)
+    ),
+    blockedControls: new Set(
+      current
+        .filter((action) => !actionIsResolved(action))
+        .map(actionControlKey)
+        .filter((key): key is string => key !== null)
+    )
+  };
+}
+
 export function reconcileAlreadyAchievedRouteAction(
   action: QueuedAction,
   authoritativeLifecycleStatus: string
