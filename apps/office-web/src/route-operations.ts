@@ -1,5 +1,11 @@
 import type { MasterDataApiClient } from "@megabin/api-client";
 import { loadAuthorizedServiceRegions } from "./regions.js";
+import {
+  isOfficeMountCurrent,
+  markFormClean,
+  updateOfficeLocation,
+  type OfficeLocation
+} from "./office-shell.js";
 
 interface Operation {
   readonly routeOperationId: string;
@@ -44,14 +50,19 @@ export async function renderRouteOperationsWorkspace(
   api: MasterDataApiClient,
   permissions: readonly string[],
   serviceRegionIds: readonly string[],
-  signOut: () => Promise<void>
+  signOut: () => Promise<void>,
+  shell: { readonly mount: number; readonly location: OfficeLocation }
 ): Promise<void> {
   const regions = await loadAuthorizedServiceRegions(api, serviceRegionIds);
+  if (!isOfficeMountCurrent(shell.mount)) return;
   let operations: readonly Operation[] = [];
   let error = "";
-  let selectedRegion = regions[0]?.serviceRegionId ?? "";
-  let selectedDate = "";
+  let selectedRegion = shell.location.serviceRegionId ?? regions[0]?.serviceRegionId ?? "";
+  let selectedDate = shell.location.serviceDate ?? "";
+  let requestGeneration = 0;
+  let initialLoad = selectedDate !== "";
   const render = () => {
+    if (!isOfficeMountCurrent(shell.mount)) return;
     root.innerHTML = `<div class="shell"><aside><div class="brand">MegaBin Control Centre</div><nav><button id="master">Master Data</button><button id="roster">Daily Roster</button><button id="routes">Route Planning</button><button aria-current="page">Route Operations</button></nav></aside><main>
       <header><div><h1>Route Operations</h1><p>Published-route handoff and day-of-operation assignments</p></div><button id="logout">Sign out</button></header>
       ${error ? `<div class="error">${escape(error)}</div>` : ""}
@@ -65,11 +76,28 @@ export async function renderRouteOperationsWorkspace(
     const date = root.querySelector<HTMLInputElement>("#date");
     const load = async () => {
       if (!region?.value || !date?.value) return;
-      selectedRegion = region.value;
-      selectedDate = date.value;
+      const request = ++requestGeneration;
+      const requestedRegion = region.value;
+      const requestedDate = date.value;
+      selectedRegion = requestedRegion;
+      selectedDate = requestedDate;
+      updateOfficeLocation(
+        {
+          route: "route-operations",
+          serviceRegionId: requestedRegion,
+          serviceDate: requestedDate
+        },
+        "replace"
+      );
+      root.querySelector("section.panel:nth-of-type(2)")?.replaceChildren(
+        Object.assign(document.createElement("div"), {
+          className: "empty",
+          textContent: "Loading route operations…"
+        })
+      );
       try {
-        const listed = await api.routeOperations<Operation[]>(region.value, date.value);
-        operations = await Promise.all(
+        const listed = await api.routeOperations<Operation[]>(requestedRegion, requestedDate);
+        const nextOperations = await Promise.all(
           listed.map(async (operation) => ({
             ...operation,
             execution: await api.routeExecutionProgress<NonNullable<Operation["execution"]>>(
@@ -77,8 +105,11 @@ export async function renderRouteOperationsWorkspace(
             )
           }))
         );
+        if (request !== requestGeneration || !isOfficeMountCurrent(shell.mount)) return;
+        operations = nextOperations;
         error = "";
       } catch (cause) {
+        if (request !== requestGeneration || !isOfficeMountCurrent(shell.mount)) return;
         error = cause instanceof Error ? cause.message : "Unable to load route operations.";
       }
       render();
@@ -135,6 +166,7 @@ export async function renderRouteOperationsWorkspace(
             reason: values.reason
           });
           dialog?.close();
+          markFormClean(event.currentTarget as HTMLFormElement);
           await load();
         } catch (cause) {
           error = cause instanceof Error ? cause.message : "Reassignment failed.";
@@ -179,6 +211,7 @@ export async function renderRouteOperationsWorkspace(
         try {
           await api.cancelRouteOperation(routeOperationId, reason);
           cancellationDialog?.close();
+          markFormClean(form);
           await load();
         } catch (cause) {
           error = cause instanceof Error ? cause.message : "Cancellation failed.";
@@ -186,7 +219,10 @@ export async function renderRouteOperationsWorkspace(
         }
       });
     root.querySelector("#logout")?.addEventListener("click", () => void signOut());
-    root.querySelector("#master")?.addEventListener("click", () => location.reload());
+    if (initialLoad) {
+      initialLoad = false;
+      void load();
+    }
   };
   render();
 }

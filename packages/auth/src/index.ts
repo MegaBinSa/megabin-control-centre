@@ -1,4 +1,9 @@
-import { createClient, type Session, type SupabaseClient } from "@supabase/supabase-js";
+import {
+  createClient,
+  type AuthChangeEvent,
+  type Session,
+  type SupabaseClient
+} from "@supabase/supabase-js";
 
 export interface OfficeIdentity {
   readonly userId: string;
@@ -13,7 +18,7 @@ export interface OfficeAuth {
   signIn(email: string, password: string): Promise<void>;
   signOut(): Promise<void>;
   accessToken(): Promise<string | null>;
-  onChange(listener: (session: Session | null) => void): () => void;
+  onChange(listener: (event: AuthChangeEvent, session: Session | null) => void): () => void;
 }
 
 export function createOfficeAuth(url: string, publishableKey: string): OfficeAuth {
@@ -37,7 +42,7 @@ export function createOfficeAuth(url: string, publishableKey: string): OfficeAut
       return (await client.auth.getSession()).data.session?.access_token ?? null;
     },
     onChange(listener) {
-      const { data } = client.auth.onAuthStateChange((_event, session) => listener(session));
+      const { data } = client.auth.onAuthStateChange((event, session) => listener(event, session));
       return () => data.subscription.unsubscribe();
     }
   };

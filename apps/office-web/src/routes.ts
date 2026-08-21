@@ -6,56 +6,86 @@ import type {
   RouteOptimizationAttempt
 } from "@megabin/route-planning";
 import { loadAuthorizedServiceRegions } from "./regions.js";
+import { isOfficeMountCurrent, updateOfficeLocation, type OfficeLocation } from "./office-shell.js";
 const esc = (v: string) =>
   v.replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" })[c] ?? c);
-const req = <T extends Element>(s: string) => {
-  const e = document.querySelector<T>(s);
-  if (!e) throw new Error(`Missing route element ${s}`);
-  return e;
-};
 export async function renderRoutesWorkspace(
   root: HTMLElement,
   api: MasterDataApiClient,
   permissions: readonly string[],
   serviceRegionIds: readonly string[],
-  signOut: () => Promise<void>
+  signOut: () => Promise<void>,
+  shell: { readonly mount: number; readonly location: OfficeLocation }
 ): Promise<void> {
   const regions = await loadAuthorizedServiceRegions(api, serviceRegionIds);
+  if (!isOfficeMountCurrent(shell.mount)) return;
   const today = new Date().toISOString().slice(0, 10);
+  const selectedDate = shell.location.serviceDate ?? today;
+  const selectedRegion = shell.location.serviceRegionId ?? regions[0]?.serviceRegionId ?? "";
   let model: RoutePlanDocument | null = null;
-  let roster: DailyRosterModel | null = null;
   let optimization: RouteOptimizationAttempt | null = null;
   let providerStatus = "unknown";
-  root.innerHTML = `<div class="shell"><aside><div class="brand">MegaBin Control Centre</div><nav><button id="master-data">Master data</button><button id="daily-roster">Daily Roster</button><button aria-current="page">Route Planning</button></nav></aside><main><header><div><h1>Route Planning</h1><p>Deterministic plans from a locked daily roster</p></div><button id="logout">Sign out</button></header><div class="roster-toolbar"><label>Service date<input id="route-date" type="date" value="${today}"></label><label>Service region<select id="route-region">${regions.map((r) => `<option value="${r.serviceRegionId}">${esc(r.name)}</option>`).join("")}</select></label><button id="load">Load</button>${permissions.includes("routes.generate") ? '<button class="button" id="generate">Generate</button>' : ""}</div><div id="route-content" class="panel"><div class="empty">Choose a locked operational day to generate or load its route plan.</div></div></main></div>`;
-  document.querySelector("#logout")?.addEventListener("click", () => void signOut());
-  document.querySelector("#master-data")?.addEventListener("click", () => location.reload());
-  document.querySelector("#daily-roster")?.addEventListener("click", () => location.reload());
+  root.innerHTML = `<div class="shell"><aside><div class="brand">MegaBin Control Centre</div><nav><button id="master-data">Master data</button><button id="daily-roster">Daily Roster</button><button aria-current="page">Route Planning</button></nav></aside><main><header><div><h1>Route Planning</h1><p>Deterministic plans from a locked daily roster</p></div><button id="logout">Sign out</button></header><div class="roster-toolbar"><label>Service date<input id="route-date" type="date" value="${selectedDate}"></label><label>Service region<select id="route-region">${regions.map((r) => `<option value="${r.serviceRegionId}" ${r.serviceRegionId === selectedRegion ? "selected" : ""}>${esc(r.name)}</option>`).join("")}</select></label><button id="load">Load</button>${permissions.includes("routes.generate") ? '<button class="button" id="generate">Generate</button>' : ""}</div><div id="route-content" class="panel"><div class="empty">Choose a locked operational day to generate or load its route plan.</div></div></main></div>`;
+  root.querySelector("#logout")?.addEventListener("click", () => void signOut());
+  const element = <T extends Element>(selector: string): T => {
+    const found = root.querySelector<T>(selector);
+    if (!found) throw new Error(`Missing route element ${selector}`);
+    return found;
+  };
   const context = () => ({
-    serviceRegionId: req<HTMLSelectElement>("#route-region").value,
-    serviceDate: req<HTMLInputElement>("#route-date").value
+    serviceRegionId: element<HTMLSelectElement>("#route-region").value,
+    serviceDate: element<HTMLInputElement>("#route-date").value
   });
+  let requestGeneration = 0;
+  const current = (request: number) =>
+    request === requestGeneration && isOfficeMountCurrent(shell.mount);
+  const showLoading = () => {
+    model = null;
+    optimization = null;
+    element("#route-content").innerHTML = '<div class="empty">Loading route plan…</div>';
+  };
   const load = async () => {
+    const request = ++requestGeneration;
     const c = context();
-    model = await api.findRoutePlan<RoutePlanDocument>(c.serviceRegionId, c.serviceDate);
-    roster = await api.findRoster<DailyRosterModel>(c.serviceRegionId, c.serviceDate);
+    updateOfficeLocation(
+      { route: "route-planning", serviceRegionId: c.serviceRegionId, serviceDate: c.serviceDate },
+      "replace"
+    );
+    showLoading();
+    const nextModel = await api.findRoutePlan<RoutePlanDocument>(c.serviceRegionId, c.serviceDate);
+    if (!current(request)) return;
+    model = nextModel;
     if (permissions.includes("routes.optimization.read")) {
       const health = await api.routeProviderHealth<readonly { healthStatus: string }[]>(
         c.serviceRegionId
       );
+      if (!current(request)) return;
       providerStatus = health[0]?.healthStatus ?? "unknown";
     }
     paint();
   };
   const generate = async () => {
+    const request = ++requestGeneration;
     const c = context();
-    roster = await api.findRoster<DailyRosterModel>(c.serviceRegionId, c.serviceDate);
-    if (!roster || roster.operationalDay.lifecycleStatus !== "locked")
+    updateOfficeLocation(
+      { route: "route-planning", serviceRegionId: c.serviceRegionId, serviceDate: c.serviceDate },
+      "replace"
+    );
+    showLoading();
+    const nextRoster = await api.findRoster<DailyRosterModel>(c.serviceRegionId, c.serviceDate);
+    if (!current(request)) return;
+    if (!nextRoster || nextRoster.operationalDay.lifecycleStatus !== "locked")
       throw new Error("Lock the daily roster before generating routes.");
-    model = await api.generateRoutePlan<RoutePlanDocument>(roster.operationalDay.operationalDayId);
+    const nextModel = await api.generateRoutePlan<RoutePlanDocument>(
+      nextRoster.operationalDay.operationalDayId
+    );
+    if (!current(request)) return;
+    model = nextModel;
     paint();
   };
   const paint = () => {
-    const content = req("#route-content");
+    if (!isOfficeMountCurrent(shell.mount)) return;
+    const content = element("#route-content");
     if (!model) {
       content.innerHTML = '<div class="empty">No route plan exists for this date.</div>';
       return;
@@ -76,22 +106,22 @@ export async function renderRoutesWorkspace(
       "afterbegin",
       `<div class="provider-health">Optimization provider: <strong>${esc(providerStatus)}</strong></div>`
     );
-    document.querySelector("#validate")?.addEventListener("click", async () => {
+    root.querySelector("#validate")?.addEventListener("click", async () => {
       if (model)
         alert(JSON.stringify(await api.validateRouteVersion(model.routeVersionId), null, 2));
     });
-    document.querySelector("#ready")?.addEventListener("click", () => void transition("ready"));
-    document.querySelector("#publish")?.addEventListener("click", () => void transition("publish"));
-    document.querySelector("#optimize")?.addEventListener("click", async () => {
+    root.querySelector("#ready")?.addEventListener("click", () => void transition("ready"));
+    root.querySelector("#publish")?.addEventListener("click", () => void transition("publish"));
+    root.querySelector("#optimize")?.addEventListener("click", async () => {
       if (model) {
         optimization = await api.startRouteOptimization<RouteOptimizationAttempt>(
           model.routeVersionId,
           model.updatedAt
         );
-        paint();
+        if (isOfficeMountCurrent(shell.mount)) paint();
       }
     });
-    document.querySelector("#accept-candidate")?.addEventListener("click", async () => {
+    root.querySelector("#accept-candidate")?.addEventListener("click", async () => {
       if (model && optimization) {
         model = await api.acceptRouteOptimization<RoutePlanDocument>(
           optimization.routeOptimizationAttemptId,
@@ -101,7 +131,7 @@ export async function renderRoutesWorkspace(
         paint();
       }
     });
-    document.querySelector("#reject-candidate")?.addEventListener("click", async () => {
+    root.querySelector("#reject-candidate")?.addEventListener("click", async () => {
       if (optimization) {
         optimization = await api.rejectRouteOptimization<RouteOptimizationAttempt>(
           optimization.routeOptimizationAttemptId,
@@ -110,7 +140,7 @@ export async function renderRoutesWorkspace(
         paint();
       }
     });
-    document.querySelector("#refresh-candidate")?.addEventListener("click", async () => {
+    root.querySelector("#refresh-candidate")?.addEventListener("click", async () => {
       if (optimization) {
         optimization = await api.routeOptimization<RouteOptimizationAttempt>(
           optimization.routeOptimizationAttemptId
@@ -128,8 +158,8 @@ export async function renderRoutesWorkspace(
     );
     paint();
   };
-  document.querySelector("#load")?.addEventListener("click", () => void load());
-  document
+  root.querySelector("#load")?.addEventListener("click", () => void load());
+  root
     .querySelector("#generate")
     ?.addEventListener(
       "click",

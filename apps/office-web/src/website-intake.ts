@@ -62,7 +62,6 @@ export async function renderWebsiteIntakeWorkspace(
       <section class="panel"><table><thead><tr><th>Submission</th><th>Client</th><th>Status</th><th>Match / duplicate</th><th></th></tr></thead><tbody>${result.items.map((item) => `<tr><td>${escape(item.sourceSubmissionId)}</td><td>${escape(item.displayName)}</td><td><span class="status">${escape(item.status)}</span></td><td>${escape(item.matchStatus)} · ${escape(item.duplicateClassification)}</td><td><button data-intake="${item.submissionId}">Review</button></td></tr>`).join("")}</tbody></table></section>
       <dialog id="intake-detail"><div id="intake-detail-content"></div></dialog></main></div>`;
     root.querySelector("#logout")?.addEventListener("click", () => void logout());
-    root.querySelector("#back")?.addEventListener("click", () => location.reload());
     root.querySelector<HTMLSelectElement>("#intake-status")?.addEventListener("change", (event) => {
       status = (event.currentTarget as HTMLSelectElement).value;
       void load();

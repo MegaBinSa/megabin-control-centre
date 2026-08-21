@@ -95,7 +95,6 @@ export async function renderLiveOperationsWorkspace(
         await load();
       })
     );
-    root.querySelector("#back")?.addEventListener("click", () => location.reload());
     root.querySelector("#logout")?.addEventListener("click", () => void signOut());
   };
   await load();
