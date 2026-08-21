@@ -36,6 +36,7 @@
       "journey": "Driver route execution and offline synchronization",
       "preconditions": [
         "Synthetic Driver is assigned a not-started Route Operation",
+        "The Route Operation date equals the current date in its service-region timezone",
         "The assigned manifest contains at least one retained UAT stop",
         "Any unsuitable prior operation is preserved as evidence and cancelled rather than deleted",
         "Test device supports offline rehearsal"
