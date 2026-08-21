@@ -32,6 +32,7 @@ interface Manifest {
   routeOperationId: string;
   routeDate: string;
   lifecycleStatus: string;
+  startEligibility?: { eligible: boolean; reasonCode: string | null };
   assignmentRevision: number;
   manifestRevision: number;
   plannedDistanceMetres?: number;
@@ -376,10 +377,16 @@ async function render() {
       !actionLocks.has("route:accept"),
     canStart =
       manifest.lifecycleStatus === "accepted" &&
+      manifest.startEligibility?.eligible !== false &&
       !retryingRouteActions.has("start") &&
       !actionLocks.has("route:start"),
     isExecuting = manifest.lifecycleStatus === "in_progress";
-  root!.innerHTML = `<header><b>MegaBin Driver</b><span class="status ${online ? "" : "offline"}"><i class="dot"></i>${syncing ? "Syncing" : issues.length ? "Sync issue" : online ? "Online" : "Offline"} · ${pending} pending</span></header><main>${message ? `<div class="notice">${escape(message)}</div>` : ""}${issues.length ? `<div class="notice">${issues.length} action(s) require attention and are not being retried automatically.</div>` : ""}<section class="card"><h1>${escape(manifest.team?.name ?? "Assigned route")}</h1><p>${escape(manifest.routeDate)} · ${escape(manifest.vehicle?.displayName ?? "Vehicle")}</p><p>Status: <b>${escape(manifest.lifecycleStatus)}</b> · Manifest ${manifest.manifestRevision}</p><div class="metrics"><div class="metric"><b>${p.done}/${p.total}</b><br>stops</div><div class="metric"><b>${p.actual}/${p.planned}</b><br>drums</div><div class="metric"><b>${p.remaining}</b><br>remaining</div></div><div class="actions">${canAccept ? '<button id="accept" class="primary">Accept route</button>' : ""}${canStart ? '<button id="start" class="primary">Start route</button>' : ""}${isExecuting && !actionLocks.has("capacity") ? '<button id="capacity">Near capacity</button>' : ""}${isExecuting && !actionLocks.has("complete") ? '<button id="complete">Complete route</button>' : ""}<button id="sync">Sync now</button><button id="logout">Logout</button></div></section><section class="card"><h2>Next stop</h2>${manifest.stops.find((s) => !s.execution) ? `Stop ${manifest.stops.find((s) => !s.execution)!.sequenceNumber}` : "All stops recorded"}</section><section class="card"><h2>Stops</h2>${manifest.stops.map((s) => `<button class="stop ${s.execution?.executionStatus === "completed" ? "done" : s.execution ? "issue" : ""}" data-stop="${s.routeOperationStopId}" ${isExecuting && !s.execution ? "" : "disabled"}><b>${s.sequenceNumber}. ${escape(s.address.line1 ?? s.address.address_line_1 ?? "Service address")}</b><br>${s.plannedDrumUnits} planned drums · ${escape(s.execution?.outcomeCode ?? "Pending")}</button>`).join("")}</section></main>`;
+  const startDateNotice =
+    manifest.lifecycleStatus === "accepted" &&
+    manifest.startEligibility?.reasonCode === "route_date_mismatch"
+      ? '<div class="notice">This route can only be started on its scheduled service date. Contact Operations.</div>'
+      : "";
+  root!.innerHTML = `<header><b>MegaBin Driver</b><span class="status ${online ? "" : "offline"}"><i class="dot"></i>${syncing ? "Syncing" : issues.length ? "Sync issue" : online ? "Online" : "Offline"} · ${pending} pending</span></header><main>${message ? `<div class="notice">${escape(message)}</div>` : ""}${issues.length ? `<div class="notice">${issues.length} action(s) require attention and are not being retried automatically.</div>` : ""}${startDateNotice}<section class="card"><h1>${escape(manifest.team?.name ?? "Assigned route")}</h1><p>${escape(manifest.routeDate)} · ${escape(manifest.vehicle?.displayName ?? "Vehicle")}</p><p>Status: <b>${escape(manifest.lifecycleStatus)}</b> · Manifest ${manifest.manifestRevision}</p><div class="metrics"><div class="metric"><b>${p.done}/${p.total}</b><br>stops</div><div class="metric"><b>${p.actual}/${p.planned}</b><br>drums</div><div class="metric"><b>${p.remaining}</b><br>remaining</div></div><div class="actions">${canAccept ? '<button id="accept" class="primary">Accept route</button>' : ""}${canStart ? '<button id="start" class="primary">Start route</button>' : ""}${isExecuting && !actionLocks.has("capacity") ? '<button id="capacity">Near capacity</button>' : ""}${isExecuting && !actionLocks.has("complete") ? '<button id="complete">Complete route</button>' : ""}<button id="sync">Sync now</button><button id="logout">Logout</button></div></section><section class="card"><h2>Next stop</h2>${manifest.stops.find((s) => !s.execution) ? `Stop ${manifest.stops.find((s) => !s.execution)!.sequenceNumber}` : "All stops recorded"}</section><section class="card"><h2>Stops</h2>${manifest.stops.map((s) => `<button class="stop ${s.execution?.executionStatus === "completed" ? "done" : s.execution ? "issue" : ""}" data-stop="${s.routeOperationStopId}" ${isExecuting && !s.execution ? "" : "disabled"}><b>${s.sequenceNumber}. ${escape(s.address.line1 ?? s.address.address_line_1 ?? "Service address")}</b><br>${s.plannedDrumUnits} planned drums · ${escape(s.execution?.outcomeCode ?? "Pending")}</button>`).join("")}</section></main>`;
   root!
     .querySelector("main")
     ?.insertAdjacentHTML(

@@ -9,7 +9,8 @@ async function driverSession(
   page: Page,
   actionOutcome: "accepted" | "conflict" = "accepted",
   tracking = false,
-  failedSignInAttempts = 0
+  failedSignInAttempts = 0,
+  startEligible = true
 ) {
   let authAttempts = 0;
   let lifecycleStatus = "available";
@@ -66,6 +67,10 @@ async function driverSession(
             routeOperationId: operationId,
             routeDate: "2026-08-20",
             lifecycleStatus,
+            startEligibility: {
+              eligible: startEligible,
+              reasonCode: !startEligible ? "route_date_mismatch" : null
+            },
             assignmentRevision: 1,
             manifestRevision: 1,
             team: { name: "Driver Team A" },
@@ -304,6 +309,20 @@ test("Driver reconciles a delayed duplicate Accept and can start normally", asyn
 test("successful Driver sign-in clears a prior authentication failure banner", async ({ page }) => {
   await driverSession(page, "accepted", false, 1);
   await expect(page.getByText("Sign in failed.")).toHaveCount(0);
+});
+
+test("Driver cannot start an accepted route outside its scheduled service date", async ({
+  page
+}) => {
+  await driverSession(page, "accepted", false, 0, false);
+  await page.getByRole("button", { name: "Accept route" }).click();
+  await expect(page.getByText(/Status: accepted/)).toBeVisible();
+  await expect(page.getByRole("button", { name: "Start route" })).toHaveCount(0);
+  await expect(
+    page.getByText(
+      "This route can only be started on its scheduled service date. Contact Operations."
+    )
+  ).toBeVisible();
 });
 
 test("Driver keeps a conflicting action visible for attention", async ({ page, context }) => {
