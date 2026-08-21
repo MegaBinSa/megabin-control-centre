@@ -3,6 +3,7 @@ import {
   actionIsPending,
   actionIsResolved,
   actionNeedsAttention,
+  operationQueueState,
   reconcileAlreadyAchievedRouteAction
 } from "../apps/driver-pwa/src/action-reconciliation.js";
 import type { QueuedAction, QueueState } from "../apps/driver-pwa/src/storage.js";
@@ -67,5 +68,29 @@ describe("Driver action reconciliation", () => {
       false,
       false
     ]);
+  });
+
+  it("scopes blocking actions and attention to the current Route Operation", () => {
+    const oldRejectedStart = action({ body: { actionType: "start" } });
+    const currentOperationId = "b9e4f245-1f94-4aef-a6f0-17188f50854b";
+    const currentQueuedStart = action({
+      actionId: "38f3ab68-2498-4b6f-8956-06060cefe887",
+      routeOperationId: currentOperationId,
+      body: { actionType: "start" },
+      state: "queued",
+      rejectionCode: undefined
+    });
+
+    const historicalOnly = operationQueueState([oldRejectedStart], currentOperationId);
+    expect(historicalOnly.attention).toEqual([]);
+    expect(historicalOnly.historicalAttention).toEqual([oldRejectedStart]);
+    expect(historicalOnly.blockedControls.has("route:start")).toBe(false);
+
+    const currentBlocked = operationQueueState(
+      [oldRejectedStart, currentQueuedStart],
+      currentOperationId
+    );
+    expect(currentBlocked.pending).toEqual([currentQueuedStart]);
+    expect(currentBlocked.blockedControls.has("route:start")).toBe(true);
   });
 });
