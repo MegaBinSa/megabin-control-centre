@@ -1,7 +1,7 @@
 # Route Operations
 
 **Status:** Phase 3A execution foundation implemented
-**Last reviewed:** 2026-08-12
+**Last reviewed:** 2026-08-21
 
 ## Boundary and identity
 
@@ -11,7 +11,7 @@ Route Operations owns the immutable day-of-operation execution aggregate. Explic
 
 Handoff snapshots the planned team, vehicle, roster staff, and operational stop manifest as assignment and manifest revision 1, then makes the route `Available`. Each revision is immutable history. An authorised Office user may reassign `Prepared`, `Assigned`, or `Available` operations with an expected revision and reason. Team and available vehicle must be in-region; staff must be active; an optional tracking device must be active for the vehicle. Reassignment revokes the prior assignment, increments assignment and manifest revisions, and does not edit permanent defaults or the Published Route. Normal post-start reassignment is deliberately not exposed pending an emergency policy.
 
-The Driver manifest contains operation/date/source IDs, revisions, lifecycle, assigned team/vehicle/staff, optional device, start depot/location, planned timing/distance/duration, provider geometry when present, and immutable operation-stop rows. Stops preserve stable operation/source stop IDs, sequence, Service Address ID and snapshot, coordinates, territory, access/safety flags, drum units, and planned duration. Billing, finances, client identity, contacts, Office notes, and raw payloads are excluded. Previous manifest revisions remain stored; freshness reports stale/refresh-required and cancelled/superseded state.
+The Driver manifest contains operation/date/source IDs, revisions, current lifecycle, assigned team/vehicle/staff, optional device, start depot/location, planned timing/distance/duration, provider geometry when present, and immutable operation-stop rows. Stops preserve stable operation/source stop IDs, sequence, Service Address ID and snapshot, coordinates, territory, access/safety flags, drum units, and planned duration. Billing, finances, client identity, contacts, Office notes, and raw payloads are excluded. Previous manifest revisions remain stored. The stored document is immutable assignment/stop history, while every manifest read overlays lifecycle from the authoritative Route Operation row. Accept, start, suspend, resume and completion therefore do not create manifest revisions; reassignment and other manifest-content changes do. Freshness reports stale/refresh-required and cancelled/superseded state.
 
 ## Driver authorization and offline actions
 
