@@ -132,7 +132,6 @@ test("Office deep links, reload, and History navigation preserve module context"
 
   await page.getByRole("button", { name: "Daily Roster" }).click();
   await page.getByLabel("Service date").fill("2026-08-24");
-  await page.getByRole("button", { name: "Refresh" }).click();
   await expect(page).toHaveURL(/module=daily-roster.*date=2026-08-24/);
   await page.reload();
   await expect(page.getByRole("heading", { name: "Daily Operational Roster" })).toBeVisible();
@@ -141,7 +140,6 @@ test("Office deep links, reload, and History navigation preserve module context"
   await page.getByRole("button", { name: "Master data" }).click();
   await page.getByRole("button", { name: "Route Planning" }).click();
   await page.getByLabel("Service date").fill("2026-08-24");
-  await page.getByRole("button", { name: "Load" }).click();
   await expect(page).toHaveURL(/module=route-planning.*date=2026-08-24/);
   await page.reload();
   await expect(page.getByRole("heading", { name: "Route Planning" })).toBeVisible();
@@ -150,7 +148,7 @@ test("Office deep links, reload, and History navigation preserve module context"
   await page.getByRole("button", { name: "Master data" }).click();
   await page.getByRole("button", { name: "Route Operations" }).click();
   await page.getByLabel("Service date").fill("2026-08-24");
-  await page.getByRole("button", { name: "Load operations" }).click();
+  await expect(page).toHaveURL(/module=route-operations.*date=2026-08-24/);
   await page.reload();
   await expect(page.getByRole("heading", { name: "Route Operations" })).toBeVisible();
   await expect(page.getByLabel("Service date")).toHaveValue("2026-08-24");

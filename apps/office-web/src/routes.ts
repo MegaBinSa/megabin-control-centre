@@ -44,6 +44,22 @@ export async function renderRoutesWorkspace(
     optimization = null;
     element("#route-content").innerHTML = '<div class="empty">Loading route plan…</div>';
   };
+  const persistContext = () => {
+    requestGeneration += 1;
+    const c = context();
+    updateOfficeLocation(
+      { route: "route-planning", serviceRegionId: c.serviceRegionId, serviceDate: c.serviceDate },
+      "replace"
+    );
+    model = null;
+    optimization = null;
+    element("#route-content").innerHTML =
+      '<div class="empty">Date or region changed. Load to inspect this route plan.</div>';
+  };
+  const dateInput = element<HTMLInputElement>("#route-date");
+  dateInput.addEventListener("input", persistContext);
+  dateInput.addEventListener("change", persistContext);
+  element<HTMLSelectElement>("#route-region").addEventListener("change", persistContext);
   const load = async () => {
     const request = ++requestGeneration;
     const c = context();

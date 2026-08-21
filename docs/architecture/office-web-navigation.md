@@ -8,7 +8,7 @@ The shell owns History API navigation, Back/Forward restoration, authentication 
 
 Each navigation creates a new mount generation and a detached workspace root. Async work from an earlier generation may complete, but it cannot repaint the current application root. Daily Roster, Route Planning and Route Operations additionally use per-workspace request generations. A response is renderable only when both its request generation and workspace mount remain current.
 
-Changing module, region or date clears the previous result and presents an explicit loading state. Daily Roster and Route Planning persist the selected region/date after a successful context selection; Route Operations restores and loads its selected context on reload.
+Changing module, region or date immediately updates the non-sensitive URL context, invalidates any in-flight request and clears the previous result before the operator runs Refresh/Load or another supported action. Persistence does not depend on a subsequent API action. Daily Roster, Route Planning and Route Operations restore the selected region/date on reload; Route Operations loads a restored complete context automatically.
 
 ## Unsaved forms
 
