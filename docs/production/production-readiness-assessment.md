@@ -1,10 +1,10 @@
 # Production Readiness Assessment
 
-**Status:** Authoritative assessment; updated through Phase 5E forward-repair evidence
+**Status:** Authoritative assessment; updated through the first passing synthetic UAT journey
 
-**Assessment baseline:** Phase 5A repository assessment plus validated shared-Staging and Phase 5E assurance evidence through `main` at `1f3a91ffe831e5039716a4fc5bc7fcc2a229d1e9`
+**Assessment baseline:** Phase 5A repository assessment plus validated shared-Staging and Phase 5E assurance evidence through release `c74bea8b7f09d572c9d1f12182d3082eca063de6`
 
-**Assessment date:** 2026-08-15
+**Assessment date:** 2026-08-25
 
 ## Executive conclusion
 
@@ -12,7 +12,7 @@ MegaBin Control Centre is now a deployed shared-staging platform suitable for st
 
 Shared Staging is proven end to end by [deployment run 31738092512](https://github.com/MegaBinSa/megabin-control-centre/actions/runs/31738092512): protected main-only release, migrations, hosted Data API configuration, application-owned persona authorization, Edge Functions, both frontends, release/CORS/auth boundaries, fake/capture providers, synthetic website intake and remote smoke checks all passed. Phase 5E additionally proved alert delivery, isolated logical restore within the four-hour RTO, compatible component rollback/current restoration and isolated immutable database forward repair without writing to shared Staging. Production providers remain intentionally inactive; real client migration, real-device operation, business UAT, privacy, retention, routine user/device management and support procedures remain unresolved. Browser geolocation cannot meet the stated all-hours vehicle-visibility requirement.
 
-The project has reached **Synthetic Internal UAT Ready**. Shared Staging is observable and its core logical recovery, component rollback and forward-repair mechanisms have been rehearsed. The exact next activity is a protected deployment of the current reviewed `main` so UAT has a current release identity, followed by structured synthetic UAT beginning with `UAT-OFF-001`; this does not authorize a pilot.
+The project remains **Synthetic Internal UAT Ready**. Shared Staging is observable, its core logical recovery, component rollback and forward-repair mechanisms have been rehearsed, and `UAT-DRV-001` has Passed with release-bound evidence. Five UAT journeys remain Not Run or Blocked, so the aggregate Synthetic Internal UAT Passed gate and every pilot/production gate remain unmet.
 
 ## Classification and stage definitions
 
@@ -160,7 +160,7 @@ Close every P0/P1 applicable to the agreed launch scope; activate and validate l
 
 ## Current Phase 5E next activity
 
-The approved monitoring/recovery decisions are recorded, and alert delivery, restore, component rollback/current restoration and isolated forward repair have executed successfully. First deploy the current reviewed `main` through the existing protected Staging workflow because the last documented deployed identity predates the Driver logout/cache correction. Then execute the six synthetic UAT journeys through the Phase 5D evidence contracts, starting with `UAT-OFF-001` because it establishes the bounded operational state required by the Driver journey.
+The approved monitoring/recovery decisions are recorded, and alert delivery, restore, component rollback/current restoration and isolated forward repair have executed successfully. Shared Staging release `c74bea8b7f09d572c9d1f12182d3082eca063de6` also supported a passing `UAT-DRV-001` execution. Continue the preserved `UAT-OFF-001` journey after its documented navigation/date checkpoint, then execute the remaining four Not Run journeys through the Phase 5D evidence contracts.
 
 Phase 5E should remain synthetic and must not connect production providers, import real client data, enable live messaging/holds or launch a pilot. Its exit criterion is actual, release-bound operational/recovery/UAT evidence—not merely configured tooling.
 

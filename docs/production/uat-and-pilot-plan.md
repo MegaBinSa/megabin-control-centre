@@ -1,7 +1,7 @@
 # UAT and Pilot Plan
 
-**Status:** Shared Staging and Synthetic Internal UAT Ready gates passed; six journeys not run; no pilot authorized
-**Last reviewed:** 2026-08-15
+**Status:** Shared Staging and Synthetic Internal UAT Ready gates passed; UAT-DRV-001 passed, five journeys remain; no pilot authorized
+**Last reviewed:** 2026-08-25
 
 ## Entry criteria for internal UAT
 
@@ -34,11 +34,9 @@ Each scenario records build/commit, environment, seed version, actor/role, expec
 
 The Phase 5C remote smoke suite is infrastructure acceptance evidence, not business UAT sign-off. It proves the environment can host the UAT catalogue safely with synthetic data and fake/capture providers.
 
-`config/synthetic-uat-catalogue.json` defines the six executable journey groups with stable IDs and mandatory evidence fields. `config/synthetic-uat-data.json` bounds preparation/recycling to synthetic provenance and preserves Phase 5C personas. Approved monitoring ownership/routing closes the UAT Ready gate, but all six journeys remain `Not Run`; Synthetic Internal UAT Passed is not claimed.
+`config/synthetic-uat-catalogue.json` defines the six executable journey groups with stable IDs and mandatory evidence fields. `config/synthetic-uat-data.json` bounds preparation/recycling to synthetic provenance and preserves Phase 5C personas. `UAT-DRV-001` passed on Shared Staging release `c74bea8b7f09d572c9d1f12182d3082eca063de6`, including offline synchronization, completion and Driver denial of Office, financial and master-data access. Five journeys remain Not Run or Blocked, so Synthetic Internal UAT Passed is not claimed.
 
-Infrastructure and recovery assurance are now sufficient to begin these synthetic journeys without implying Pilot readiness. The last documented Staging application identity is `e2837def54f922649965298e27f97357977b0dd0`, while subsequent main commits include the Driver logout/cache correction. Therefore the exact next protected activity is `Deploy staging` from the current reviewed `main` after this evidence close-out merges: use its exact 40-character SHA as `source_sha`, `DEPLOY-STAGING` as `confirm_environment`, and `false` for `allow_destructive_migrations`. No GitHub Environment configuration change is required; the existing `staging` variables/secrets and fake/capture posture are prerequisites.
-
-After that deployment and smoke suite pass, execute `UAT-OFF-001` first because it creates and validates the bounded Office planning, roster, route, publication and handoff state required by the Driver journey. Record the deployed release identity and tester, validate both UAT contracts, confirm fake/capture posture, and prepare only `megabin-uat`/`uat:` records. The operator must retain the case evidence and stop on any live-provider or real-data indication.
+Infrastructure and recovery assurance are sufficient to continue the synthetic journeys without implying Pilot readiness. Shared Staging release `c74bea8b7f09d572c9d1f12182d3082eca063de6` passed its protected deployment and supported the passing Driver execution. Continue `UAT-OFF-001` from its preserved state after its documented navigation/date checkpoint is verified, then execute the remaining catalogue journeys one at a time. Record release identity and tester, confirm fake/capture posture, and prepare only `megabin-uat`/`uat:` records. The operator must retain case evidence and stop on any live-provider or real-data indication.
 
 ## Minimum safe controlled pilot
 
