@@ -1,10 +1,10 @@
 # Synthetic UAT Results
 
-**Status:** UAT-DRV-001 Passed; five journeys remain Not Run or Blocked
+**Status:** UAT-OFF-001 and UAT-DRV-001 Passed; four journeys remain Not Run
 
 | Case | Journey | Result | Evidence/blocker |
 |---|---|---|---|
-| `UAT-OFF-001` | Office operational planning | Blocked | Release `a3a8ee46501e538ec8bce2676878a32794fd762b` restored the Daily Roster module and region after F5, but a manually selected `2026-08-24` date reverted to `2026-08-21` because URL persistence incorrectly depended on Refresh/Load. The input-level context correction is awaiting review, merge, protected deployment and real-browser verification. No Monday Route Plan was created by the rejected attempt. Earlier Sunday zero-stop Route Operation `bd07d795-294c-4051-86f9-f4b6fa2e0c0c` remains preserved historical evidence. |
+| `UAT-OFF-001` | Office operational planning | Passed | Manual protected-Staging execution completed on `2026-08-25`, release `c74bea8b7f09d572c9d1f12182d3082eca063de6`, by Shaun. See the evidence record below. |
 | `UAT-DRV-001` | Driver execution/offline synchronization | Passed | Manual protected-Staging execution on `2026-08-24`, release `c74bea8b7f09d572c9d1f12182d3082eca063de6`, by Shaun. See the evidence record below. |
 | `UAT-WEB-001` | Website onboarding | Not Run | Protected execution required |
 | `UAT-SKP-001` | Client SKIP/replan | Not Run | Protected execution required |
@@ -12,6 +12,20 @@
 | `UAT-TRK-001` | Tracking/intelligence | Not Run | Protected execution required |
 
 Results may change only with release-bound evidence containing every catalogue field. Local unit, pgTAP and Playwright tests support readiness but are not substituted for shared-Staging UAT.
+
+## UAT-OFF-001 — Passed
+
+Shaun completed the Office planning journey against Shared Staging release `c74bea8b7f09d572c9d1f12182d3082eca063de6`. Existing synthetic records and immutable operational history were used throughout; no reset, reseed, duplicate generation, republish or second handoff was performed.
+
+The region-scoped `Synthetic Staging Office` persona authenticated and reviewed the permitted active Client, Client Service `59000000-0000-0000-0000-000000000001`, Service Address `58000000-0000-0000-0000-000000000001`, effective Monday Service Configuration `d9f2d3c4-f2ee-4b43-a12f-e88e7e510a75`, Pretoria geography and Synthetic Team A readiness. The locked `2026-08-24` roster showed Ready checks passing. After F5, Daily Roster, Pretoria Test Region and `2026-08-24` were restored from `?module=daily-roster&region=51000000-0000-0000-0000-000000000001&date=2026-08-24`; no stale date appeared.
+
+The preserved Version 2 plan was Published, not stale, and retained one route, one assigned stop, zero unassigned services and two planned drums. Planned Route Stop `7747648e-edf9-44ff-b3b1-8dd9ca27b26f` referenced the correct Client Service, address and configuration at sequence 1 with two drums and a ten-minute planned duration. Synthetic Team A and Synthetic Collection Vehicle remained assigned.
+
+Route Operation `33cb2338-30ab-4d62-adfc-27ded32ee37b`, linked to Published Route Version `f243e985-ea9c-46bc-9673-a9d6e07af6b4`, remained `completed`: Accepted **Yes**, Started **Yes**, 1/1 stops, 0 remaining, 2/2 drums, `near_capacity`, assignment revision 1, manifest revision 1 and zero open issues. It had no cancellation, supersession, stale, conflict or review warning.
+
+Live Operations returned zero Needs Attention and no routes, positions, operational facts or warnings. Excluding the completed operation from the live projection was consistent with the authoritative Route Operations record and did not misrepresent it. Driver financial isolation was independently demonstrated by the verified `driver_team` actor receiving `403 permission_denied` from the accounting status endpoint.
+
+The earlier Daily Roster input-level date persistence blocker is closed by the real-browser F5 evidence above. The Sunday zero-stop operation and all other historical preparation evidence remain preserved.
 
 ## UAT-DRV-001 — Passed
 
