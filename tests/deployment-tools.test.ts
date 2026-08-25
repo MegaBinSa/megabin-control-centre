@@ -731,7 +731,9 @@ describe("deployment safety tools", () => {
     const catalogue = JSON.parse(readFileSync("config/synthetic-uat-catalogue.json", "utf8"));
     expect(validateUatCatalogue(catalogue)).toEqual({ ok: true, cases: 6 });
     const invalid = structuredClone(catalogue);
-    invalid.cases[0].result = "Passed";
+    const notRun = invalid.cases.find((item: { result: string }) => item.result === "Not Run");
+    if (!notRun) throw new Error("Expected a Not Run UAT case for negative validation.");
+    notRun.result = "Passed";
     expect(() => validateUatCatalogue(invalid)).toThrow("actualOutcome");
   });
 

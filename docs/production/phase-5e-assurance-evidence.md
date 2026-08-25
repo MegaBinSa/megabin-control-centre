@@ -1,6 +1,6 @@
 # Phase 5E Assurance Evidence
 
-**Status:** Recovery, alert-delivery, component-rollback and isolated forward-repair rehearsals Passed; UAT-DRV-001 Passed and five synthetic UAT journeys remain
+**Status:** Recovery, alert-delivery, component-rollback and isolated forward-repair rehearsals Passed; UAT-OFF-001 and UAT-DRV-001 Passed and four synthetic UAT journeys remain
 
 ## Approved decisions
 
@@ -20,7 +20,7 @@ Component rollback/current-release restoration passed in [run 31881010706](https
 
 The isolated database forward-repair rehearsal passed in [run 31906816621](https://github.com/MegaBinSa/megabin-control-centre/actions/runs/31906816621) from main SHA `1f3a91ffe831e5039716a4fc5bc7fcc2a229d1e9`. Protected Environment approval and exact dispatch/baseline validation passed. Fault migration `20990101000001` applied only to the isolated target and produced exactly `MBA-FR-EXPECTED-001`; immutable repair migration `20990101000002` then applied and restored the invariant. Restored-data, regional authorization, Driver Office/financial denial, Driver linkage and critical RLS checks passed. Shared Staging identity was unchanged and the artifact records zero Staging writes. The isolated target remains intact for Sidney's independent post-run review.
 
-The one-hour RPO and 12-month evidence-retention targets remain unmet. `UAT-DRV-001` passed on Shared Staging release `c74bea8b7f09d572c9d1f12182d3082eca063de6`; the other five release-bound UAT journeys remain Not Run or Blocked. No production system, live provider or real client data was involved.
+The one-hour RPO and 12-month evidence-retention targets remain unmet. `UAT-OFF-001` and `UAT-DRV-001` passed on Shared Staging release `c74bea8b7f09d572c9d1f12182d3082eca063de6`; the other four release-bound UAT journeys remain Not Run. No production system, live provider or real client data was involved.
 
 ## Current evidence state
 
@@ -34,4 +34,4 @@ The one-hour RPO and 12-month evidence-retention targets remain unmet. `UAT-DRV-
 | Component rollback/restoration | Passed | Run 31881010706; prior deployed and current release restored with smoke checks |
 | Database forward repair | Passed | Run 31906816621; expected fault proven, immutable repair applied, post-repair integrity/security passed, zero Staging writes |
 | Independent forward-repair review | Pending | Sidney must review and confirm artifact 9252603931; Environment approval alone is not post-run evidence acceptance |
-| Six synthetic UAT journeys | In progress | `UAT-DRV-001` Passed with release-bound manual evidence; five journeys remain Not Run or Blocked |
+| Six synthetic UAT journeys | In progress | `UAT-OFF-001` and `UAT-DRV-001` Passed with release-bound manual evidence; four journeys remain Not Run |

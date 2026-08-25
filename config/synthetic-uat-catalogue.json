@@ -23,13 +23,15 @@
         "Confirm Driver financial isolation"
       ],
       "expectedOutcome": "Office completes a region-scoped planning journey while financial and cross-scope boundaries remain enforced.",
-      "actualOutcome": null,
-      "evidenceReference": null,
-      "result": "Not Run",
-      "executionTimestamp": null,
-      "environmentReleaseIdentity": null,
-      "testerIdentity": null,
-      "defectReferences": []
+      "actualOutcome": "The region-scoped Office persona reviewed the active Monday client/service and geography, restored the Daily Roster module, Pretoria region and 2026-08-24 date across F5, and verified the preserved locked roster. The published Version 2 plan remained non-stale with one route, one assigned stop, zero unassigned services and two planned drums. The linked completed Route Operation retained the correct team, vehicle and Driver, 1/1 stops, 2/2 drums, near-capacity state and zero issues. Live Operations correctly excluded the completed operation and showed no positions, facts, warnings or Needs Attention. Driver financial isolation was independently proven.",
+      "evidenceReference": "docs/production/synthetic-uat-results.md#uat-off-001--passed",
+      "result": "Passed",
+      "executionTimestamp": "2026-08-25",
+      "environmentReleaseIdentity": "c74bea8b7f09d572c9d1f12182d3082eca063de6",
+      "testerIdentity": "Shaun",
+      "defectReferences": [
+        "Daily Roster date-context blocker resolved by PR #66 and verified in Shared Staging before completion"
+      ]
     },
     {
       "id": "UAT-DRV-001",
