@@ -51,13 +51,15 @@
         "Confirm Office, financial and admin denial"
       ],
       "expectedOutcome": "Assigned work synchronizes idempotently and privileged functions remain unavailable.",
-      "actualOutcome": null,
-      "evidenceReference": null,
-      "result": "Not Run",
-      "executionTimestamp": null,
-      "environmentReleaseIdentity": null,
-      "testerIdentity": null,
-      "defectReferences": []
+      "actualOutcome": "The assigned 2026-08-24 synthetic operation was accepted offline, synchronized automatically on reconnect, started on its service date, completed with one cleaned stop and two actual drums, retained near-capacity state, and disappeared from active Driver assignments after completion. Office independently confirmed completed, accepted and started state, 1/1 stops, 2/2 drums, zero remaining and zero open issues. The verified Driver actor was denied Office navigation, accounting status and region-scoped client master data.",
+      "evidenceReference": "docs/production/synthetic-uat-results.md#uat-drv-001--passed",
+      "result": "Passed",
+      "executionTimestamp": "2026-08-24",
+      "environmentReleaseIdentity": "c74bea8b7f09d572c9d1f12182d3082eca063de6",
+      "testerIdentity": "Shaun",
+      "defectReferences": [
+        "Historical Driver reconciliation and lifecycle defects resolved before this execution; preserved prior-operation evidence was not cleared"
+      ]
     },
     {
       "id": "UAT-WEB-001",
