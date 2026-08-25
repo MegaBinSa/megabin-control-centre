@@ -1,6 +1,8 @@
 import { describe, expect, it } from "vitest";
 import {
+  beginOfficeBootstrap,
   beginOfficeMount,
+  isOfficeBootstrapCurrent,
   isOfficeMountCurrent,
   officeUrl,
   readOfficeLocation,
@@ -33,6 +35,13 @@ describe("Office shell navigation contract", () => {
     const current = beginOfficeMount();
     expect(isOfficeMountCurrent(previous)).toBe(false);
     expect(isOfficeMountCurrent(current)).toBe(true);
+  });
+
+  it("invalidates a stale authentication bootstrap before it can mount a workspace", () => {
+    const stale = beginOfficeBootstrap();
+    const current = beginOfficeBootstrap();
+    expect(isOfficeBootstrapCurrent(stale)).toBe(false);
+    expect(isOfficeBootstrapCurrent(current)).toBe(true);
   });
 
   it("does not remount an established Office shell for routine token renewal", () => {

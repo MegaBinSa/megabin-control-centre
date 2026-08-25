@@ -31,6 +31,8 @@ async function fulfillApi(route: Route): Promise<void> {
             "master_data.read",
             "master_data.write",
             "clients.sensitive.read",
+            "geography.read",
+            "geography.write",
             "roster.read",
             "routes.read",
             "route_operations.read"
@@ -72,6 +74,44 @@ async function fulfillApi(route: Route): Promise<void> {
           page: 1,
           pageSize: 25,
           total: 1
+        }
+      }
+    });
+    return;
+  }
+  if (url.pathname.endsWith("/geography/map")) {
+    await route.fulfill({
+      json: {
+        ok: true,
+        data: {
+          territories: [
+            {
+              territoryId: "53000000-0000-0000-0000-000000000001",
+              name: "Synthetic North",
+              priority: 10,
+              serviceRegionId: regionId,
+              defaultDepotId: "52000000-0000-0000-0000-000000000001",
+              serviceStatus: "active",
+              isActive: true,
+              preferredCollectionDays: [1],
+              eligibleTeamIds: ["54000000-0000-0000-0000-000000000001"],
+              geometry: {
+                type: "Polygon",
+                coordinates: [
+                  [
+                    [28.2, -25.75],
+                    [28.3, -25.75],
+                    [28.3, -25.65],
+                    [28.2, -25.65],
+                    [28.2, -25.75]
+                  ]
+                ]
+              },
+              updatedAt: "2026-08-25T00:00:00Z"
+            }
+          ],
+          depots: [],
+          addresses: []
         }
       }
     });
@@ -161,6 +201,47 @@ test("Office deep links, reload, and History navigation preserve module context"
   await page.goto(`/?module=route-planning&region=${regionId}&date=2026-08-24`);
   await expect(page.getByRole("heading", { name: "Route Planning" })).toBeVisible();
   await expect(page.getByLabel("Service date")).toHaveValue("2026-08-24");
+});
+
+test("unauthenticated Geography deep link waits for sign-in and restores the authorized workspace", async ({
+  page
+}) => {
+  let geographyRequests = 0;
+  await page.route("http://supabase.phase1b.test/**", async (route) => {
+    await route.fulfill({
+      json: route.request().url().includes("/token")
+        ? {
+            access_token: token,
+            refresh_token: "synthetic-refresh",
+            expires_in: 3600,
+            token_type: "bearer",
+            user: { id: userId, aud: "authenticated", role: "authenticated" }
+          }
+        : { id: userId, aud: "authenticated", role: "authenticated" }
+    });
+  });
+  await page.route("http://api.phase1b.test/**", async (route) => {
+    if (new URL(route.request().url()).pathname.endsWith("/geography/map")) geographyRequests += 1;
+    await fulfillApi(route);
+  });
+
+  await page.goto(`/?module=geography&region=${regionId}`);
+  await expect(page.getByRole("heading", { name: "Office sign in" })).toBeVisible();
+  await expect(page.getByText("Required geography element is missing")).toHaveCount(0);
+  expect(geographyRequests).toBe(0);
+
+  await page.getByLabel("Email").fill("staging-office@megabin.local");
+  await page.getByLabel("Password").fill("synthetic-password");
+  await page.getByRole("button", { name: "Sign in" }).click();
+  await expect(page.getByRole("heading", { name: "Geography" })).toBeVisible();
+  await expect(page.getByLabel("Service region")).toHaveValue(regionId);
+  await expect(page.getByLabel("Geography configuration map")).toBeVisible();
+  expect(geographyRequests).toBe(1);
+
+  await page.reload();
+  await expect(page.getByRole("heading", { name: "Geography" })).toBeVisible();
+  await expect(page.getByLabel("Service region")).toHaveValue(regionId);
+  await expect(page.getByLabel("Geography configuration map")).toBeVisible();
 });
 
 test("out-of-order roster responses cannot paint the wrong date", async ({ page }) => {

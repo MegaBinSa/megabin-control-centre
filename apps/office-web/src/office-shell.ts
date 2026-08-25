@@ -56,6 +56,16 @@ const knownRoutes = new Set<OfficeRoute>([
 ]);
 
 let mountGeneration = 0;
+let bootstrapGeneration = 0;
+
+export function beginOfficeBootstrap(): number {
+  bootstrapGeneration += 1;
+  return bootstrapGeneration;
+}
+
+export function isOfficeBootstrapCurrent(generation: number): boolean {
+  return generation === bootstrapGeneration;
+}
 
 export function beginOfficeMount(): number {
   mountGeneration += 1;

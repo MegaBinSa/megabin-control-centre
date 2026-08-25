@@ -35,9 +35,11 @@ import {
   type EditableMasterDataResource
 } from "./master-data-edit.js";
 import {
+  beginOfficeBootstrap,
   beginOfficeMount,
   hasUnsavedOfficeForm,
   installDirtyFormTracking,
+  isOfficeBootstrapCurrent,
   isOfficeMountCurrent,
   readOfficeLocation,
   shouldBootstrapOfficeSession,
@@ -497,7 +499,8 @@ async function renderCurrentLocation(): Promise<void> {
         api,
         permissions.includes("geography.write"),
         regions,
-        signOutFromWorkspace
+        signOutFromWorkspace,
+        { mount, location }
       );
       break;
     case "daily-roster":
@@ -566,15 +569,20 @@ async function renderCurrentLocation(): Promise<void> {
 }
 
 async function restore(): Promise<void> {
+  const bootstrap = beginOfficeBootstrap();
   if (!auth || !api || !(await auth.session())) {
+    if (!isOfficeBootstrapCurrent(bootstrap)) return;
     identity = null;
     render();
     return;
   }
   try {
-    identity = await api.profile<OfficeIdentity>();
+    const restoredIdentity = await api.profile<OfficeIdentity>();
+    if (!isOfficeBootstrapCurrent(bootstrap)) return;
+    identity = restoredIdentity;
     await renderCurrentLocation();
   } catch (cause) {
+    if (!isOfficeBootstrapCurrent(bootstrap)) return;
     errorMessage = cause instanceof Error ? cause.message : "Session expired.";
     identity = null;
     render();
@@ -582,6 +590,7 @@ async function restore(): Promise<void> {
 }
 auth?.onChange((event, session) => {
   if (event === "SIGNED_OUT" || !session) {
+    beginOfficeBootstrap();
     identity = null;
     records = [];
     render();
