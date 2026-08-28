@@ -48,7 +48,6 @@ jobs:
       SOURCE_SUBMISSION_ID: ${{ inputs.source_submission_id }}
       EXECUTION_MODE: ${{ inputs.execution_mode }}
       CONFIRM_SUBMISSION: ${{ inputs.confirm_submission }}
-      EVIDENCE_PATH: ${{ runner.temp }}/uat-web-001-submission-evidence.json
     steps:
       - name: Check out the exact requested main release
         uses: actions/checkout@v4
@@ -81,6 +80,8 @@ jobs:
           node-version-file: .node-version
 
       - name: Submit the repository-controlled synthetic intake
+        env:
+          EVIDENCE_PATH: ${{ runner.temp }}/uat-web-001-submission-evidence.json
         shell: bash
         run: |
           set -euo pipefail
@@ -96,6 +97,6 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: uat-web-001-submission-${{ github.run_id }}-${{ github.run_attempt }}
-          path: ${{ env.EVIDENCE_PATH }}
+          path: ${{ runner.temp }}/uat-web-001-submission-evidence.json
           if-no-files-found: warn
           retention-days: 90
