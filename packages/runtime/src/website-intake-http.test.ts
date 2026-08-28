@@ -21,16 +21,14 @@ const submission = {
 
 function setup(actorId: string | null = null) {
   const rpc = { rpc: vi.fn() };
-  const deferred: Promise<unknown>[] = [];
   const handler = createWebsiteIntakeHandler({
     rpc,
     actorId,
     id: () => "00000000-0000-4000-8000-000000000099",
     integrationKey: "megabin-website-onboarding-local",
-    integrationSecret: "synthetic-secret",
-    defer: (work) => deferred.push(work)
+    integrationSecret: "synthetic-secret"
   });
-  return { rpc, handler, deferred };
+  return { rpc, handler };
 }
 
 describe("website intake HTTP boundary", () => {
@@ -46,14 +44,14 @@ describe("website intake HTTP boundary", () => {
     expect(rpc.rpc).not.toHaveBeenCalled();
   });
 
-  it("acknowledges a valid submission and defers processing", async () => {
-    const { handler, rpc, deferred } = setup();
+  it("acknowledges a valid submission only after dispatching its durable job", async () => {
+    const { handler, rpc } = setup();
     rpc.rpc
       .mockResolvedValueOnce({
         data: { submission_id: "00000000-0000-4000-8000-000000000010", duplicate: false },
         error: null
       })
-      .mockResolvedValueOnce({ data: { status: "needs_review" }, error: null });
+      .mockResolvedValueOnce({ data: { status: "succeeded" }, error: null });
     const response = await handler(
       new Request("https://local/api/v1/integrations/website/onboarding", {
         method: "POST",
@@ -66,17 +64,48 @@ describe("website intake HTTP boundary", () => {
       })
     );
     expect(response?.status).toBe(202);
-    expect(deferred).toHaveLength(1);
-    await Promise.all(deferred);
-    expect(rpc.rpc).toHaveBeenLastCalledWith("website_intake_process", expect.any(Object));
+    expect(rpc.rpc).toHaveBeenLastCalledWith("website_intake_process_pending", {
+      p_submission_id: "00000000-0000-4000-8000-000000000010",
+      p_correlation_id: "00000000-0000-4000-8000-000000000099"
+    });
+    expect(await response?.json()).toMatchObject({
+      data: { processingStatus: "succeeded" }
+    });
+  });
+
+  it("keeps an accepted receipt visible when durable processing reports failure", async () => {
+    const { handler, rpc } = setup();
+    rpc.rpc
+      .mockResolvedValueOnce({
+        data: { submission_id: "00000000-0000-4000-8000-000000000010", duplicate: false },
+        error: null
+      })
+      .mockResolvedValueOnce({ data: { status: "retryable_failure" }, error: null });
+    const response = await handler(
+      new Request("https://local/api/v1/integrations/website/onboarding", {
+        method: "POST",
+        headers: {
+          "X-Integration-Key": "megabin-website-onboarding-local",
+          "X-Integration-Secret": "synthetic-secret",
+          "Idempotency-Key": "signup-100"
+        },
+        body: JSON.stringify(submission)
+      })
+    );
+    expect(response?.status).toBe(202);
+    expect(await response?.json()).toMatchObject({
+      data: { duplicate: false, processingStatus: "retryable_failure" }
+    });
   });
 
   it("returns the prior result for a duplicate retry", async () => {
     const { handler, rpc } = setup();
-    rpc.rpc.mockResolvedValue({
-      data: { submission_id: "00000000-0000-4000-8000-000000000010", duplicate: true },
-      error: null
-    });
+    rpc.rpc
+      .mockResolvedValueOnce({
+        data: { submission_id: "00000000-0000-4000-8000-000000000010", duplicate: true },
+        error: null
+      })
+      .mockResolvedValueOnce({ data: { status: "succeeded", duplicate: true }, error: null });
     const response = await handler(
       new Request("https://local/api/v1/integrations/website/onboarding", {
         method: "POST",
@@ -89,6 +118,7 @@ describe("website intake HTTP boundary", () => {
       })
     );
     expect(response?.status).toBe(200);
+    expect(rpc.rpc).toHaveBeenLastCalledWith("website_intake_process_pending", expect.any(Object));
   });
 
   it("maps a changed-payload identity conflict to 409", async () => {

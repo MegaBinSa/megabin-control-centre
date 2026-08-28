@@ -91,8 +91,7 @@ const authenticatedFetch = withSupabase(
           Deno.env.get("MEGABIN_WEBSITE_ONBOARDING_INTEGRATION_KEY") ??
           "megabin-website-onboarding-local",
         integrationSecret: Deno.env.get("MEGABIN_WEBSITE_ONBOARDING_SECRET"),
-        allowIntegrationRoutes: false,
-        defer: (work) => EdgeRuntime.waitUntil(work)
+        allowIntegrationRoutes: false
       });
       const websiteIntakeResponse = await websiteIntake(request);
       if (websiteIntakeResponse) return websiteIntakeResponse;

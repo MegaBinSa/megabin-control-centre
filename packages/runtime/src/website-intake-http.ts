@@ -18,7 +18,6 @@ interface Dependencies {
   readonly integrationKey: string;
   readonly integrationSecret?: string;
   readonly allowIntegrationRoutes?: boolean;
-  readonly defer?: (work: Promise<unknown>) => void;
 }
 
 const payload = z
@@ -271,14 +270,23 @@ export function createWebsiteIntakeHandler(dependencies: Dependencies) {
             : fail("internal_error", "The request could not be completed.", 500, correlationId);
         }
         const result = camel(received.data) as { submissionId?: string; duplicate?: boolean };
-        if (!result.duplicate && result.submissionId && dependencies.defer)
-          dependencies.defer(
-            dependencies.rpc.rpc("website_intake_process", {
-              p_submission_id: result.submissionId,
-              p_correlation_id: correlationId
-            })
-          );
-        return json({ ok: true, data: result }, result.duplicate ? 200 : 202);
+        let processingStatus: string | undefined;
+        if (result.submissionId) {
+          const processing = await dependencies.rpc.rpc("website_intake_process_pending", {
+            p_submission_id: result.submissionId,
+            p_correlation_id: correlationId
+          });
+          processingStatus = processing.error
+            ? "dispatch_failed"
+            : ((camel(processing.data) as { status?: string }).status ?? "unknown");
+        }
+        return json(
+          {
+            ok: true,
+            data: { ...result, ...(processingStatus ? { processingStatus } : {}) }
+          },
+          result.duplicate ? 200 : 202
+        );
       }
       if (!dependencies.actorId)
         return fail("authentication_required", "Authentication is required.", 401, correlationId);
