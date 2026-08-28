@@ -2,8 +2,6 @@ import "@supabase/functions-js/edge-runtime.d.ts";
 import { withSupabase } from "@supabase/server";
 import { createWebsiteIntakeHandler, type RuntimeRpcClient } from "@megabin/runtime";
 
-declare const EdgeRuntime: { waitUntil(work: Promise<unknown>): void };
-
 function allowedOrigins(environment: string): string[] {
   const configured = (Deno.env.get("MEGABIN_ALLOWED_ORIGINS") ?? "")
     .split(",")
@@ -64,8 +62,7 @@ export default {
         configuredIntegrationKey ??
         (environment === "local" ? "megabin-website-onboarding-local" : ""),
       integrationSecret: Deno.env.get("MEGABIN_WEBSITE_ONBOARDING_SECRET"),
-      allowIntegrationRoutes: true,
-      defer: (work) => EdgeRuntime.waitUntil(work)
+      allowIntegrationRoutes: true
     });
     const response =
       (await handler(request)) ??
