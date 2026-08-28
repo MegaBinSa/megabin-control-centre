@@ -25,3 +25,5 @@ Website receipt is hosted by the dedicated `website-onboarding` Edge Function. I
 Unknown fields are rejected. Receipt returns `202` accepted, `200` duplicate, `422` retained validation rejection, `409` changed-payload conflict, or `401` authentication failure. The status endpoint returns only `received`, `under_review`, `activated`, or `rejected`.
 
 The future WordPress adapter must save locally first, preserve `sourceSubmissionId`, retry the identical payload and idempotency key with bounded backoff, and treat acknowledgement as receipt—not activation. It must not synchronously depend on activation or overwrite Control Centre operational data after activation.
+
+Shared-Staging `UAT-WEB-001` uses a manual protected GitHub workflow rather than exposing the integration secret to a browser or operator workstation. Its repository-controlled payload, exact Staging project/identity checks and initial-versus-retry status assertions exercise this same contract without adding another onboarding path. The workflow cannot target Production and never calls database reset, seed or direct-write mechanisms.

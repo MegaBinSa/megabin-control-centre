@@ -1,0 +1,37 @@
+{
+  "version": 1,
+  "caseId": "UAT-WEB-001",
+  "environment": "staging",
+  "projectRef": "xniweqdmswzljcgkfglx",
+  "integrationKey": "megabin-website-onboarding-staging",
+  "sourceSubmissionId": "uat:web:UAT-WEB-001:20260825:01",
+  "payload": {
+    "sourceSubmissionId": "uat:web:UAT-WEB-001:20260825:01",
+    "payloadVersion": "1.0",
+    "submittedAt": "2026-08-25T08:00:00+02:00",
+    "client": {
+      "type": "individual",
+      "displayName": "Synthetic UAT Website Client 001"
+    },
+    "contact": {
+      "name": "Synthetic UAT Website Contact 001",
+      "mobile": "+27820000101",
+      "email": "uat-web-001@example.invalid",
+      "preferredLanguage": "english"
+    },
+    "address": {
+      "addressLine1": "101 Synthetic UAT Website Road",
+      "suburb": "Synthetic North",
+      "city": "Pretoria",
+      "postalCode": "0001",
+      "latitude": -25.7,
+      "longitude": 28.22
+    },
+    "requestedDrumCount": 2,
+    "requestedStartDate": "2026-08-25",
+    "references": {
+      "customerReference": "uat:web:UAT-WEB-001:customer:01",
+      "serviceReference": "uat:web:UAT-WEB-001:service:01"
+    }
+  }
+}

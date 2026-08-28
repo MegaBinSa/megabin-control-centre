@@ -14,3 +14,13 @@
 Before continuing `UAT-OFF-001`, record the deployed release identity and prove that reload restores the active Office module and selected region/date. Wait for the explicit loading state to clear before interpreting roster or route-plan status. A roster or plan response is valid only for the region/date visible in the URL and controls. Stop and record a blocker if another date briefly appears, routine session renewal returns the operator to Clients, or an in-flight request repaints a different workspace. Never repeat a mutating action merely because navigation reset or loading obscured its result.
 
 The six baseline journeys are Office planning, Driver offline execution, website onboarding, Client SKIP, financial/accounting isolation, and vehicle tracking/intelligence. The catalogue is intentionally MegaBin-specific rather than a generic test-management framework. Phase 5D repository verification validates the contracts; no business journey is marked Passed until it actually runs on shared Staging.
+
+## Protected Website Intake submission
+
+`UAT-WEB-001` intake creation uses the manual-only **Submit staging Website UAT intake** workflow and the protected GitHub `staging` Environment. The workflow accepts the exact current `main` SHA, the reserved identity `uat:web:UAT-WEB-001:20260825:01`, a controlled `initial_submission` or `idempotency_retry` mode, and this confirmation:
+
+`SUBMIT-UAT-WEB-001:xniweqdmswzljcgkfglx:uat:web:UAT-WEB-001:20260825:01:<source-sha>:<mode>`
+
+The request body is immutable repository configuration in `config/synthetic-uat-website-intake.json`; operators cannot supply arbitrary payloads, URLs, project references, SQL or credentials. The workflow requires the requested SHA to equal current `origin/main`, requires successful quality/database checks, runs under the shared-Staging concurrency boundary and obtains `WEBSITE_ONBOARDING_SECRET` only from the protected Environment. It performs one POST through the existing Website Onboarding boundary and no database administration or deployment operation.
+
+The initial execution must receive HTTP `202` with `duplicate: false`. The later deliberate retry uses the same identity, idempotency key and byte-identical payload and must receive HTTP `200` with `duplicate: true`. Retain the sanitized evidence artifact containing workflow/release identity, operator, source/idempotency identity, payload SHA-256, correlation ID, safe response status, duplicate result and submission ID. It excludes the integration secret, request body, contact details and address. GitHub artifact retention is currently 90 days and does not satisfy the separate 12-month assurance target.
