@@ -538,7 +538,13 @@ async function renderCurrentLocation(): Promise<void> {
       );
       break;
     case "website-intake":
-      await renderWebsiteIntakeWorkspace(workspaceRoot, api, permissions, signOutFromWorkspace);
+      await renderWebsiteIntakeWorkspace(
+        workspaceRoot,
+        api,
+        permissions,
+        regions,
+        signOutFromWorkspace
+      );
       break;
     case "client-migration":
       await renderClientMigrationWorkspace(workspaceRoot, api, permissions, signOutFromWorkspace);

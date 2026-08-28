@@ -324,6 +324,9 @@ describe("deployment safety tools", () => {
       true
     );
     expect(
+      checks.find((check) => check.name === "regional_office_website_intake_read")?.passed
+    ).toBe(true);
+    expect(
       fetchMock.mock.calls.some((call) => {
         const url = new URL(String(call[0]));
         return (

@@ -32,17 +32,24 @@ export async function renderWebsiteIntakeWorkspace(
   root: HTMLElement,
   api: MasterDataApiClient,
   permissions: readonly string[],
+  serviceRegionIds: readonly string[],
   logout: () => Promise<void>
 ): Promise<void> {
   let status = "";
   let source = "";
   let duplicateClassification = "";
   let matchStatus = "";
-  let serviceRegionId = "";
+  let serviceRegionId = serviceRegionIds[0] ?? "";
   let receivedFrom = "";
   let receivedTo = "";
   let selected: IntakeDetail | null = null;
   let message = "";
+  const renderLoadFailure = (cause: unknown) => {
+    const detail = cause instanceof Error ? cause.message : "The request could not be completed.";
+    root.innerHTML = `<div class="shell"><aside><div class="brand">MegaBin Control Centre</div><nav><button id="back">Master Data</button><button aria-current="page">Website Intake</button></nav></aside><main><header><div><h1>Website Intake</h1><p>Review website submissions before operational activation.</p></div><button id="logout">Sign out</button></header><div class="error" role="alert">Unable to load Website Intake: ${escape(detail)}</div><button id="intake-retry">Retry</button></main></div>`;
+    root.querySelector("#logout")?.addEventListener("click", () => void logout());
+    root.querySelector("#intake-retry")?.addEventListener("click", () => void load());
+  };
   const load = async () => {
     const query = new URLSearchParams();
     for (const [key, value] of Object.entries({
@@ -55,7 +62,13 @@ export async function renderWebsiteIntakeWorkspace(
       receivedTo
     }))
       if (value) query.set(key, value);
-    const result = await api.websiteIntake<{ items: readonly IntakeSummary[] }>(query.toString());
+    let result: { items: readonly IntakeSummary[] };
+    try {
+      result = await api.websiteIntake<{ items: readonly IntakeSummary[] }>(query.toString());
+    } catch (cause) {
+      renderLoadFailure(cause);
+      return;
+    }
     root.innerHTML = `<div class="shell"><aside><div class="brand">MegaBin Control Centre</div><nav><button id="back">Master Data</button><button aria-current="page">Website Intake</button></nav></aside><main><header><div><h1>Website Intake</h1><p>Review website submissions before operational activation.</p></div><button id="logout">Sign out</button></header>
       ${message ? `<div class="notice">${escape(message)}</div>` : ""}
       <div class="toolbar"><select id="intake-status" aria-label="Intake status"><option value="">All statuses</option>${["received", "needs_review", "approved", "rejected", "activated", "invalid", "failed"].map((value) => `<option value="${value}" ${status === value ? "selected" : ""}>${value.replace("_", " ")}</option>`).join("")}</select><select id="intake-source" aria-label="Intake source"><option value="">All sources</option><option value="megabin_website" ${source === "megabin_website" ? "selected" : ""}>MegaBin website</option></select><select id="intake-duplicate" aria-label="Duplicate classification"><option value="">All duplicate classes</option>${["none", "possible", "active_service_duplicate"].map((value) => `<option value="${value}" ${duplicateClassification === value ? "selected" : ""}>${value.replaceAll("_", " ")}</option>`).join("")}</select><select id="intake-match" aria-label="Match status"><option value="">All match states</option>${["no_match", "strong_match", "ambiguous_match"].map((value) => `<option value="${value}" ${matchStatus === value ? "selected" : ""}>${value.replaceAll("_", " ")}</option>`).join("")}</select><input id="intake-region" aria-label="Service region ID" placeholder="Service region ID" value="${escape(serviceRegionId)}"><input id="intake-from" aria-label="Received from" type="date" value="${escape(receivedFrom)}"><input id="intake-to" aria-label="Received to" type="date" value="${escape(receivedTo)}"><button id="intake-apply-filters">Apply filters</button></div>
