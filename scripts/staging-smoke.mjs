@@ -142,6 +142,19 @@ export async function runSmoke(values, fetchImpl = fetch) {
       status: regionalClients.status
     });
     await check(
+      "regional_office_website_intake_read",
+      `${values.VITE_MASTER_DATA_API_URL}/api/v1/website-intake?serviceRegionId=51000000-0000-0000-0000-000000000001`,
+      200,
+      {
+        headers: {
+          Origin: values.MEGABIN_OFFICE_ORIGIN,
+          Authorization: `Bearer ${officeToken}`,
+          "Content-Type": "application/json",
+          "X-Correlation-Id": crypto.randomUUID()
+        }
+      }
+    );
+    await check(
       "fake_routing_provider_health",
       `${values.VITE_MASTER_DATA_API_URL}/api/v1/route-providers/health?serviceRegionId=51000000-0000-0000-0000-000000000001`,
       200,

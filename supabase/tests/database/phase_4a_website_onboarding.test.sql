@@ -1,5 +1,5 @@
 begin;
-select plan(45);
+select plan(48);
 
 select has_table('app_private','website_intake_submissions','immutable website intake exists');
 select has_table('app_private','website_intake_processing_history','processing interpretation history exists');
@@ -10,19 +10,23 @@ select has_function('api','website_intake_activate',array['uuid','uuid','integer
 insert into auth.users(id,email) values
  ('74000000-0000-4000-8000-000000000001','intake-office@test.invalid'),
  ('74000000-0000-4000-8000-000000000002','intake-driver@test.invalid'),
- ('74000000-0000-4000-8000-000000000003','intake-other-region@test.invalid');
+ ('74000000-0000-4000-8000-000000000003','intake-other-region@test.invalid'),
+ ('74000000-0000-4000-8000-000000000004','intake-regional-office@test.invalid');
 insert into public.user_profiles(user_id,display_name) values
  ('74000000-0000-4000-8000-000000000001','Intake Office'),
  ('74000000-0000-4000-8000-000000000002','Intake Driver'),
- ('74000000-0000-4000-8000-000000000003','Other Region Office');
+ ('74000000-0000-4000-8000-000000000003','Other Region Office'),
+ ('74000000-0000-4000-8000-000000000004','Regional Intake Office');
 insert into app_private.user_roles(user_id,role_id)
 select '74000000-0000-4000-8000-000000000001'::uuid,role_id from app_private.roles where role_key='operations_manager'
 union all select '74000000-0000-4000-8000-000000000002'::uuid,role_id from app_private.roles where role_key='driver_team'
-union all select '74000000-0000-4000-8000-000000000003'::uuid,role_id from app_private.roles where role_key='operations_manager';
+union all select '74000000-0000-4000-8000-000000000003'::uuid,role_id from app_private.roles where role_key='operations_manager'
+union all select '74000000-0000-4000-8000-000000000004'::uuid,role_id from app_private.roles where role_key='office_admin';
 insert into app_private.user_access_scopes(user_id,scope_kind,scope_id) values
  ('74000000-0000-4000-8000-000000000001','global',null),
  ('74000000-0000-4000-8000-000000000002','team','54000000-0000-0000-0000-000000000001'),
- ('74000000-0000-4000-8000-000000000003','service_region',gen_random_uuid());
+ ('74000000-0000-4000-8000-000000000003','service_region','51000000-0000-0000-0000-000000000099'),
+ ('74000000-0000-4000-8000-000000000004','service_region','51000000-0000-0000-0000-000000000001');
 
 create temporary table intake_result(value jsonb);
 insert into intake_result select api.website_intake_receive(
@@ -58,6 +62,9 @@ select is((select count(*) from app_private.client_services where service_addres
 
 select throws_ok(format('select api.website_intake_detail(%L,%L)','74000000-0000-4000-8000-000000000002',(select website_intake_submission_id from app_private.website_intake_submissions where source_submission_id='web-100')),'42501',null,'Driver cannot access intake');
 select throws_ok(format('select api.website_intake_detail(%L,%L)','74000000-0000-4000-8000-000000000003',(select website_intake_submission_id from app_private.website_intake_submissions where source_submission_id='web-100')),'42501',null,'cross-region Office denied after region known');
+select lives_ok($$select api.website_intake_list('74000000-0000-4000-8000-000000000004','{"serviceRegionId":"51000000-0000-0000-0000-000000000001"}')$$,'region-scoped Office can list Website Intake in its region');
+select throws_ok($$select api.website_intake_list('74000000-0000-4000-8000-000000000004','{}')$$,'42501',null,'region-scoped Office cannot request an unscoped Website Intake list');
+select throws_ok($$select api.website_intake_list('74000000-0000-4000-8000-000000000004','{"serviceRegionId":"51000000-0000-0000-0000-000000000099"}')$$,'42501',null,'region-scoped Office cannot list Website Intake in another region');
 select throws_ok($$set local role authenticated; select * from app_private.website_intake_submissions$$,'42501',null,'browser cannot read raw intake table');
 
 select lives_ok(format($f$select api.website_intake_review(%L,%L,'approve',2,%L::jsonb,null,%L)$f$,

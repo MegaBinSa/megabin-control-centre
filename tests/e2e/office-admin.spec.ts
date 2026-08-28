@@ -1312,19 +1312,28 @@ test("Office Live Operations reviews and dismisses inferred facts", async ({ pag
 });
 
 test("Office Website Intake reviews, approves, and activates a signup", async ({ page }) => {
-  await syntheticSession(page, [
-    "master_data.read",
-    "website_intake.read",
-    "website_intake.review",
-    "website_intake.approve",
-    "website_intake.reject",
-    "website_intake.activate"
-  ]);
+  const serviceRegionId = "51000000-0000-0000-0000-000000000001";
+  await syntheticSession(
+    page,
+    [
+      "master_data.read",
+      "website_intake.read",
+      "website_intake.review",
+      "website_intake.approve",
+      "website_intake.reject",
+      "website_intake.activate"
+    ],
+    undefined,
+    [serviceRegionId]
+  );
   const submissionId = "96000000-0000-4000-8000-000000000001";
   let status = "needs_review",
     version = 2;
-  await page.route("**/api/v1/website-intake", (route) =>
-    route.fulfill({
+  await page.route("**/api/v1/website-intake?*", (route) => {
+    expect(new URL(route.request().url()).searchParams.get("serviceRegionId")).toBe(
+      serviceRegionId
+    );
+    return route.fulfill({
       json: {
         ok: true,
         data: {
@@ -1342,8 +1351,8 @@ test("Office Website Intake reviews, approves, and activates a signup", async ({
           ]
         }
       }
-    })
-  );
+    });
+  });
   await page.route(`**/api/v1/website-intake/${submissionId}`, (route) =>
     route.fulfill({
       json: {
@@ -1404,6 +1413,33 @@ test("Office Website Intake reviews, approves, and activates a signup", async ({
   await page.getByRole("button", { name: "Review" }).click();
   await page.getByRole("button", { name: "Activate" }).click();
   await expect(page.getByText("Intake activate succeeded.")).toBeVisible();
+});
+
+test("Office Website Intake renders a failed scoped list instead of hanging", async ({ page }) => {
+  const serviceRegionId = "51000000-0000-0000-0000-000000000001";
+  await syntheticSession(page, ["master_data.read", "website_intake.read"], undefined, [
+    serviceRegionId
+  ]);
+  await page.route("**/api/v1/website-intake?*", (route) =>
+    route.fulfill({
+      status: 403,
+      json: {
+        ok: false,
+        error: {
+          code: "permission_denied",
+          message: "Permission denied.",
+          correlationId: "806f6a4a-2655-4bff-adbe-58d180f65665"
+        }
+      }
+    })
+  );
+
+  await page.getByRole("button", { name: "Website Intake" }).click();
+  await expect(page.getByRole("heading", { name: "Website Intake" })).toBeVisible();
+  await expect(page.getByRole("alert")).toContainText(
+    "Unable to load Website Intake: Permission denied."
+  );
+  await expect(page.getByText("Loading workspace…")).toHaveCount(0);
 });
 
 test("Office Client Migration imports, profiles, dry-runs, reviews, approves, activates, and reconciles", async ({
