@@ -1,0 +1,101 @@
+name: Submit staging Website UAT intake
+
+on:
+  workflow_dispatch:
+    inputs:
+      source_sha:
+        description: Exact current main commit to bind to the evidence
+        required: true
+        type: string
+      source_submission_id:
+        description: Reserved UAT-WEB-001 source and idempotency identity
+        required: true
+        default: uat:web:UAT-WEB-001:20260825:01
+        type: string
+      execution_mode:
+        description: Initial receipt or deliberate identical retry
+        required: true
+        default: initial_submission
+        type: choice
+        options:
+          - initial_submission
+          - idempotency_retry
+      confirm_submission:
+        description: SUBMIT-UAT-WEB-001:<project-ref>:<source-id>:<source-sha>:<mode>
+        required: true
+        type: string
+
+permissions:
+  contents: read
+  checks: read
+
+concurrency:
+  group: megabin-shared-staging
+  cancel-in-progress: false
+
+jobs:
+  submit:
+    runs-on: ubuntu-latest
+    environment: staging
+    env:
+      MEGABIN_ENVIRONMENT: staging
+      SUPABASE_PROJECT_REF: ${{ vars.SUPABASE_PROJECT_REF }}
+      SUPABASE_URL: ${{ vars.SUPABASE_URL }}
+      MEGABIN_WEBSITE_ONBOARDING_URL: ${{ vars.SUPABASE_URL }}/functions/v1/website-onboarding
+      MEGABIN_WEBSITE_ONBOARDING_INTEGRATION_KEY: ${{ vars.WEBSITE_ONBOARDING_INTEGRATION_KEY }}
+      MEGABIN_WEBSITE_ONBOARDING_SECRET: ${{ secrets.WEBSITE_ONBOARDING_SECRET }}
+      SOURCE_SHA: ${{ inputs.source_sha }}
+      SOURCE_SUBMISSION_ID: ${{ inputs.source_submission_id }}
+      EXECUTION_MODE: ${{ inputs.execution_mode }}
+      CONFIRM_SUBMISSION: ${{ inputs.confirm_submission }}
+      EVIDENCE_PATH: ${{ runner.temp }}/uat-web-001-submission-evidence.json
+    steps:
+      - name: Check out the exact requested main release
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ inputs.source_sha }}
+          fetch-depth: 0
+
+      - name: Validate exact release and controlled dispatch inputs
+        shell: bash
+        run: |
+          set -euo pipefail
+          git fetch origin main
+          test "$(git rev-parse HEAD)" = "$SOURCE_SHA"
+          test "$(git rev-parse origin/main)" = "$SOURCE_SHA"
+          test "$SOURCE_SUBMISSION_ID" = "uat:web:UAT-WEB-001:20260825:01"
+          test "$EXECUTION_MODE" = "initial_submission" -o "$EXECUTION_MODE" = "idempotency_retry"
+
+      - name: Require successful quality and database checks
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          checks="$(gh api "repos/${{ github.repository }}/commits/$SOURCE_SHA/check-runs" --jq '[.check_runs[] | select(.name == "quality" or .name == "database") | {name, conclusion, started_at}] | sort_by(.name, .started_at) | group_by(.name) | map(last)')"
+          echo "$checks" | jq -e 'length == 2 and all(.conclusion == "success")'
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version-file: .node-version
+
+      - name: Submit the repository-controlled synthetic intake
+        shell: bash
+        run: |
+          set -euo pipefail
+          node scripts/website-uat-submission.mjs \
+            --source-sha "$SOURCE_SHA" \
+            --source-submission-id "$SOURCE_SUBMISSION_ID" \
+            --mode "$EXECUTION_MODE" \
+            --confirmation "$CONFIRM_SUBMISSION" \
+            --evidence "$EVIDENCE_PATH"
+
+      - name: Upload sanitized UAT submission evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: uat-web-001-submission-${{ github.run_id }}-${{ github.run_attempt }}
+          path: ${{ env.EVIDENCE_PATH }}
+          if-no-files-found: warn
+          retention-days: 90
