@@ -35,6 +35,21 @@ jobs:
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
+      - name: Validate GitHub Actions workflows
+        env:
+          ACTIONLINT_VERSION: 1.7.12
+          ACTIONLINT_LINUX_AMD64_SHA256: 8aca8db96f1b94770f1b0d72b6dddcb1ebb8123cb3712530b08cc387b349a3d8
+        shell: bash
+        run: |
+          set -euo pipefail
+          archive="actionlint_${ACTIONLINT_VERSION}_linux_amd64.tar.gz"
+          curl --fail --location --silent --show-error \
+            "https://github.com/rhysd/actionlint/releases/download/v${ACTIONLINT_VERSION}/${archive}" \
+            --output "$RUNNER_TEMP/$archive"
+          echo "$ACTIONLINT_LINUX_AMD64_SHA256  $RUNNER_TEMP/$archive" | sha256sum --check --strict
+          tar --extract --gzip --file "$RUNNER_TEMP/$archive" --directory "$RUNNER_TEMP" actionlint
+          "$RUNNER_TEMP/actionlint" -color .github/workflows/submit-staging-website-uat.yml
+
       - name: Verify repository quality
         run: pnpm check
 

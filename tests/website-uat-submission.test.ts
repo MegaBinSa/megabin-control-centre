@@ -121,8 +121,28 @@ describe("protected Website UAT submission", () => {
     expect(workflow).toContain("${{ secrets.WEBSITE_ONBOARDING_SECRET }}");
     expect(workflow).toContain("scripts/website-uat-submission.mjs");
     expect(workflow).toContain("if-no-files-found: warn");
+    expect(
+      workflow.match(/\$\{\{ runner\.temp \}\}\/uat-web-001-submission-evidence\.json/g)
+    ).toHaveLength(2);
+    const jobEnvironment = workflow.slice(
+      workflow.indexOf("    env:"),
+      workflow.indexOf("    steps:")
+    );
+    expect(jobEnvironment).not.toContain("runner.temp");
     expect(workflow).not.toMatch(/supabase db (reset|push|query)/);
     expect(workflow).not.toMatch(/\b(truncate|delete from|drop schema)\b/i);
     expect(workflow).not.toMatch(/echo.*WEBSITE_ONBOARDING_SECRET/i);
+  });
+
+  it("runs expression-aware workflow validation in required quality CI", () => {
+    const workflow = readFileSync(".github/workflows/ci.yml", "utf8");
+    expect(workflow).toContain("Validate GitHub Actions workflows");
+    expect(workflow).toContain("ACTIONLINT_VERSION: 1.7.12");
+    expect(workflow).toContain(
+      "ACTIONLINT_LINUX_AMD64_SHA256: 8aca8db96f1b94770f1b0d72b6dddcb1ebb8123cb3712530b08cc387b349a3d8"
+    );
+    expect(workflow).toContain(
+      '"$RUNNER_TEMP/actionlint" -color .github/workflows/submit-staging-website-uat.yml'
+    );
   });
 });
