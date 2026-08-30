@@ -2011,7 +2011,9 @@ test("authenticated Office deep link restores the Client SKIP review workspace",
   page
 }) => {
   await syntheticSession(page, ["master_data.read", "client_skip.read"]);
-  await page.goto("/?module=client-skip");
+  await page.getByRole("button", { name: "Client SKIP" }).click();
+  await expect(page.getByRole("heading", { name: "Client SKIP requests" })).toBeVisible();
+  await page.reload();
   await expect(page).toHaveURL(/module=client-skip/);
   await expect(page.getByRole("heading", { name: "Client SKIP requests" })).toBeVisible();
   await expect(page.getByRole("heading", { name: "Office sign in" })).toHaveCount(0);
