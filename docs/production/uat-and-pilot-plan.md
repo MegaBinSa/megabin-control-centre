@@ -1,7 +1,7 @@
 # UAT and Pilot Plan
 
-**Status:** Shared Staging and Synthetic Internal UAT Ready gates passed; UAT-OFF-001 and UAT-DRV-001 passed, four journeys remain; no pilot authorized
-**Last reviewed:** 2026-08-25
+**Status:** Shared Staging and Synthetic Internal UAT Ready gates passed; UAT-OFF-001, UAT-DRV-001 and UAT-WEB-001 passed, three journeys remain; no pilot authorized
+**Last reviewed:** 2026-08-30
 
 ## Entry criteria for internal UAT
 
@@ -34,9 +34,9 @@ Each scenario records build/commit, environment, seed version, actor/role, expec
 
 The Phase 5C remote smoke suite is infrastructure acceptance evidence, not business UAT sign-off. It proves the environment can host the UAT catalogue safely with synthetic data and fake/capture providers.
 
-`config/synthetic-uat-catalogue.json` defines the six executable journey groups with stable IDs and mandatory evidence fields. `config/synthetic-uat-data.json` bounds preparation/recycling to synthetic provenance and preserves Phase 5C personas. `UAT-OFF-001` and `UAT-DRV-001` passed on Shared Staging release `c74bea8b7f09d572c9d1f12182d3082eca063de6`, covering region-scoped planning, immutable handoff/observation, offline synchronization, completion and Driver denial of Office, financial and master-data access. Four journeys remain Not Run, so Synthetic Internal UAT Passed is not claimed.
+`config/synthetic-uat-catalogue.json` defines the six executable journey groups with stable IDs and mandatory evidence fields. `config/synthetic-uat-data.json` bounds preparation/recycling to synthetic provenance and preserves Phase 5C personas. `UAT-OFF-001` and `UAT-DRV-001` passed on Shared Staging release `c74bea8b7f09d572c9d1f12182d3082eca063de6`, covering region-scoped planning, immutable handoff/observation, offline synchronization, completion and Driver denial of Office, financial and master-data access. `UAT-WEB-001` passed after protected receipt, durable processing remediation, identical-submission retry, scoped review/approval and atomic regional activation, with final evidence on release `faf4be5d0b676f21bcd8f5d3cea584e860b78107`. Three journeys remain Not Run, so Synthetic Internal UAT Passed is not claimed.
 
-Infrastructure and recovery assurance are sufficient to continue the synthetic journeys without implying Pilot readiness. Shared Staging release `c74bea8b7f09d572c9d1f12182d3082eca063de6` passed its protected deployment and supported the passing Office and Driver executions. Execute `UAT-WEB-001` next because its idempotent intake, review and activation journey is independent of the completed route and establishes authoritative onboarding evidence without disturbing it. Continue the remaining catalogue journeys one at a time. Record release identity and tester, confirm fake/capture posture, and prepare only `megabin-uat`/`uat:` records. The operator must retain case evidence and stop on any live-provider or real-data indication.
+Infrastructure and recovery assurance are sufficient to continue the synthetic journeys without implying Pilot readiness. Execute `UAT-SKP-001` next, following catalogue order, because website onboarding authority transition is now proven and the next untested cross-domain boundary is synthetic inbound SKIP through one-occurrence exclusion and protected replanning. Before mutation, prove a future synthetic collection occurrence exists and establish a protected, secret-safe way to inject exactly one authenticated fake inbound SKIP; the repository currently has the authenticated webhook boundary but no reviewed manual Shared-Staging SKIP submission workflow. If that operator mechanism is absent, implement and deploy it before execution rather than exposing the webhook secret or writing directly to the database. Continue one case at a time, retain release identity/tester evidence, and stop on any live-provider or real-data indication.
 
 ## Minimum safe controlled pilot
 
