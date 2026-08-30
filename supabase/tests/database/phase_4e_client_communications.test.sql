@@ -1,5 +1,5 @@
 begin;
-select plan(29);
+select plan(33);
 select has_table('app_private','communication_templates','versioned templates exist');
 select has_table('app_private','communication_intents','immutable intents exist');
 select has_table('app_private','communication_attempts','durable attempts exist');
@@ -22,10 +22,14 @@ select is((select channel from app_private.communication_attempts),'whatsapp','W
 select is((api.communication_delivery_callback('fake-communications','fake-wa-1','delivered',now())->>'lifecycle_status'),'delivered','delivery callback advances status');
 select is((api.communication_delivery_callback('fake-communications','fake-wa-1','sent',now()-interval'1 minute')->>'lifecycle_status'),'delivered','out-of-order callback cannot regress delivered');
 select lives_ok($$select api.communication_delivery_callback('fake-communications','fake-wa-1','delivered',now())$$,'duplicate callback is safe');
-select is((api.communication_ingest_inbound('fake-communications','whatsapp','inbound-1','+27820000001',now(),' SKIP ',gen_random_uuid())->>'recognized_command'),'skip','SKIP recognized case-insensitively');
+select is((api.communication_ingest_inbound('fake-communications','whatsapp','inbound-1','+27820000001','2026-08-30T06:00:00Z',' SKIP ',gen_random_uuid())->>'recognized_command'),'skip','SKIP recognized case-insensitively');
+select is((api.communication_ingest_inbound('fake-communications','whatsapp','inbound-1','+27820000001','2026-08-30T06:00:00Z',' SKIP ',gen_random_uuid())->>'duplicate')::boolean,true,'exact inbound retry is identified');
 select is((select match_classification from app_private.inbound_messages),'matched','inbound sender matched');
-select lives_ok($$select api.communication_ingest_inbound('fake-communications','whatsapp','inbound-1','+27820000001',now(),'SKIP',gen_random_uuid())$$,'duplicate inbound is safe');
+select lives_ok($$select api.communication_ingest_inbound('fake-communications','whatsapp','inbound-1','+27820000001','2026-08-30T06:00:00Z',' SKIP ',gen_random_uuid())$$,'duplicate inbound is safe');
 select is((select count(*)from app_private.inbound_messages),1::bigint,'inbound duplicate not duplicated');
+select is((select count(*)from app_private.outbox_events where event_name='Communications.InboundMessageReceived' and aggregate_id=(select inbound_message_id from app_private.inbound_messages)),1::bigint,'inbound retry does not duplicate receipt event');
+select is((select count(*)from app_private.outbox_events where event_name='Communications.InboundCommandRecognized' and aggregate_id=(select inbound_message_id from app_private.inbound_messages)),1::bigint,'inbound retry does not duplicate command event');
+select throws_ok($$select api.communication_ingest_inbound('fake-communications','whatsapp','inbound-1','+27820000001','2026-08-30T06:00:00Z','NOT SKIP',gen_random_uuid())$$,'22023','provider_message_identity_conflict','provider identity cannot be replayed with changed content');
 select is((select count(*)from app_private.route_operations),0::bigint,'SKIP recognition performs no route action');
 select is((select count(*)from app_private.client_services),3::bigint,'SKIP recognition performs no service action');
 insert into app_private.communication_suppressions(client_contact_id,channel,reason)values('82000000-0000-4000-8000-000000000001','whatsapp','synthetic opt out');

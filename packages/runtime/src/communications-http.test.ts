@@ -154,6 +154,39 @@ describe("communications HTTP boundary", () => {
   });
   it("authenticates provider callbacks and inbound messages", async () => {
     const d = setup();
+    d.rpc.rpc.mockImplementation(
+      async (name: string) =>
+        ({
+          data:
+            name === "communication_ingest_inbound"
+              ? {
+                  inbound_message_id: "80000000-0000-4000-8000-000000000005",
+                  recognized_command: "skip",
+                  duplicate: false
+                }
+              : { items: [] },
+          error: null
+        }) as never
+    );
+    const consumeInboundCommand = vi.fn(async () => ({
+      data: {
+        client_skip_request_id: "80000000-0000-4000-8000-000000000006",
+        lifecycle_status: "qualified"
+      },
+      error: null
+    }));
+    d.handler = createCommunicationsHandler({
+      rpc: d.rpc,
+      actorId: "80000000-0000-4000-8000-000000000003",
+      id: () => "80000000-0000-4000-8000-000000000004",
+      environment: "local",
+      mode: "test",
+      provider: new FakeMessagingAdapter(),
+      testRecipientAllowlist: [],
+      webhookSecret: "synthetic-secret",
+      defer: (work) => d.deferred.push(work),
+      consumeInboundCommand
+    });
     const denied = await d.handler(
       new Request("http://x/api/v1/integrations/communications/inbound", {
         method: "POST",
@@ -179,6 +212,60 @@ describe("communications HTTP boundary", () => {
       "communication_ingest_inbound",
       expect.objectContaining({ p_content: " SKIP " })
     );
+    expect(consumeInboundCommand).toHaveBeenCalledWith(
+      "80000000-0000-4000-8000-000000000005",
+      expect.any(String)
+    );
+    expect(await accepted?.json()).toMatchObject({
+      ok: true,
+      data: {
+        recognizedCommand: "skip",
+        clientSkip: { lifecycleStatus: "qualified" }
+      }
+    });
+  });
+  it("retains an inbound receipt but fails visibly when SKIP consumption fails", async () => {
+    const d = setup();
+    d.rpc.rpc.mockResolvedValue({
+      data: {
+        inbound_message_id: "80000000-0000-4000-8000-000000000005",
+        recognized_command: "skip"
+      },
+      error: null
+    } as never);
+    d.handler = createCommunicationsHandler({
+      rpc: d.rpc,
+      actorId: null,
+      id: () => "80000000-0000-4000-8000-000000000004",
+      environment: "staging",
+      mode: "capture",
+      provider: new FakeMessagingAdapter(),
+      testRecipientAllowlist: [],
+      webhookSecret: "synthetic-secret",
+      defer: () => undefined,
+      consumeInboundCommand: vi.fn(async () => ({
+        data: null,
+        error: { code: "P0001", message: "synthetic failure" }
+      }))
+    });
+    const response = await d.handler(
+      new Request("http://x/api/v1/integrations/communications/inbound", {
+        method: "POST",
+        headers: { "X-Communications-Webhook-Secret": "synthetic-secret" },
+        body: JSON.stringify({
+          providerMessageId: "inbound-1",
+          channel: "whatsapp",
+          sender: "+27820000001",
+          receivedAt: "2026-08-30T06:00:00Z",
+          text: "SKIP"
+        })
+      })
+    );
+    expect(response?.status).toBe(500);
+    expect(await response?.json()).toMatchObject({
+      ok: false,
+      error: { code: "internal_error", message: "Inbound command processing failed." }
+    });
   });
   it("denies unauthenticated Office access", async () => {
     expect(

@@ -4,7 +4,9 @@
 
 ## Boundary and lifecycle
 
-Client SKIP consumes the provider-neutral `Communications.InboundCommandRecognized` fact and never reparses provider payloads. A matched command becomes a durable SKIP Request qualified against active Client Services and the nearest valid future Collection Occurrence. Multiple services, missing services, late timing, and other ambiguity remain visible for Office review; the system does not guess.
+Client SKIP consumes the provider-neutral normalized inbound record and never reparses provider payloads. The authenticated communications webhook retains an immutable provider/message receipt and synchronously invokes the idempotent `client_skip_consume_inbound` application boundary when the normalized command is `SKIP`. A failed consumption returns a visible retryable webhook failure while preserving the receipt; an exact provider retry resumes the same inbound identity and cannot duplicate broad communications events or the SKIP Request. A changed payload under an existing provider/message identity fails closed.
+
+A matched command becomes a durable SKIP Request qualified against active Client Services and the nearest valid future Collection Occurrence, with `Communications.InboundCommandRecognized` and `ClientSkip.RequestQualified` retained as separate concise facts. Multiple services, missing services, late timing, and other ambiguity remain visible for Office review; the system does not guess.
 
 `Received -> Matching -> Needs Review | Qualified -> Approved -> Applied -> Acknowledged` is the normal path, with `Rejected`, `Duplicate`, `Expired`, and `Failed` review outcomes. Review commands use an expected review version. Approval freezes the target service, occurrence, service date, route-impact snapshot, actor, and time.
 

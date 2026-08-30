@@ -23,6 +23,10 @@ interface Dependencies {
   readonly webhookSecret?: string;
   readonly maxRetries?: number;
   readonly defer: (work: Promise<unknown>) => void;
+  readonly consumeInboundCommand?: (
+    inboundMessageId: string,
+    correlationId: string
+  ) => Promise<{ data: unknown; error: { code?: string; message: string } | null }>;
 }
 const json = (body: unknown, status = 200) =>
   Response.json(body, { status, headers: { "Cache-Control": "no-store" } });
@@ -285,7 +289,7 @@ export function createCommunicationsHandler(deps: Dependencies) {
         }
         if (path.endsWith("/inbound") && request.method === "POST") {
           const inbound = deps.provider.normalizeInbound(payload);
-          return run("communication_ingest_inbound", {
+          const result = await deps.rpc.rpc("communication_ingest_inbound", {
             p_provider: deps.provider.providerKey,
             p_channel: inbound.channel,
             p_message: inbound.providerMessageId,
@@ -293,6 +297,26 @@ export function createCommunicationsHandler(deps: Dependencies) {
             p_received: inbound.receivedAt,
             p_content: inbound.text,
             p_correlation: cid
+          });
+          if (result.error)
+            return fail("internal_error", "Inbound communication could not be retained.", 500, cid);
+          const retained = result.data as Record<string, unknown>;
+          let clientSkip: unknown;
+          if (retained.recognized_command === "skip" && deps.consumeInboundCommand) {
+            const consumed = await deps.consumeInboundCommand(
+              String(retained.inbound_message_id),
+              cid
+            );
+            if (consumed.error)
+              return fail("internal_error", "Inbound command processing failed.", 500, cid);
+            clientSkip = camel(consumed.data);
+          }
+          return json({
+            ok: true,
+            data: {
+              ...(camel(retained) as Record<string, unknown>),
+              ...(clientSkip === undefined ? {} : { clientSkip })
+            }
           });
         }
       }

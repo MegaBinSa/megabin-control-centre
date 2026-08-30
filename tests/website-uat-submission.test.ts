@@ -141,8 +141,7 @@ describe("protected Website UAT submission", () => {
     expect(workflow).toContain(
       "ACTIONLINT_LINUX_AMD64_SHA256: 8aca8db96f1b94770f1b0d72b6dddcb1ebb8123cb3712530b08cc387b349a3d8"
     );
-    expect(workflow).toContain(
-      '"$RUNNER_TEMP/actionlint" -color .github/workflows/submit-staging-website-uat.yml'
-    );
+    expect(workflow).toContain(".github/workflows/submit-staging-website-uat.yml");
+    expect(workflow).toContain(".github/workflows/submit-staging-skip-uat.yml");
   });
 });

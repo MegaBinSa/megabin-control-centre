@@ -1,0 +1,95 @@
+name: Submit staging SKIP UAT inbound
+
+on:
+  workflow_dispatch:
+    inputs:
+      source_sha:
+        description: Exact current main commit to bind to the evidence
+        required: true
+        type: string
+      provider_message_id:
+        description: Reserved UAT-SKP-001 provider and replay identity
+        required: true
+        default: uat:skip:UAT-SKP-001:20260831:01
+        type: string
+      confirm_submission:
+        description: SUBMIT-UAT-SKP-001:<project-ref>:<provider-message-id>:<source-sha>
+        required: true
+        type: string
+
+permissions:
+  contents: read
+  checks: read
+
+concurrency:
+  group: megabin-shared-staging
+  cancel-in-progress: false
+
+jobs:
+  submit:
+    runs-on: ubuntu-latest
+    environment: staging
+    env:
+      MEGABIN_ENVIRONMENT: staging
+      SUPABASE_PROJECT_REF: ${{ vars.SUPABASE_PROJECT_REF }}
+      SUPABASE_URL: ${{ vars.SUPABASE_URL }}
+      SUPABASE_PUBLISHABLE_KEY: ${{ secrets.SUPABASE_PUBLISHABLE_KEY }}
+      STAGING_OFFICE_EMAIL: ${{ vars.STAGING_OFFICE_EMAIL }}
+      STAGING_OFFICE_PASSWORD: ${{ secrets.STAGING_OFFICE_PASSWORD }}
+      MEGABIN_PLATFORM_RUNTIME_URL: ${{ vars.SUPABASE_URL }}/functions/v1/platform-runtime
+      MEGABIN_COMMUNICATIONS_WEBHOOK_SECRET: ${{ secrets.COMMUNICATIONS_WEBHOOK_SECRET }}
+      SOURCE_SHA: ${{ inputs.source_sha }}
+      PROVIDER_MESSAGE_ID: ${{ inputs.provider_message_id }}
+      CONFIRM_SUBMISSION: ${{ inputs.confirm_submission }}
+    steps:
+      - name: Check out the exact requested main release
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ inputs.source_sha }}
+          fetch-depth: 0
+
+      - name: Validate exact release and controlled dispatch inputs
+        shell: bash
+        run: |
+          set -euo pipefail
+          git fetch origin main
+          test "$(git rev-parse HEAD)" = "$SOURCE_SHA"
+          test "$(git rev-parse origin/main)" = "$SOURCE_SHA"
+          test "$SUPABASE_PROJECT_REF" = "xniweqdmswzljcgkfglx"
+          test "$SUPABASE_URL" = "https://xniweqdmswzljcgkfglx.supabase.co"
+          test "$PROVIDER_MESSAGE_ID" = "uat:skip:UAT-SKP-001:20260831:01"
+
+      - name: Require successful quality and database checks
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          checks="$(gh api "repos/${{ github.repository }}/commits/$SOURCE_SHA/check-runs" --jq '[.check_runs[] | select(.name == "quality" or .name == "database") | {name, conclusion, started_at}] | sort_by(.name, .started_at) | group_by(.name) | map(last)')"
+          echo "$checks" | jq -e 'length == 2 and all(.conclusion == "success")'
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version-file: .node-version
+
+      - name: Submit one repository-controlled synthetic inbound SKIP
+        env:
+          EVIDENCE_PATH: ${{ runner.temp }}/uat-skp-001-inbound-evidence.json
+        shell: bash
+        run: |
+          set -euo pipefail
+          node scripts/skip-uat-inbound.mjs \
+            --source-sha "$SOURCE_SHA" \
+            --provider-message-id "$PROVIDER_MESSAGE_ID" \
+            --confirmation "$CONFIRM_SUBMISSION" \
+            --evidence "$EVIDENCE_PATH"
+
+      - name: Upload sanitized UAT inbound evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: uat-skp-001-inbound-${{ github.run_id }}-${{ github.run_attempt }}
+          path: ${{ runner.temp }}/uat-skp-001-inbound-evidence.json
+          if-no-files-found: warn
+          retention-days: 90

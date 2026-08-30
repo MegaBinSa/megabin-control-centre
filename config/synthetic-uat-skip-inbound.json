@@ -1,0 +1,22 @@
+{
+  "version": 1,
+  "caseId": "UAT-SKP-001",
+  "environment": "staging",
+  "projectRef": "xniweqdmswzljcgkfglx",
+  "providerMessageId": "uat:skip:UAT-SKP-001:20260831:01",
+  "payload": {
+    "providerMessageId": "uat:skip:UAT-SKP-001:20260831:01",
+    "channel": "whatsapp",
+    "sender": "+27820000101",
+    "receivedAt": "2026-08-30T08:00:00+02:00",
+    "text": " SKIP "
+  },
+  "expected": {
+    "recognizedCommand": "skip",
+    "matchState": "matched",
+    "lifecycleStatus": "qualified",
+    "serviceRegionId": "51000000-0000-0000-0000-000000000001",
+    "clientServiceId": "b0c742aa-9484-4c49-afd5-c164404c8080",
+    "collectionDate": "2026-08-31"
+  }
+}
