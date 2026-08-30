@@ -62,7 +62,7 @@ jobs:
           echo "POST_REPAIR_INVARIANT_RESULT=Not Run" >> "$GITHUB_ENV"
 
       - name: Check out protected workflow release with full history
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
         with:
           ref: ${{ github.sha }}
           fetch-depth: 0
