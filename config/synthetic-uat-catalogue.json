@@ -79,13 +79,16 @@
         "Retry identical submission"
       ],
       "expectedOutcome": "One intake and one activated operational identity exist without duplicate records.",
-      "actualOutcome": null,
-      "evidenceReference": null,
-      "result": "Not Run",
-      "executionTimestamp": null,
-      "environmentReleaseIdentity": null,
-      "testerIdentity": null,
-      "defectReferences": []
+      "actualOutcome": "The protected synthetic website submission was received exactly once, recovered through the durable processing job, normalized and matched to Pretoria for Office review, and returned the same intake on the byte-identical retry. Regional Office approval froze the reviewed activation decision. Activation then atomically created one active Client, primary Contact, Service Address, weekly Client Service and effective Service Configuration with three authoritative external references, one activation audit fact and one activation event. No duplicate or service-linked operational record was created.",
+      "evidenceReference": "docs/production/synthetic-uat-results.md#uat-web-001--passed",
+      "result": "Passed",
+      "executionTimestamp": "2026-08-30",
+      "environmentReleaseIdentity": "faf4be5d0b676f21bcd8f5d3cea584e860b78107",
+      "testerIdentity": "Shaun",
+      "defectReferences": [
+        "Initial non-durable deferred processing left the receipt unprocessed; PR #75 introduced a durable retryable job and the preserved intake recovered successfully after deployment",
+        "Initial region-scoped activation was blocked by legacy global master-data authorization; PR #76 introduced the bounded regional activation path and the same approved intake activated successfully after deployment"
+      ]
     },
     {
       "id": "UAT-SKP-001",
