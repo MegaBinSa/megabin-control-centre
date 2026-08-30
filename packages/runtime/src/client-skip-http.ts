@@ -46,7 +46,11 @@ export function createClientSkipHandler(deps: ClientSkipHttpDependencies) {
   };
   return async (request: Request): Promise<Response | null> => {
     const url = new URL(request.url);
-    if (!url.pathname.startsWith("/api/v1/client-skips")) return null;
+    // Hosted Supabase requests retain the Edge Function slug in the pathname
+    // (`/platform-runtime/api/v1/...`), while local/unit requests begin at
+    // `/api/v1/...`. Normalize at the versioned API boundary before routing.
+    const apiPath = url.pathname.replace(/^.*\/api\/v1/, "");
+    if (!apiPath.startsWith("/client-skips")) return null;
     if (!deps.actorId)
       return json(
         {
@@ -55,7 +59,7 @@ export function createClientSkipHandler(deps: ClientSkipHttpDependencies) {
         },
         401
       );
-    const path = url.pathname.replace("/api/v1/client-skips", "") || "/";
+    const path = apiPath.replace("/client-skips", "") || "/";
     try {
       if (path === "/" && request.method === "GET")
         return run("client_skip_list", {

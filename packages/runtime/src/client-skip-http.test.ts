@@ -20,6 +20,17 @@ describe("client SKIP HTTP boundary", () => {
       expect.objectContaining({ p_actor: "actor-1" })
     );
   });
+  it("serves the queue when the hosted Edge Function slug prefixes the API path", async () => {
+    const d = setup();
+    const response = await d.handler(
+      new Request("https://project.supabase.co/functions/v1/platform-runtime/api/v1/client-skips")
+    );
+    expect(response?.status).toBe(200);
+    expect(d.rpc.rpc).toHaveBeenCalledWith("client_skip_list", {
+      p_actor: "actor-1",
+      p_query: {}
+    });
+  });
   it("passes optimistic approval and rejection commands", async () => {
     const d = setup();
     for (const action of ["approve", "reject"])

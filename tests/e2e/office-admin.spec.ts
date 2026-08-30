@@ -2006,3 +2006,15 @@ test("Office reviews inbound SKIP, approves one occurrence, replans, and sees ac
   await page.getByRole("button", { name: "Create Draft replan" }).click();
   await expect(page.getByText(/new Draft route candidate/)).toBeVisible();
 });
+
+test("authenticated Office deep link restores the Client SKIP review workspace", async ({
+  page
+}) => {
+  await syntheticSession(page, ["master_data.read", "client_skip.read"]);
+  await page.getByRole("button", { name: "Client SKIP" }).click();
+  await expect(page.getByRole("heading", { name: "Client SKIP requests" })).toBeVisible();
+  await page.reload();
+  await expect(page).toHaveURL(/module=client-skip/);
+  await expect(page.getByRole("heading", { name: "Client SKIP requests" })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Office sign in" })).toHaveCount(0);
+});
