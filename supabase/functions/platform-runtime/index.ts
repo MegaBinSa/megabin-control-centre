@@ -140,7 +140,12 @@ const authenticatedFetch = withSupabase(
           .filter(Boolean),
         webhookSecret: Deno.env.get("MEGABIN_COMMUNICATIONS_WEBHOOK_SECRET"),
         maxRetries: Number(Deno.env.get("MEGABIN_COMMUNICATIONS_MAX_RETRIES") ?? 2),
-        defer: (work) => EdgeRuntime.waitUntil(work)
+        defer: (work) => EdgeRuntime.waitUntil(work),
+        consumeInboundCommand: (inboundMessageId, correlationId) =>
+          rpc.rpc("client_skip_consume_inbound", {
+            p_inbound_message_id: inboundMessageId,
+            p_correlation_id: correlationId
+          })
       })(request);
       if (communicationsResponse) return communicationsResponse;
       const clientSkipResponse = await createClientSkipHandler({
