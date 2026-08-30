@@ -1415,6 +1415,77 @@ test("Office Website Intake reviews, approves, and activates a signup", async ({
   await expect(page.getByText("Intake activate succeeded.")).toBeVisible();
 });
 
+test("Office Website Intake keeps an approved intake visible after activation denial", async ({
+  page
+}) => {
+  const serviceRegionId = "51000000-0000-0000-0000-000000000001";
+  const submissionId = "96000000-0000-4000-8000-000000000002";
+  await syntheticSession(
+    page,
+    ["master_data.read", "website_intake.read", "website_intake.activate"],
+    undefined,
+    [serviceRegionId]
+  );
+  await page.route("**/api/v1/website-intake?*", (route) =>
+    route.fulfill({
+      json: {
+        ok: true,
+        data: {
+          items: [
+            {
+              submissionId,
+              sourceSubmissionId: "web-e2e-denied",
+              displayName: "Denied Website Client",
+              status: "approved",
+              matchStatus: "no_match",
+              duplicateClassification: "none",
+              receivedAt: new Date().toISOString(),
+              version: 3
+            }
+          ]
+        }
+      }
+    })
+  );
+  await page.route(`**/api/v1/website-intake/${submissionId}`, (route) =>
+    route.fulfill({
+      json: {
+        ok: true,
+        data: {
+          submissionId,
+          sourceSubmissionId: "web-e2e-denied",
+          status: "approved",
+          version: 3,
+          matchStatus: "no_match",
+          duplicateClassification: "none",
+          receivedAt: new Date().toISOString(),
+          sourcePayload: {},
+          normalizedData: {},
+          approvedDecision: { serviceRegionId },
+          validationErrors: [],
+          activationResult: {},
+          history: [{ action: "approved" }]
+        }
+      }
+    })
+  );
+  await page.route(`**/api/v1/website-intake/${submissionId}/activate`, (route) =>
+    route.fulfill({
+      status: 403,
+      json: {
+        ok: false,
+        error: { code: "permission_denied", message: "Permission denied." }
+      }
+    })
+  );
+
+  await page.getByRole("button", { name: "Website Intake" }).click();
+  await page.getByRole("button", { name: "Review" }).click();
+  await page.getByRole("button", { name: "Activate" }).click();
+  await expect(page.getByText("Permission denied.")).toBeVisible();
+  await expect(page.getByText("web-e2e-denied")).toBeVisible();
+});
+
 test("Office Website Intake renders a failed scoped list instead of hanging", async ({ page }) => {
   const serviceRegionId = "51000000-0000-0000-0000-000000000001";
   await syntheticSession(page, ["master_data.read", "website_intake.read"], undefined, [
