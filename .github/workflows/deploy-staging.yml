@@ -196,14 +196,14 @@ jobs:
         run: pnpm build
 
       - name: Upload Office artifact
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: office-web-staging-${{ inputs.source_sha }}
           path: apps/office-web/dist
           if-no-files-found: error
 
       - name: Upload Driver artifact
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: driver-pwa-staging-${{ inputs.source_sha }}
           path: apps/driver-pwa/dist
