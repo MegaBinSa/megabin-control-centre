@@ -7,4 +7,6 @@
 5. Approve to freeze the activation decision, or reject with a reason.
 6. Activate. The transaction creates or links authoritative records and references once.
 
+For a region-scoped Office actor, activation is limited to the frozen approved service region. A denial must leave the intake `approved` with no activation references or partial master records; do not grant global scope to work around a failure. Repeated activation after success returns the existing activation references and creates no duplicate records.
+
 A stale review returns `409`; reload before acting. Rejected and activated intake remains historically visible. Never link records manually in the database.

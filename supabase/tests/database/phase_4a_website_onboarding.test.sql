@@ -1,5 +1,5 @@
 begin;
-select plan(48);
+select plan(70);
 
 select has_table('app_private','website_intake_submissions','immutable website intake exists');
 select has_table('app_private','website_intake_processing_history','processing interpretation history exists');
@@ -11,22 +11,30 @@ insert into auth.users(id,email) values
  ('74000000-0000-4000-8000-000000000001','intake-office@test.invalid'),
  ('74000000-0000-4000-8000-000000000002','intake-driver@test.invalid'),
  ('74000000-0000-4000-8000-000000000003','intake-other-region@test.invalid'),
- ('74000000-0000-4000-8000-000000000004','intake-regional-office@test.invalid');
+ ('74000000-0000-4000-8000-000000000004','intake-regional-office@test.invalid'),
+ ('74000000-0000-4000-8000-000000000005','intake-regional-no-activate@test.invalid');
 insert into public.user_profiles(user_id,display_name) values
  ('74000000-0000-4000-8000-000000000001','Intake Office'),
  ('74000000-0000-4000-8000-000000000002','Intake Driver'),
  ('74000000-0000-4000-8000-000000000003','Other Region Office'),
- ('74000000-0000-4000-8000-000000000004','Regional Intake Office');
+ ('74000000-0000-4000-8000-000000000004','Regional Intake Office'),
+ ('74000000-0000-4000-8000-000000000005','Regional Master Data Only');
+insert into app_private.roles(role_id,role_key,display_name,is_system) values
+ ('74000000-0000-4000-8000-000000000105','regional_master_data_only','Regional Master Data Only',false);
+insert into app_private.role_permissions(role_id,permission_key) values
+ ('74000000-0000-4000-8000-000000000105','master_data.write');
 insert into app_private.user_roles(user_id,role_id)
 select '74000000-0000-4000-8000-000000000001'::uuid,role_id from app_private.roles where role_key='operations_manager'
 union all select '74000000-0000-4000-8000-000000000002'::uuid,role_id from app_private.roles where role_key='driver_team'
 union all select '74000000-0000-4000-8000-000000000003'::uuid,role_id from app_private.roles where role_key='operations_manager'
-union all select '74000000-0000-4000-8000-000000000004'::uuid,role_id from app_private.roles where role_key='office_admin';
+union all select '74000000-0000-4000-8000-000000000004'::uuid,role_id from app_private.roles where role_key='office_admin'
+union all select '74000000-0000-4000-8000-000000000005'::uuid,role_id from app_private.roles where role_key='regional_master_data_only';
 insert into app_private.user_access_scopes(user_id,scope_kind,scope_id) values
  ('74000000-0000-4000-8000-000000000001','global',null),
  ('74000000-0000-4000-8000-000000000002','team','54000000-0000-0000-0000-000000000001'),
  ('74000000-0000-4000-8000-000000000003','service_region','51000000-0000-0000-0000-000000000099'),
- ('74000000-0000-4000-8000-000000000004','service_region','51000000-0000-0000-0000-000000000001');
+ ('74000000-0000-4000-8000-000000000004','service_region','51000000-0000-0000-0000-000000000001'),
+ ('74000000-0000-4000-8000-000000000005','service_region','51000000-0000-0000-0000-000000000001');
 
 create temporary table intake_result(value jsonb);
 insert into intake_result select api.website_intake_receive(
@@ -86,6 +94,42 @@ select is(api.website_intake_source_status('megabin-website-onboarding-local','w
 select ok((select count(*)>=3 from app_private.outbox_events where producer_module='website-intake'),'concise lifecycle events emitted');
 select ok((select count(*)>=2 from app_private.business_audit_facts where module_key='website-intake'),'business actions audited');
 select ok((select count(*)>=3 from app_private.integration_activity_logs where safe_metadata ? 'validationStatus' or safe_metadata->>'classification'='transport_retry'),'safe integration receipt metrics recorded');
+
+-- A region-scoped Office activation reuses private master-data owner primitives;
+-- the ordinary unscoped APIs remain global-only.
+select lives_ok($$select api.website_intake_receive(
+  'megabin-website-onboarding-local','web-regional','retry-regional',repeat('e',64),gen_random_uuid(),
+  '{"sourceSubmissionId":"web-regional","payloadVersion":"1.0","submittedAt":"2026-08-30T08:00:00Z","client":{"type":"individual","displayName":"Regional Website Client"},"contact":{"name":"Regional Website Contact","mobile":"0820000201","email":"regional-website@example.test"},"address":{"addressLine1":"201 Regional Website Road","suburb":"Synthetic North","city":"Pretoria","postalCode":"0001","latitude":-25.70,"longitude":28.22},"requestedDrumCount":2,"requestedStartDate":"2026-09-01","references":{"customerReference":"regional-customer","serviceReference":"regional-service"}}'
+)$$,'regional intake received');
+select lives_ok(format('select api.website_intake_process(%L,gen_random_uuid())',(select website_intake_submission_id from app_private.website_intake_submissions where source_submission_id='web-regional')),'regional intake processed');
+select lives_ok(format($f$select api.website_intake_review(%L,%L,'approve',2,%L::jsonb,'Regional UAT approval',gen_random_uuid())$f$,
+ '74000000-0000-4000-8000-000000000004',(select website_intake_submission_id from app_private.website_intake_submissions where source_submission_id='web-regional'),
+ '{"approvedDrumCount":2,"serviceRegionId":"51000000-0000-0000-0000-000000000001","territoryId":"53000000-0000-0000-0000-000000000001","depotId":"52000000-0000-0000-0000-000000000001","defaultTeamId":"54000000-0000-0000-0000-000000000001","collectionDay":1,"effectiveStartDate":"2026-09-01"}'),'regional intake approved');
+select throws_ok(format('select api.website_intake_activate(%L,%L,3,gen_random_uuid())','74000000-0000-4000-8000-000000000003',(select website_intake_submission_id from app_private.website_intake_submissions where source_submission_id='web-regional')),'42501',null,'cross-region Office cannot activate Pretoria intake');
+select throws_ok(format('select api.website_intake_activate(%L,%L,3,gen_random_uuid())','74000000-0000-4000-8000-000000000005',(select website_intake_submission_id from app_private.website_intake_submissions where source_submission_id='web-regional')),'42501',null,'regional master-data actor without website activation permission is denied');
+select lives_ok(format('select api.website_intake_activate(%L,%L,3,gen_random_uuid())','74000000-0000-4000-8000-000000000004',(select website_intake_submission_id from app_private.website_intake_submissions where source_submission_id='web-regional')),'Pretoria-scoped Office activates approved Pretoria intake');
+select is((select lifecycle_status from app_private.website_intake_submissions where source_submission_id='web-regional'),'activated','regional intake is activated');
+select is((select count(*) from app_private.clients where display_name='Regional Website Client'),1::bigint,'regional activation creates one Client');
+select is((select count(*) from app_private.client_contacts where email='regional-website@example.test'),1::bigint,'regional activation creates one Contact');
+select is((select count(*) from app_private.service_addresses where address_line_1='201 Regional Website Road'),1::bigint,'regional activation creates one Address');
+select is((select count(*) from app_private.client_services cs join app_private.clients c using(client_id) where c.display_name='Regional Website Client'),1::bigint,'regional activation creates one Client Service');
+select is((select count(*) from app_private.service_configurations sc join app_private.client_services cs using(client_service_id) join app_private.clients c using(client_id) where c.display_name='Regional Website Client' and sc.service_region_id='51000000-0000-0000-0000-000000000001'),1::bigint,'regional activation creates one Pretoria configuration');
+select is((api.website_intake_activate('74000000-0000-4000-8000-000000000004',(select website_intake_submission_id from app_private.website_intake_submissions where source_submission_id='web-regional'),4,gen_random_uuid())->>'duplicate')::boolean,true,'regional duplicate activation returns existing result');
+select is((select count(*) from app_private.clients where display_name='Regional Website Client'),1::bigint,'regional duplicate creates no second Client');
+select throws_ok($$select api.create_client('74000000-0000-4000-8000-000000000004','regional-generic-denied',repeat('f',64),gen_random_uuid(),'{"clientType":"individual","displayName":"Forbidden Generic Regional Client"}')$$,'42501',null,'ordinary unscoped Client creation remains global-only');
+
+select lives_ok($$select api.website_intake_receive(
+  'megabin-website-onboarding-local','web-rollback','retry-rollback',repeat('1',64),gen_random_uuid(),
+  '{"sourceSubmissionId":"web-rollback","payloadVersion":"1.0","submittedAt":"2026-08-30T08:10:00Z","client":{"type":"individual","displayName":"Rollback Website Client"},"contact":{"name":"Rollback Website Contact","mobile":"0820000202","email":"rollback-website@example.test"},"address":{"addressLine1":"202 Rollback Website Road","suburb":"Synthetic North","city":"Pretoria","postalCode":"0001","latitude":-25.70,"longitude":28.22},"requestedDrumCount":2,"requestedStartDate":"2026-09-01"}'
+)$$,'rollback intake received');
+select lives_ok(format('select api.website_intake_process(%L,gen_random_uuid())',(select website_intake_submission_id from app_private.website_intake_submissions where source_submission_id='web-rollback')),'rollback intake processed');
+select lives_ok(format($f$select api.website_intake_review(%L,%L,'approve',2,%L::jsonb,'Rollback proof',gen_random_uuid())$f$,
+ '74000000-0000-4000-8000-000000000004',(select website_intake_submission_id from app_private.website_intake_submissions where source_submission_id='web-rollback'),
+ '{"approvedDrumCount":0,"serviceRegionId":"51000000-0000-0000-0000-000000000001","territoryId":"53000000-0000-0000-0000-000000000001","depotId":"52000000-0000-0000-0000-000000000001","defaultTeamId":"54000000-0000-0000-0000-000000000001","collectionDay":1,"effectiveStartDate":"2026-09-01"}'),'rollback intake approved with a deliberately invalid downstream invariant');
+select throws_ok(format('select api.website_intake_activate(%L,%L,3,gen_random_uuid())','74000000-0000-4000-8000-000000000004',(select website_intake_submission_id from app_private.website_intake_submissions where source_submission_id='web-rollback')),'23514',null,'late configuration failure aborts activation');
+select is((select lifecycle_status from app_private.website_intake_submissions where source_submission_id='web-rollback'),'approved','failed activation rolls intake back to approved');
+select is((select count(*) from app_private.clients where display_name='Rollback Website Client'),0::bigint,'failed activation rolls back Client');
+select is((select count(*) from app_private.service_addresses where address_line_1='202 Rollback Website Road'),0::bigint,'failed activation rolls back Address');
 
 select * from finish();
 rollback;

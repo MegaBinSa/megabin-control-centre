@@ -180,4 +180,50 @@ describe("website intake HTTP boundary", () => {
     );
     expect(response?.status).toBe(409);
   });
+
+  it("dispatches activation with optimistic version and preserves permission denials", async () => {
+    const office = setup("00000000-0000-4000-8000-000000000001");
+    office.rpc.rpc.mockResolvedValueOnce({
+      data: {
+        submissionId: "00000000-0000-4000-8000-000000000010",
+        status: "activated",
+        duplicate: false
+      },
+      error: null
+    });
+    const accepted = await office.handler(
+      new Request(
+        "https://local/api/v1/website-intake/00000000-0000-4000-8000-000000000010/activate",
+        {
+          method: "POST",
+          headers: { "Idempotency-Key": "activate-1" },
+          body: JSON.stringify({ expectedVersion: 3 })
+        }
+      )
+    );
+    expect(accepted?.status).toBe(200);
+    expect(office.rpc.rpc).toHaveBeenLastCalledWith("website_intake_activate", {
+      p_actor_id: "00000000-0000-4000-8000-000000000001",
+      p_submission_id: "00000000-0000-4000-8000-000000000010",
+      p_expected_version: 3,
+      p_correlation_id: "00000000-0000-4000-8000-000000000099"
+    });
+
+    office.rpc.rpc.mockResolvedValueOnce({
+      data: null,
+      error: { code: "42501", message: "permission denied" }
+    });
+    const denied = await office.handler(
+      new Request(
+        "https://local/api/v1/website-intake/00000000-0000-4000-8000-000000000011/activate",
+        {
+          method: "POST",
+          headers: { "Idempotency-Key": "activate-2" },
+          body: JSON.stringify({ expectedVersion: 3 })
+        }
+      )
+    );
+    expect(denied?.status).toBe(403);
+    expect(await denied?.json()).toMatchObject({ error: { code: "permission_denied" } });
+  });
 });
