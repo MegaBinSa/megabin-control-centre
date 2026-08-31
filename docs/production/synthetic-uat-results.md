@@ -1,17 +1,41 @@
 # Synthetic UAT Results
 
-**Status:** UAT-OFF-001, UAT-DRV-001 and UAT-WEB-001 Passed; three journeys remain Not Run
+**Status:** UAT-OFF-001, UAT-DRV-001, UAT-WEB-001 and UAT-SKP-001 Passed; two journeys remain Not Run
 
 | Case | Journey | Result | Evidence/blocker |
 |---|---|---|---|
 | `UAT-OFF-001` | Office operational planning | Passed | Manual protected-Staging execution completed on `2026-08-25`, release `c74bea8b7f09d572c9d1f12182d3082eca063de6`, by Shaun. See the evidence record below. |
 | `UAT-DRV-001` | Driver execution/offline synchronization | Passed | Manual protected-Staging execution on `2026-08-24`, release `c74bea8b7f09d572c9d1f12182d3082eca063de6`, by Shaun. See the evidence record below. |
 | `UAT-WEB-001` | Website onboarding | Passed | Protected submission, durable processing, identical retry, Office review/approval and atomic regional activation completed by Shaun; final state verified on release `faf4be5d0b676f21bcd8f5d3cea584e860b78107`. |
-| `UAT-SKP-001` | Client SKIP/replan | Not Run | Protected execution required |
+| `UAT-SKP-001` | Client SKIP/replan | Passed | Protected authenticated inbound, qualification, regional approval, one-occurrence exclusion, capture-only acknowledgement and immutable-source Draft replanning completed by Shaun; final state verified on release `684dc94df3a6ceea6cdfe3ed5740ec26cf93b3df`. |
 | `UAT-FIN-001` | Accounting/financial boundary | Not Run | Protected execution required |
 | `UAT-TRK-001` | Tracking/intelligence | Not Run | Protected execution required |
 
 Results may change only with release-bound evidence containing every catalogue field. Local unit, pgTAP and Playwright tests support readiness but are not substituted for shared-Staging UAT.
+
+## UAT-SKP-001 — Passed
+
+Shaun completed the Client SKIP and protected-replanning journey in Shared Staging using reserved provider identity `uat:skip:UAT-SKP-001:20260831:01`. The protected workflow sent exactly one authenticated fake-provider request through the real communications webhook boundary. The retained inbound message matched the one active synthetic Contact and Client Service, synchronously produced SKIP Request `b41da6e3-c237-41f5-b427-287d05b91860`, and qualified collection occurrence `e556c918-72ec-451c-b583-0174bb4108d1` as `near_cutoff` because Published Route Version 1 already contained the due service. No duplicate inbound, SKIP Request or early exclusion was created.
+
+### Original inbound and Office-route failures
+
+Repository review before execution found that recognized inbound commands depended on detached Edge Function work after the webhook response. This could leave a successfully retained message without a durable SKIP Request. PR #78 introduced synchronous, idempotent consumption through `client_skip_consume_inbound` while preserving webhook authentication, replay protection and the immutable provider/message identity. The protected initial submission then retained and qualified the request exactly once.
+
+The first Office review deep link reached the deployed Edge Function but `GET /functions/v1/platform-runtime/api/v1/client-skips` fell through to `endpoint_not_found` because the Client SKIP handler matched only the local pathname shape. PR #79 normalized the hosted Function pathname at the versioned API boundary. After protected deployment, the same qualified request loaded for `Synthetic Staging Office` with Pretoria-scoped read, review, approve, reject and replan permissions. Neither remediation changed the preserved request or manufactured a decision.
+
+### Approval, exclusion and captured acknowledgement
+
+Office approved the qualified request once with review version 1 and the retained reason `UAT-SKP-001 approved one-day SKIP for the 2026-08-31 collection after near-cutoff review.` The request moved to `applied`, review version 2, and recorded the Office actor and review time. Occurrence `e556c918-72ec-451c-b583-0174bb4108d1` moved from `expected` to `excluded` without changing its Client Service, service date, Operational Day, region or source-configuration identity. Exactly one active exclusion `e3dc803f-6a3f-42c7-9b90-ca62708125be` records reason `client_requested_skip` and links the request and occurrence.
+
+Approval created exactly one `skip_approved` communication intent `5fa46254-48a9-4fa0-ba28-fbdfc97b83f5` with idempotency identity `skip-approved-v1`. Shared Staging remained in `capture` mode and the intent had zero provider attempts, proving no live delivery. Correlation `6a1d1c00-5bad-4d2b-8152-685968a97e82` links the expected `client_skip.approved` and `communications.manual_send_requested` audit facts with `ClientSkip.Approved`, `ClientSkip.ExclusionApplied` and `Communications.IntentCreated` events.
+
+### Explicit protected replan
+
+Approval did not replan automatically. Shaun separately requested the Draft replan with reason `UAT-SKP-001 create protected Draft replan after approved one-day exclusion.` Replan record `b9f40dc5-c8fc-4e6f-b69d-28a802bfc8e8` succeeded under correlation `07660fc1-fb2d-42bc-8400-6f136d5ff33f`, with one `client_skip.replan_requested` audit fact and one `ClientSkip.ReplanRequested` event attributed to the Office actor.
+
+Published Version 1 `b82f6158-909d-4f34-99f4-f3f0c2663e35` remained published, non-stale and immutable with its original two stops and four planned drums. New Version 2 `296f61ba-1265-4b28-b65c-075770ff0d77` remained Draft, referenced Published Version 1 as its source, and contained one route, one assigned Synthetic Client One stop and two planned drums. The excluded UAT Website Client Service had no planned stop; it was retained once as explicit unassigned evidence with reason `client_requested_skip`, linked to the approved occurrence. No Ready or additional Published version, optimization, publication, handoff or Route Operation was created.
+
+The recurring Client Service and effective Monday/two-drum configuration remained unchanged. Final reconciliation found one inbound identity, one SKIP Request, one active exclusion, one acknowledgement intent, one replan record, no live provider attempt and no unrelated operational side effect. The original defects, remediation PRs and successful retests remain visible in this evidence trail.
 
 ## UAT-WEB-001 — Passed
 

@@ -107,13 +107,16 @@
         "Verify acknowledgement remains captured"
       ],
       "expectedOutcome": "One occurrence is excluded and protected operational history is unchanged.",
-      "actualOutcome": null,
-      "evidenceReference": null,
-      "result": "Not Run",
-      "executionTimestamp": null,
-      "environmentReleaseIdentity": null,
-      "testerIdentity": null,
-      "defectReferences": []
+      "actualOutcome": "One authenticated synthetic inbound SKIP was durably consumed, matched to the activated Pretoria client/service and qualified near cutoff against a preserved Published route. Regional Office approval applied exactly one occurrence exclusion and created one capture-only acknowledgement intent. Explicit replanning then created Draft Version 2 from immutable Published Version 1, retained Synthetic Client One as the only assigned stop and represented the excluded UAT Website service once as client_requested_skip unassigned evidence. No Route Operation, live provider attempt, recurring-service change or duplicate SKIP/exclusion was created.",
+      "evidenceReference": "docs/production/synthetic-uat-results.md#uat-skp-001--passed",
+      "result": "Passed",
+      "executionTimestamp": "2026-08-31",
+      "environmentReleaseIdentity": "684dc94df3a6ceea6cdfe3ed5740ec26cf93b3df",
+      "testerIdentity": "Shaun",
+      "defectReferences": [
+        "Initial fire-and-forget inbound command consumption was not durable; PR #78 introduced synchronous idempotent SKIP consumption through the authenticated communications boundary",
+        "Initial hosted Client SKIP list routing returned endpoint_not_found; PR #79 normalized the hosted Edge Function path and the preserved qualified request loaded successfully after deployment"
+      ]
     },
     {
       "id": "UAT-FIN-001",
