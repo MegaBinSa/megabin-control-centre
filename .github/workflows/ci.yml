@@ -51,7 +51,8 @@ jobs:
           "$RUNNER_TEMP/actionlint" -color \
             .github/workflows/submit-staging-website-uat.yml \
             .github/workflows/submit-staging-skip-uat.yml \
-            .github/workflows/submit-staging-accounting-uat.yml
+            .github/workflows/submit-staging-accounting-uat.yml \
+            .github/workflows/diagnose-supabase-pat.yml
 
       - name: Verify repository quality
         run: pnpm check
