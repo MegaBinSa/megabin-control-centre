@@ -7,3 +7,9 @@
 5. Apply a reasoned manual exception with an optional expiry when operational treatment needs temporary human judgment. Remove it to restore derivation.
 
 This workspace does not replace Zoho Books and cannot edit invoices, payments, Clients, Services, routes, or holds.
+
+## Scope-aware workspace behavior
+
+Regional Office users see only authorized Client accounting projections and detail. The provider-administration panel explicitly states that global administration is unavailable; provider health, sync controls/history and global reconciliation are neither requested nor rendered. A global Operations Manager with the established permissions retains those controls. Financial Eligibility similarly offers individual region-authorized preview, reevaluation, hold and release actions while hiding the global `stale_review` batch action from region-only actors.
+
+UAT fact preparation is not an Office capability. It uses the protected manual **Submit staging Accounting UAT synchronization** workflow and the dedicated `Synthetic Staging Accounting Operator`; the normal regional Office persona never receives `accounting.sync` or global scope.

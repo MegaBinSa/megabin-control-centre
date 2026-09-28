@@ -50,7 +50,8 @@ jobs:
           tar --extract --gzip --file "$RUNNER_TEMP/$archive" --directory "$RUNNER_TEMP" actionlint
           "$RUNNER_TEMP/actionlint" -color \
             .github/workflows/submit-staging-website-uat.yml \
-            .github/workflows/submit-staging-skip-uat.yml
+            .github/workflows/submit-staging-skip-uat.yml \
+            .github/workflows/submit-staging-accounting-uat.yml
 
       - name: Verify repository quality
         run: pnpm check

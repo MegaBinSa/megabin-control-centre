@@ -37,7 +37,7 @@ describe("accounting HTTP boundary", () => {
     const response = await d.handler(
       new Request("http://x/api/v1/accounting/sync-runs", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: { "Content-Type": "application/json", "Idempotency-Key": "sync-test-1" },
         body: JSON.stringify({ syncMode: "initial_full" })
       })
     );
@@ -45,12 +45,57 @@ describe("accounting HTTP boundary", () => {
     await Promise.all(d.deferred);
     expect(d.rpc.rpc).toHaveBeenCalledWith("accounting_ingest_sync", expect.anything());
   });
+  it("resolves an exact synchronization retry without repeating provider work", async () => {
+    const provider = new FakeZohoBooksAdapter();
+    const customers = vi.spyOn(provider, "customers");
+    const d = deps(provider);
+    d.rpc.rpc.mockImplementation(async (name: string) => ({
+      data:
+        name === "accounting_start_sync"
+          ? {
+              sync_run_id: "71000000-0000-4000-8000-000000000001",
+              status: "succeeded",
+              duplicate: d.rpc.rpc.mock.calls.filter(([called]) => called === name).length > 1
+            }
+          : { items: [] },
+      error: null
+    }));
+    const request = () =>
+      new Request("http://x/api/v1/accounting/sync-runs", {
+        method: "POST",
+        headers: { "Content-Type": "application/json", "Idempotency-Key": "uat-fin-sync-1" },
+        body: JSON.stringify({ syncMode: "initial_full" })
+      });
+    expect((await d.handler(request()))?.status).toBe(202);
+    await Promise.all(d.deferred);
+    expect((await d.handler(request()))?.status).toBe(200);
+    expect(customers).toHaveBeenCalledTimes(1);
+  });
+  it("fails closed when an idempotency identity is reused for another request", async () => {
+    const d = deps();
+    d.rpc.rpc.mockResolvedValueOnce({
+      data: null,
+      error: { code: "22023", message: "accounting_sync_idempotency_conflict" }
+    } as never);
+    const response = await d.handler(
+      new Request("http://x/api/v1/accounting/sync-runs", {
+        method: "POST",
+        headers: { "Content-Type": "application/json", "Idempotency-Key": "reused" },
+        body: JSON.stringify({ syncMode: "incremental" })
+      })
+    );
+    expect(response?.status).toBe(409);
+    await expect(response?.json()).resolves.toMatchObject({
+      error: { code: "idempotency_key_reused" }
+    });
+    expect(d.deferred).toHaveLength(0);
+  });
   it("passes capped retry-after and authentication failures to durable failure capture", async () => {
     const d = deps(new FakeZohoBooksAdapter({ failure: "rate_limited", retryAfterMs: 9000 }));
     await d.handler(
       new Request("http://x/api/v1/accounting/sync-runs", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: { "Content-Type": "application/json", "Idempotency-Key": "sync-test-1" },
         body: JSON.stringify({ syncMode: "incremental" })
       })
     );

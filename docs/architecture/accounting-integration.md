@@ -23,3 +23,9 @@ A manual exception may temporarily report Current, Manual Review, or Unknown. It
 Facts and snapshot lineage are retained long enough to explain status changes. Automated purge is deferred until the financial retention/legal policy is approved. Generic logs contain counts, latency, failure class, health, correlation, and freshness only—never customer, invoice, payment, or balance payloads.
 
 Future consumers use only the eligibility projection: account status, freshness, manual-exception presence, reconciliation state, and a non-binding recommendation. `financial_attention` and `review_required` are advisory foundations, not service holds or route decisions.
+
+## Regional projection and global administration boundary
+
+The Office Accounting workspace is capability- and scope-aware. `accounting.read` and `accounting.sensitive.read` may expose only authorized regional projections. Provider health, synchronization history, synchronization commands and the global reconciliation queue require both the relevant permission and `global_access`; the browser does not call those endpoints for a region-only actor. An expected global denial cannot suppress a valid regional status projection.
+
+Synchronization commands carry a durable idempotency identity. The first request creates one pending run and invokes the configured adapter. An exact retry returns the same run and terminal outcome without repeating provider work. Reusing the identity with different provider, environment, organization, mode or cursor fails closed. Failure remains recorded on the run and connection; recovery uses a reviewed new identity rather than editing history.

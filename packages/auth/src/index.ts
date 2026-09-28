@@ -8,8 +8,10 @@ import {
 export interface OfficeIdentity {
   readonly userId: string;
   readonly displayName: string;
+  readonly roles: readonly string[];
   readonly permissions: readonly string[];
   readonly serviceRegionIds: readonly string[];
+  readonly globalAccess: boolean;
 }
 
 export interface OfficeAuth {

@@ -105,24 +105,38 @@ export function createAccountingHandler(deps: Dependencies) {
     const cid = request.headers.get("X-Correlation-Id") ?? deps.id();
     if (!deps.actorId)
       return fail("authentication_required", "Authentication is required.", 401, cid);
-    const run = async (name: string, p: Record<string, unknown>) => {
-      const r = await deps.rpc.rpc(name, p);
-      if (!r.error) return json({ ok: true, data: camel(r.data) });
-      if (r.error.code === "42501")
+    const respond = (result: {
+      data: unknown;
+      error: { code?: string; message: string } | null;
+    }) => {
+      if (!result.error) return json({ ok: true, data: camel(result.data) });
+      if (result.error.code === "42501")
         return fail("permission_denied", "Permission denied.", 403, cid);
-      if (r.error.code === "P0002")
+      if (result.error.code === "P0002")
         return fail("not_found", "Accounting resource not found.", 404, cid);
-      if (r.error.code === "55000" && r.error.message.includes("sync_running"))
+      if (
+        result.error.code === "22023" &&
+        result.error.message.includes("accounting_sync_idempotency_conflict")
+      )
+        return fail(
+          "idempotency_key_reused",
+          "The synchronization identity was already used for a different request.",
+          409,
+          cid
+        );
+      if (result.error.code === "55000" && result.error.message.includes("sync_running"))
         return fail("sync_running", "An accounting sync is already running.", 409, cid);
-      if (["22023", "55000"].includes(r.error.code ?? ""))
+      if (["22023", "55000"].includes(result.error.code ?? ""))
         return fail(
           "reconciliation_conflict",
-          r.error.message.split("\n")[0] ?? "Accounting conflict.",
+          result.error.message.split("\n")[0] ?? "Accounting conflict.",
           409,
           cid
         );
       return fail("internal_error", "Accounting operation failed.", 500, cid);
     };
+    const run = async (name: string, p: Record<string, unknown>) =>
+      respond(await deps.rpc.rpc(name, p));
     try {
       if (path === "/accounting/health" && request.method === "GET")
         return run("accounting_health", { p_actor: deps.actorId });
@@ -139,6 +153,9 @@ export function createAccountingHandler(deps: Dependencies) {
       if (detail && request.method === "GET")
         return run("accounting_client_detail", { p_actor: deps.actorId, p_client: detail[1] });
       if (path === "/accounting/sync-runs" && request.method === "POST") {
+        const idempotencyKey = request.headers.get("Idempotency-Key")?.trim();
+        if (!idempotencyKey)
+          return fail("validation_failed", "Idempotency-Key is required.", 400, cid);
         const body = z
           .object({
             syncMode: z.enum(["initial_full", "incremental", "manual_refresh", "scheduled"]),
@@ -153,25 +170,19 @@ export function createAccountingHandler(deps: Dependencies) {
             environment: deps.environment,
             organizationId: deps.organizationId,
             syncMode: body.syncMode,
-            cursor: body.cursor
+            cursor: body.cursor,
+            idempotencyKey
           },
           p_correlation: cid
         });
-        if (result.error)
-          return run("accounting_start_sync", {
-            p_actor: deps.actorId,
-            p_body: {
-              provider: deps.provider.providerKey,
-              environment: deps.environment,
-              organizationId: deps.organizationId,
-              syncMode: body.syncMode,
-              cursor: body.cursor
-            },
-            p_correlation: cid
-          });
-        const data = camel(result.data) as { syncRunId: string };
-        deps.defer(synchronize(deps, data.syncRunId, body.syncMode));
-        return json({ ok: true, data }, 202);
+        if (result.error) return respond(result);
+        const data = camel(result.data) as {
+          syncRunId: string;
+          status: string;
+          duplicate?: boolean;
+        };
+        if (!data.duplicate) deps.defer(synchronize(deps, data.syncRunId, body.syncMode));
+        return json({ ok: true, data }, data.duplicate ? 200 : 202);
       }
       const reconcile = /^\/accounting\/reconciliation\/([^/]+)\/([^/]+)$/.exec(path);
       if (reconcile && request.method === "POST") {

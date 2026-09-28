@@ -79,3 +79,9 @@ Pause on unexplained data divergence, authorization/privacy breach, unrecoverabl
 - Messaging sender/template/webhook/fallback behavior in sandboxes.
 - SKIP cutoff, late request, replan and acknowledgement timing with operators.
 - Synthetic scale/load scenarios defined in the assessment.
+
+## UAT-FIN-001 preparation contract
+
+The reviewed preparation adds a dedicated synthetic global accounting operator and a manual protected fake-sync workflow. Before deployment, create and confirm `staging-accounting@megabin.local` in Staging Auth, configure `STAGING_ACCOUNTING_EMAIL` as a GitHub `staging` Environment variable and `STAGING_ACCOUNTING_PASSWORD` as an Environment secret, and preserve the persona register's MFA requirement. Deployment provisions exactly the `operations_manager` role and global scope through the administrator-only database-owned function; it does not alter Synthetic Staging Office or Driver grants.
+
+After deployment and before dispatch, verify read-only that Office remains region-only, Driver remains denied, the operator has exactly one approved role/global scope, provider mode is `zoho-books-fake`, automatic hold/release are false, and the reserved sync identity is absent. Capture current sync/fact/snapshot/financial-decision/provider-attempt counts plus the Published and active operational identities that must remain unchanged. The workflow mechanism being present does not pass `UAT-FIN-001`.

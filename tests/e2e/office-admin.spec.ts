@@ -8,7 +8,8 @@ async function syntheticSession(
   permissions = ["master_data.read", "master_data.write", "clients.sensitive.read"],
   onWrite?: (body: unknown) => void,
   serviceRegionIds: readonly string[] = [],
-  onRead?: (url: string) => void
+  onRead?: (url: string) => void,
+  globalAccess = false
 ): Promise<void> {
   await page.route("http://supabase.phase1b.test/**", async (route) => {
     if (route.request().url().includes("/token"))
@@ -42,7 +43,14 @@ async function syntheticSession(
       return route.fulfill({
         json: {
           ok: true,
-          data: { userId, displayName: "Synthetic Office User", permissions, serviceRegionIds }
+          data: {
+            userId,
+            displayName: "Synthetic Office User",
+            roles: [globalAccess ? "operations_manager" : "office_admin"],
+            permissions,
+            serviceRegionIds,
+            globalAccess
+          }
         }
       });
     if (route.request().method() === "GET") {
@@ -1611,17 +1619,69 @@ test("Office Client Migration imports, profiles, dry-runs, reviews, approves, ac
   await expect(page.getByText("Migration activate succeeded.")).toBeVisible();
 });
 
+test("region-scoped Office renders accounting projections without global administration calls", async ({
+  page
+}) => {
+  const regionId = "51000000-0000-0000-0000-000000000001";
+  await syntheticSession(
+    page,
+    ["master_data.read", "accounting.read", "accounting.sensitive.read", "accounting.reconcile"],
+    undefined,
+    [regionId]
+  );
+  let globalRequests = 0;
+  for (const path of ["health", "reconciliation", "sync-runs"])
+    await page.route(`**/api/v1/accounting/${path}`, (route) => {
+      globalRequests++;
+      return route.fulfill({
+        status: 403,
+        json: { ok: false, error: { code: "permission_denied", message: "Permission denied." } }
+      });
+    });
+  await page.route("**/api/v1/accounting/status", (route) =>
+    route.fulfill({
+      json: {
+        ok: true,
+        data: {
+          items: [
+            {
+              clientId: "57000000-0000-0000-0000-000000000001",
+              clientName: "Synthetic Client One",
+              accountStatus: "current",
+              derivedStatus: "current",
+              isStale: false,
+              lastSync: "2026-08-13T06:30:00Z"
+            }
+          ]
+        }
+      }
+    })
+  );
+  await page.getByRole("button", { name: "Accounting" }).click();
+  await expect(page.getByText("Synthetic Client One")).toBeVisible();
+  await expect(page.getByText(/Global provider administration is unavailable/)).toBeVisible();
+  await expect(page.getByRole("button", { name: "Start manual incremental sync" })).toHaveCount(0);
+  await expect(page.getByRole("heading", { name: "Reconciliation queue" })).toHaveCount(0);
+  expect(globalRequests).toBe(0);
+});
 test("Office accounting syncs, reconciles, reviews sensitive status, and applies an exception", async ({
   page
 }) => {
-  await syntheticSession(page, [
-    "master_data.read",
-    "accounting.read",
-    "accounting.sensitive.read",
-    "accounting.sync",
-    "accounting.reconcile",
-    "accounting.exception.manage"
-  ]);
+  await syntheticSession(
+    page,
+    [
+      "master_data.read",
+      "accounting.read",
+      "accounting.sensitive.read",
+      "accounting.sync",
+      "accounting.reconcile",
+      "accounting.exception.manage"
+    ],
+    undefined,
+    [],
+    undefined,
+    true
+  );
   const clientId = "57000000-0000-0000-0000-000000000001";
   let mapped = false,
     exception = false;
@@ -1824,6 +1884,10 @@ test("Office previews, holds, releases, and reevaluates service financial eligib
   await page.getByRole("button", { name: "Financial Eligibility" }).click();
   await expect(page.getByRole("heading", { name: "Financial Eligibility" })).toBeVisible();
   await expect(page.getByText("Synthetic Client One")).toBeVisible();
+  await expect(page.getByRole("button", { name: "Reevaluate stale/review cases" })).toHaveCount(0);
+  await expect(
+    page.getByText(/Global stale\/review batch reevaluation is unavailable/)
+  ).toBeVisible();
   await page.getByRole("button", { name: "Preview" }).click();
   await expect(page.getByText("No decision was committed.")).toBeVisible();
   await page.getByRole("button", { name: "Close" }).click();
