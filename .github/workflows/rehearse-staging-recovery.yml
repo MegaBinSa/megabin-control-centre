@@ -41,7 +41,7 @@ jobs:
       CONFIRM_RESTORE_REHEARSAL: ${{ inputs.confirm_restore }}
       RECOVERY_EVIDENCE_PATH: recovery-rehearsal-evidence.json
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       - uses: pnpm/action-setup@v4
         with:
           version: 11.16.0
