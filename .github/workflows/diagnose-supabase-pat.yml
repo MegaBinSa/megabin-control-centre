@@ -1,0 +1,90 @@
+name: Diagnose staging Supabase PAT permissions
+
+on:
+  workflow_dispatch:
+    inputs:
+      source_sha:
+        description: Exact current main commit SHA
+        required: true
+        type: string
+      confirm_diagnostic:
+        description: Type DIAGNOSE-SUPABASE-PAT:xniweqdmswzljcgkfglx:<source_sha>
+        required: true
+        type: string
+      verify_token_fingerprint:
+        description: Compare the PAT with protected SUPABASE_ACCESS_TOKEN_SHA256
+        required: false
+        default: false
+        type: boolean
+
+permissions:
+  contents: read
+
+concurrency:
+  group: megabin-staging-supabase-pat-diagnostic
+  cancel-in-progress: false
+
+jobs:
+  diagnose:
+    runs-on: ubuntu-latest
+    environment: staging
+    env:
+      MEGABIN_ENVIRONMENT: staging
+      SUPABASE_PROJECT_REF: xniweqdmswzljcgkfglx
+      SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+      SUPABASE_ACCESS_TOKEN_SHA256: ${{ secrets.SUPABASE_ACCESS_TOKEN_SHA256 }}
+      VERIFY_TOKEN_FINGERPRINT: ${{ inputs.verify_token_fingerprint }}
+      SOURCE_SHA: ${{ inputs.source_sha }}
+      CONFIRM_DIAGNOSTIC: ${{ inputs.confirm_diagnostic }}
+    outputs:
+      project_status: ${{ steps.probe.outputs.project_status }}
+      postgrest_status: ${{ steps.probe.outputs.postgrest_status }}
+      pooler_status: ${{ steps.probe.outputs.pooler_status }}
+      token_fingerprint_matches: ${{ steps.probe.outputs.token_fingerprint_matches }}
+    steps:
+      - name: Check out exact current main release
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ inputs.source_sha }}
+          fetch-depth: 0
+
+      - name: Validate immutable diagnostic target
+        shell: bash
+        run: |
+          set +x
+          set -euo pipefail
+          git fetch origin main
+          test "$GITHUB_REF" = "refs/heads/main"
+          test "$SOURCE_SHA" = "$(git rev-parse origin/main)"
+          test "$SOURCE_SHA" = "$(git rev-parse HEAD)"
+          test "$SUPABASE_PROJECT_REF" = "xniweqdmswzljcgkfglx"
+          test "$CONFIRM_DIAGNOSTIC" = "DIAGNOSE-SUPABASE-PAT:xniweqdmswzljcgkfglx:$SOURCE_SHA"
+          test -n "$SUPABASE_ACCESS_TOKEN"
+          if [ "$VERIFY_TOKEN_FINGERPRINT" = "true" ]; then
+            test "$SUPABASE_ACCESS_TOKEN_SHA256" != ""
+          fi
+
+      - name: Probe read-only Management API permissions
+        id: probe
+        shell: bash
+        run: |
+          set +x
+          set -euo pipefail
+          node scripts/supabase-pat-permission-diagnostic.mjs
+
+      - name: Report sanitized diagnostic result
+        shell: bash
+        env:
+          PROJECT_STATUS: ${{ steps.probe.outputs.project_status }}
+          POSTGREST_STATUS: ${{ steps.probe.outputs.postgrest_status }}
+          POOLER_STATUS: ${{ steps.probe.outputs.pooler_status }}
+          TOKEN_FINGERPRINT_MATCHES: ${{ steps.probe.outputs.token_fingerprint_matches }}
+        run: |
+          set +x
+          set -euo pipefail
+          echo "project_status: $PROJECT_STATUS"
+          echo "postgrest_status: $POSTGREST_STATUS"
+          echo "pooler_status: $POOLER_STATUS"
+          if [ "$VERIFY_TOKEN_FINGERPRINT" = "true" ]; then
+            echo "token_fingerprint_matches: $TOKEN_FINGERPRINT_MATCHES"
+          fi
