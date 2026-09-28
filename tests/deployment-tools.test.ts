@@ -60,6 +60,8 @@ const staging = {
   STAGING_OFFICE_PASSWORD: "synthetic-password",
   STAGING_DRIVER_EMAIL: "staging-driver@megabin.local",
   STAGING_DRIVER_PASSWORD: "synthetic-password",
+  STAGING_ACCOUNTING_EMAIL: "staging-accounting@megabin.local",
+  STAGING_ACCOUNTING_PASSWORD: "synthetic-password",
   SUPABASE_ACCESS_TOKEN: "synthetic-token",
   SUPABASE_DB_PASSWORD: "synthetic-password",
   CLOUDFLARE_ACCOUNT_ID: "synthetic-account",

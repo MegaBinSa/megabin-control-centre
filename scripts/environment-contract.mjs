@@ -36,6 +36,8 @@ const deploymentRequired = [
   "STAGING_OFFICE_PASSWORD",
   "STAGING_DRIVER_EMAIL",
   "STAGING_DRIVER_PASSWORD",
+  "STAGING_ACCOUNTING_EMAIL",
+  "STAGING_ACCOUNTING_PASSWORD",
   "CLOUDFLARE_ACCOUNT_ID",
   "CLOUDFLARE_OFFICE_PROJECT",
   "CLOUDFLARE_DRIVER_PROJECT",
@@ -49,6 +51,7 @@ const secretNames = new Set([
   "MEGABIN_COMMUNICATIONS_WEBHOOK_SECRET",
   "STAGING_OFFICE_PASSWORD",
   "STAGING_DRIVER_PASSWORD",
+  "STAGING_ACCOUNTING_PASSWORD",
   "CLOUDFLARE_API_TOKEN"
 ]);
 
@@ -116,6 +119,8 @@ export function validateEnvironment(target, values, options = {}) {
       errors.push("Staging Office identity must be the approved synthetic persona.");
     if (values.STAGING_DRIVER_EMAIL !== "staging-driver@megabin.local")
       errors.push("Staging Driver identity must be the approved synthetic persona.");
+    if (values.STAGING_ACCOUNTING_EMAIL !== "staging-accounting@megabin.local")
+      errors.push("Staging accounting identity must be the approved synthetic operator.");
     if (values.MEGABIN_COMMUNICATIONS_MODE === "live")
       errors.push("Staging communications cannot use live mode.");
     if (!new Set(["capture", "test"]).has(values.MEGABIN_COMMUNICATIONS_MODE))

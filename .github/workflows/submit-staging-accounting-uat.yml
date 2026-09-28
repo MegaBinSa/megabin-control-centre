@@ -1,0 +1,100 @@
+name: Submit staging Accounting UAT synchronization
+
+on:
+  workflow_dispatch:
+    inputs:
+      source_sha:
+        description: Exact current main commit to bind to the evidence
+        required: true
+        type: string
+      execution_mode:
+        description: Initial deterministic sync or exact idempotency retry
+        required: true
+        default: initial_sync
+        type: choice
+        options:
+          - initial_sync
+          - idempotency_retry
+      confirm_sync:
+        description: SYNC-UAT-FIN-001:<project-ref>:<sync-identity>:<source-sha>:<mode>
+        required: true
+        type: string
+
+permissions:
+  contents: read
+  checks: read
+
+concurrency:
+  group: megabin-shared-staging
+  cancel-in-progress: false
+
+jobs:
+  synchronize:
+    runs-on: ubuntu-latest
+    environment: staging
+    env:
+      MEGABIN_ENVIRONMENT: staging
+      SUPABASE_PROJECT_REF: ${{ vars.SUPABASE_PROJECT_REF }}
+      SUPABASE_URL: ${{ vars.SUPABASE_URL }}
+      SUPABASE_PUBLISHABLE_KEY: ${{ secrets.SUPABASE_PUBLISHABLE_KEY }}
+      MEGABIN_PLATFORM_RUNTIME_URL: ${{ vars.SUPABASE_URL }}/functions/v1/platform-runtime
+      MEGABIN_ACCOUNTING_PROVIDER: zoho-books-fake
+      STAGING_ACCOUNTING_EMAIL: ${{ vars.STAGING_ACCOUNTING_EMAIL }}
+      STAGING_ACCOUNTING_PASSWORD: ${{ secrets.STAGING_ACCOUNTING_PASSWORD }}
+      SOURCE_SHA: ${{ inputs.source_sha }}
+      EXECUTION_MODE: ${{ inputs.execution_mode }}
+      CONFIRM_SYNC: ${{ inputs.confirm_sync }}
+    steps:
+      - name: Check out the exact requested main release
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ inputs.source_sha }}
+          fetch-depth: 0
+
+      - name: Validate exact release and controlled dispatch inputs
+        shell: bash
+        run: |
+          set -euo pipefail
+          git fetch origin main
+          test "$(git rev-parse HEAD)" = "$SOURCE_SHA"
+          test "$(git rev-parse origin/main)" = "$SOURCE_SHA"
+          test "$SUPABASE_PROJECT_REF" = "xniweqdmswzljcgkfglx"
+          test "$SUPABASE_URL" = "https://xniweqdmswzljcgkfglx.supabase.co"
+          test "$MEGABIN_ACCOUNTING_PROVIDER" = "zoho-books-fake"
+          test "$STAGING_ACCOUNTING_EMAIL" = "staging-accounting@megabin.local"
+          test "$EXECUTION_MODE" = "initial_sync" -o "$EXECUTION_MODE" = "idempotency_retry"
+
+      - name: Require successful quality and database checks
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          checks="$(gh api "repos/${{ github.repository }}/commits/$SOURCE_SHA/check-runs" --jq '[.check_runs[] | select(.name == "quality" or .name == "database") | {name, conclusion, started_at}] | sort_by(.name, .started_at) | group_by(.name) | map(last)')"
+          echo "$checks" | jq -e 'length == 2 and all(.conclusion == "success")'
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version-file: .node-version
+
+      - name: Materialize deterministic fake-accounting facts
+        env:
+          EVIDENCE_PATH: ${{ runner.temp }}/uat-fin-001-accounting-sync-evidence.json
+        shell: bash
+        run: |
+          set -euo pipefail
+          node scripts/accounting-uat-sync.mjs \
+            --source-sha "$SOURCE_SHA" \
+            --mode "$EXECUTION_MODE" \
+            --confirmation "$CONFIRM_SYNC" \
+            --evidence "$EVIDENCE_PATH"
+
+      - name: Upload sanitized Accounting UAT evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: uat-fin-001-accounting-sync-${{ github.run_id }}-${{ github.run_attempt }}
+          path: ${{ runner.temp }}/uat-fin-001-accounting-sync-evidence.json
+          if-no-files-found: warn
+          retention-days: 90

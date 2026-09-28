@@ -50,21 +50,24 @@ export async function renderAccountingWorkspace(
   root: HTMLElement,
   api: MasterDataApiClient,
   permissions: readonly string[],
+  globalAccess: boolean,
   logout: () => Promise<void>
 ) {
   let message = "";
   const load = async () => {
-    const [health, statuses, queue, runs] = await Promise.all([
-      api.accountingHealth<Health>(),
+    const canAdministerProvider = globalAccess && permissions.includes("accounting.sync");
+    const canReconcileGlobally = globalAccess && permissions.includes("accounting.reconcile");
+    const [statuses, health, queue, runs] = await Promise.all([
       api.accountStatuses<{ items: Status[] }>(),
-      permissions.includes("accounting.reconcile")
+      canAdministerProvider ? api.accountingHealth<Health>() : Promise.resolve<Health | null>(null),
+      canReconcileGlobally
         ? api.accountingReconciliation<{ items: Queue[] }>()
         : Promise.resolve({ items: [] }),
-      permissions.includes("accounting.sync")
+      canAdministerProvider
         ? api.accountingSyncRuns<{ items: Record<string, unknown>[] }>()
         : Promise.resolve({ items: [] })
     ]);
-    root.innerHTML = `<div class="shell"><aside><div class="brand">MegaBin Control Centre</div><nav><button id="back">Master Data</button><button aria-current="page">Accounting</button></nav></aside><main><header><div><h1>Accounting & Account Status</h1><p>Operational projections from provider-owned financial facts.</p></div><button id="logout">Sign out</button></header>${message ? `<div class="notice">${esc(message)}</div>` : ""}<section class="panel"><h2>Provider connection</h2><p><span class="status">${esc(health.status)}</span> ${esc(health.provider)} · Last success ${esc(health.lastSuccessfulSync)} · ${esc(health.summary)}</p>${permissions.includes("accounting.sync") ? '<button class="button" id="sync">Start manual incremental sync</button>' : ""}</section><section class="panel"><h2>Client account status</h2><table><thead><tr><th>Client</th><th>Status</th><th>Freshness</th><th>Last sync</th><th></th></tr></thead><tbody>${statuses.items.map((s) => `<tr><td>${esc(s.clientName)}</td><td>${esc(s.accountStatus)}</td><td>${s.isStale ? "Stale" : "Current"}</td><td>${esc(s.lastSync)}</td><td><button data-client="${s.clientId}">Open</button></td></tr>`).join("")}</tbody></table></section>${permissions.includes("accounting.reconcile") ? `<section class="panel"><h2>Reconciliation queue</h2><table><tbody>${queue.items.map((q) => `<tr><td>${esc(q.providerCustomerId)}</td><td>${esc(q.classification)}</td><td>${esc(JSON.stringify(q.customer ?? {}))}</td><td>${q.candidateClientIds[0] ? `<button data-map="${esc(q.provider)}|${esc(q.providerCustomerId)}|${q.candidateClientIds[0]}">Link candidate</button>` : "Follow up required"}</td></tr>`).join("")}</tbody></table></section>` : ""}<section class="panel"><h2>Sync runs</h2><pre>${esc(JSON.stringify(runs.items, null, 2))}</pre></section><dialog id="account-detail"><div id="account-content"></div></dialog></main></div>`;
+    root.innerHTML = `<div class="shell"><aside><div class="brand">MegaBin Control Centre</div><nav><button id="back">Master Data</button><button aria-current="page">Accounting</button></nav></aside><main><header><div><h1>Accounting & Account Status</h1><p>Operational projections from provider-owned financial facts.</p></div><button id="logout">Sign out</button></header>${message ? `<div class="notice">${esc(message)}</div>` : ""}<section class="panel"><h2>Provider administration</h2>${health ? `<p><span class="status">${esc(health.status)}</span> ${esc(health.provider)} · Last success ${esc(health.lastSuccessfulSync)} · ${esc(health.summary)}</p><button class="button" id="sync">Start manual incremental sync</button>` : '<p class="notice">Global provider administration is unavailable at regional scope. Authorized regional accounting information remains available below.</p>'}</section><section class="panel"><h2>Client account status</h2><table><thead><tr><th>Client</th><th>Status</th><th>Freshness</th><th>Last sync</th><th></th></tr></thead><tbody>${statuses.items.map((s) => `<tr><td>${esc(s.clientName)}</td><td>${esc(s.accountStatus)}</td><td>${s.isStale ? "Stale" : "Current"}</td><td>${esc(s.lastSync)}</td><td><button data-client="${s.clientId}">Open</button></td></tr>`).join("") || '<tr><td colspan="5">No authorized accounting projections are available.</td></tr>'}</tbody></table></section>${canReconcileGlobally ? `<section class="panel"><h2>Reconciliation queue</h2><table><tbody>${queue.items.map((q) => `<tr><td>${esc(q.providerCustomerId)}</td><td>${esc(q.classification)}</td><td>${esc(JSON.stringify(q.customer ?? {}))}</td><td>${q.candidateClientIds[0] ? `<button data-map="${esc(q.provider)}|${esc(q.providerCustomerId)}|${q.candidateClientIds[0]}">Link candidate</button>` : "Follow up required"}</td></tr>`).join("")}</tbody></table></section>` : ""}${canAdministerProvider ? `<section class="panel"><h2>Sync runs</h2><pre>${esc(JSON.stringify(runs.items, null, 2))}</pre></section>` : ""}<dialog id="account-detail"><div id="account-content"></div></dialog></main></div>`;
     root.querySelector("#logout")?.addEventListener("click", () => void logout());
     root.querySelector("#sync")?.addEventListener("click", async () => {
       await api.startAccountingSync("incremental");

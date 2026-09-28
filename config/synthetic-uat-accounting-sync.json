@@ -1,0 +1,11 @@
+{
+  "caseId": "UAT-FIN-001",
+  "environment": "staging",
+  "projectRef": "xniweqdmswzljcgkfglx",
+  "provider": "zoho-books-fake",
+  "operatorEmail": "staging-accounting@megabin.local",
+  "operatorDisplayName": "Synthetic Staging Accounting Operator",
+  "operatorRole": "operations_manager",
+  "syncMode": "initial_full",
+  "syncIdentity": "uat:accounting:UAT-FIN-001:fake-sync:01"
+}

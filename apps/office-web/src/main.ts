@@ -550,13 +550,20 @@ async function renderCurrentLocation(): Promise<void> {
       await renderClientMigrationWorkspace(workspaceRoot, api, permissions, signOutFromWorkspace);
       break;
     case "accounting":
-      await renderAccountingWorkspace(workspaceRoot, api, permissions, signOutFromWorkspace);
+      await renderAccountingWorkspace(
+        workspaceRoot,
+        api,
+        permissions,
+        identity.globalAccess,
+        signOutFromWorkspace
+      );
       break;
     case "financial-eligibility":
       await renderFinancialEligibilityWorkspace(
         workspaceRoot,
         api,
         permissions,
+        identity.globalAccess,
         signOutFromWorkspace
       );
       break;

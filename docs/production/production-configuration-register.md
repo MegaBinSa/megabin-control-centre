@@ -48,3 +48,13 @@ Phase 5C configured and proved the isolated Supabase project, protected GitHub S
 ## Secret rotation requirements
 
 Every credential needs an owner, creation date, least-privilege scope, staging/production separation, rotation interval, emergency revocation path and overlap procedure where senders/webhooks cannot change atomically. Rotation must be rehearsed for website signing, provider OAuth/API keys, webhook secrets and privileged deployment credentials. Public frontend keys are configuration, not authorization; service-role and provider credentials must never enter frontend bundles.
+
+## UAT-FIN-001 protected Staging configuration
+
+| Key | Classification | Required value/posture | Purpose |
+|---|---|---|---|
+| `STAGING_ACCOUNTING_EMAIL` | GitHub Environment variable | `staging-accounting@megabin.local` | Exact dedicated synthetic Operations Manager identity |
+| `STAGING_ACCOUNTING_PASSWORD` | GitHub Environment secret | Protected, never logged or committed | Authenticates the controlled manual fake-sync workflow |
+| `MEGABIN_ACCOUNTING_PROVIDER` | Runtime/workflow configuration | `zoho-books-fake` | Fail-closed fake-provider gate |
+
+The accounting operator is separate from `Synthetic Staging Office`; provisioning must not grant the Office persona global access or `accounting.sync`. Workflow artifacts retain only sanitized run metadata for 90 days, which does not close the separate 12-month assurance-retention gap.

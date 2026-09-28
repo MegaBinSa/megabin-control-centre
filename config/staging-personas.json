@@ -9,6 +9,12 @@
       "mfaRequired": true
     },
     {
+      "code": "accounting-operator",
+      "emailPattern": "staging-accounting@megabin.local",
+      "role": "Operations Manager",
+      "mfaRequired": true
+    },
+    {
       "code": "operations",
       "emailPattern": "operations+staging@example.invalid",
       "role": "Operations Manager",
