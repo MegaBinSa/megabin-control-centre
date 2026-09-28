@@ -48,7 +48,7 @@ jobs:
       MEGABIN_SYNTHETIC_ALERT_PROOF: ${{ inputs.synthetic_alert_proof }}
     steps:
       - uses: actions/checkout@v4
-      - uses: pnpm/action-setup@v4
+      - uses: pnpm/action-setup@v6
         with:
           version: 11.16.0
       - uses: actions/setup-node@v4
