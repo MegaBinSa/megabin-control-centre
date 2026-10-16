@@ -8,7 +8,7 @@ async function syntheticSession(
   permissions = ["master_data.read", "master_data.write", "clients.sensitive.read"],
   onWrite?: (body: unknown) => void,
   serviceRegionIds: readonly string[] = [],
-  onRead?: (url: string) => void,
+  onRead?: (url: string) => void | Promise<void>,
   globalAccess = false
 ): Promise<void> {
   await page.route("http://supabase.phase1b.test/**", async (route) => {
@@ -54,7 +54,7 @@ async function syntheticSession(
         }
       });
     if (route.request().method() === "GET") {
-      onRead?.(url);
+      await onRead?.(url);
       return route.fulfill({
         json: { ok: true, data: { items: [], page: 1, pageSize: 25, total: 0 } }
       });
@@ -114,6 +114,32 @@ test("authorized Office user can create a synthetic client", async ({ page }) =>
     clientType: "individual",
     displayName: "Synthetic Browser Client"
   });
+});
+
+test("waits for master-data loading before opening a create editor", async ({ page }) => {
+  let releaseServiceAddresses: (() => void) | undefined;
+  const serviceAddressesLoaded = new Promise<void>((resolve) => {
+    releaseServiceAddresses = resolve;
+  });
+  await syntheticSession(
+    page,
+    ["master_data.read", "master_data.write", "clients.sensitive.read"],
+    undefined,
+    [],
+    async (url) => {
+      if (url.includes("/master-data/service-addresses")) await serviceAddressesLoaded;
+    }
+  );
+
+  await page.getByRole("button", { name: "Service Addresses" }).click();
+  const add = page.getByRole("button", { name: "Add Service Address" });
+  await expect(add).toBeDisabled();
+
+  releaseServiceAddresses?.();
+  await expect(add).toBeEnabled();
+  await add.click();
+  await page.getByLabel("City").fill("Pretoria");
+  await expect(page.getByLabel("City")).toHaveValue("Pretoria");
 });
 
 test("Driver Team is denied Office master-data navigation", async ({ page }) => {
