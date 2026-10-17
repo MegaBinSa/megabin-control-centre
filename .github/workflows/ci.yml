@@ -14,6 +14,14 @@ on:
         description: Exact deployed main SHA required by the optional hosted UAT
         type: string
         required: false
+      prepare_financial_fixture:
+        description: Apply only the user-approved ZC-100/Client One and ZC-200/Client Two synthetic fixture
+        type: boolean
+        default: false
+      confirm_financial_fixture:
+        description: PREPARE-UAT-FIN-001:<deployed-sha>:ZC-100-ONE:ZC-200-TWO
+        type: string
+        required: false
 
 permissions:
   contents: read
@@ -51,6 +59,14 @@ jobs:
           cache: pnpm
       - run: pnpm install --frozen-lockfile
       - run: pnpm exec playwright install --with-deps chromium
+      - name: Apply specifically approved synthetic financial fixture
+        if: inputs.prepare_financial_fixture
+        env:
+          EXPECTED_BUILD_SHA: ${{ inputs.deployed_sha }}
+          CONFIRM_FINANCIAL_FIXTURE: ${{ inputs.confirm_financial_fixture }}
+          SUPABASE_PUBLISHABLE_KEY: ${{ secrets.SUPABASE_PUBLISHABLE_KEY }}
+          STAGING_ACCOUNTING_PASSWORD: ${{ secrets.STAGING_ACCOUNTING_PASSWORD }}
+        run: node scripts/financial-uat-fixture.mjs
       - name: Verify hosted financial boundary without operational writes
         env:
           EXPECTED_BUILD_SHA: ${{ inputs.deployed_sha }}
