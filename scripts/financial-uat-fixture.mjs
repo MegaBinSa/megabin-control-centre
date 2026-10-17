@@ -117,6 +117,7 @@ export async function prepareFinancialFixture(
       "financial_eligibility.reevaluate"
     ])
       assert(profile.permissions.includes(permission));
+    assert.equal((await request("/accounting/health")).data.provider, "zoho-books-fake");
     const clients = (await request("/master-data/clients?pageSize=100")).data.items;
     for (const item of financialFixture)
       assert(
