@@ -144,10 +144,20 @@ try {
   });
   for (const [name, path] of [
     ["driver_financial_denial", "/financial-eligibility/decisions"],
-    ["driver_accounting_denial", "/accounting/status"],
-    ["driver_office_denial", "/office/profile"]
+    ["driver_accounting_denial", "/accounting/status"]
   ])
     await check(name, async () => deny(await get(path, driverToken)));
+
+  await check("driver_profile_has_no_financial_permission", async () => {
+    // The profile endpoint returns the actor's own identity; Office applies its
+    // workspace gate to these permissions rather than denying profile access.
+    const result = await get("/office/profile", driverToken);
+    assert.equal(result.status, 200);
+    assert.equal(result.body.data.userId, "aaa27c4a-040c-40d0-83d1-6a70d446c994");
+    assert(!result.body.data.permissions.includes("financial_eligibility.read"));
+    assert(!result.body.data.permissions.includes("master_data.read"));
+    return { status: result.status, financialRead: false, masterDataRead: false };
+  });
 
   await check("driver_current_operation_precondition", async () => {
     const result = await get("/driver/route-operations", driverToken);
