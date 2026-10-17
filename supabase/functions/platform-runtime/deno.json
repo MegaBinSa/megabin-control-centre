@@ -39,5 +39,43 @@
     "../../../packages/runtime/src/vehicle-tracking-http.js": "../../../packages/runtime/src/vehicle-tracking-http.ts",
     "../../../packages/runtime/src/website-intake-http.js": "../../../packages/runtime/src/website-intake-http.ts",
     "zod": "npm:zod@4.1.11"
+  },
+  "scopes": {
+    "../../../packages/domain-types/src/": {
+      "./jobs.js": "../../../packages/domain-types/src/jobs.ts",
+      "./offline.js": "../../../packages/domain-types/src/offline.ts"
+    },
+    "../../../packages/integrations/src/": {
+      "./accounting.js": "../../../packages/integrations/src/accounting.ts",
+      "./communications.js": "../../../packages/integrations/src/communications.ts"
+    },
+    "../../../packages/route-planning/src/": {
+      "./providers.js": "../../../packages/route-planning/src/providers.ts"
+    },
+    "../../../packages/runtime/src/": {
+      "./accounting-http.js": "../../../packages/runtime/src/accounting-http.ts",
+      "./client-migration-http.js": "../../../packages/runtime/src/client-migration-http.ts",
+      "./client-skip-http.js": "../../../packages/runtime/src/client-skip-http.ts",
+      "./communications-http.js": "../../../packages/runtime/src/communications-http.ts",
+      "./configuration.js": "../../../packages/runtime/src/configuration.ts",
+      "./contracts.js": "../../../packages/runtime/src/contracts.ts",
+      "./dispatcher.js": "../../../packages/runtime/src/dispatcher.ts",
+      "./errors.js": "../../../packages/runtime/src/errors.ts",
+      "./financial-eligibility-http.js": "../../../packages/runtime/src/financial-eligibility-http.ts",
+      "./geography-http.js": "../../../packages/runtime/src/geography-http.ts",
+      "./http.js": "../../../packages/runtime/src/http.ts",
+      "./jobs.js": "../../../packages/runtime/src/jobs.ts",
+      "./live-operations-http.js": "../../../packages/runtime/src/live-operations-http.ts",
+      "./master-data-http.js": "../../../packages/runtime/src/master-data-http.ts",
+      "./memory.js": "../../../packages/runtime/src/memory.ts",
+      "./operational-intelligence.js": "../../../packages/runtime/src/operational-intelligence.ts",
+      "./roster-http.js": "../../../packages/runtime/src/roster-http.ts",
+      "./route-operations-http.js": "../../../packages/runtime/src/route-operations-http.ts",
+      "./route-optimization.js": "../../../packages/runtime/src/route-optimization.ts",
+      "./routes-http.js": "../../../packages/runtime/src/routes-http.ts",
+      "./supabase.js": "../../../packages/runtime/src/supabase.ts",
+      "./vehicle-tracking-http.js": "../../../packages/runtime/src/vehicle-tracking-http.ts",
+      "./website-intake-http.js": "../../../packages/runtime/src/website-intake-http.ts"
+    }
   }
 }
