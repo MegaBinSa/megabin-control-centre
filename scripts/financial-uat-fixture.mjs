@@ -89,6 +89,13 @@ export async function prepareFinancialFixture(
         ...(body === undefined ? {} : { body: JSON.stringify(body) })
       });
       const result = await response.json();
+      if (!response.ok || result.ok !== true)
+        record({
+          requestPath: path,
+          httpStatus: response.status,
+          errorCode: result.error?.code ?? "invalid_envelope",
+          correlationId
+        });
       assert(response.ok && result.ok === true);
       return { data: result.data, correlationId, status: response.status };
     }
@@ -133,6 +140,12 @@ export async function prepareFinancialFixture(
         continue;
       }
       assert.equal(row.classification, "unmatched");
+      record({
+        customer: item.customer,
+        intendedClient: item.client,
+        classification: row.classification,
+        checkpoint: "before_link"
+      });
       const result = await request(`/accounting/reconciliation/zoho-books-fake/${item.customer}`, {
         action: "link",
         clientId: item.client,
