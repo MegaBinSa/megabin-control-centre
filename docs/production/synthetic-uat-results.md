@@ -1,6 +1,6 @@
 # Synthetic UAT Results
 
-**Status:** UAT-OFF-001, UAT-DRV-001, UAT-WEB-001 and UAT-SKP-001 Passed; two journeys remain Not Run
+**Status:** UAT-OFF-001, UAT-DRV-001, UAT-WEB-001 and UAT-SKP-001 Passed; UAT-FIN-001 Blocked on populated projection preconditions; UAT-TRK-001 Not Run
 
 | Case | Journey | Result | Evidence/blocker |
 |---|---|---|---|
@@ -8,10 +8,16 @@
 | `UAT-DRV-001` | Driver execution/offline synchronization | Passed | Manual protected-Staging execution on `2026-08-24`, release `c74bea8b7f09d572c9d1f12182d3082eca063de6`, by Shaun. See the evidence record below. |
 | `UAT-WEB-001` | Website onboarding | Passed | Protected submission, durable processing, identical retry, Office review/approval and atomic regional activation completed by Shaun; final state verified on release `faf4be5d0b676f21bcd8f5d3cea584e860b78107`. |
 | `UAT-SKP-001` | Client SKIP/replan | Passed | Protected authenticated inbound, qualification, regional approval, one-occurrence exclusion, capture-only acknowledgement and immutable-source Draft replanning completed by Shaun; final state verified on release `684dc94df3a6ceea6cdfe3ed5740ec26cf93b3df`. |
-| `UAT-FIN-001` | Accounting/financial boundary | Not Run | Protected execution required |
+| `UAT-FIN-001` | Accounting/financial boundary | Blocked | Hosted route, authenticated Office deep link/reload and verified Driver 403 retested successfully on release `6ac6210d91a9de8052f590d6e06adaae02ea4d76`. Three imported fake customers remain unmatched; no populated accounting/eligibility projections exist. See [hosted retest evidence](uat-fin-001-hosted-retest.md). |
 | `UAT-TRK-001` | Tracking/intelligence | Not Run | Protected execution required |
 
 Results may change only with release-bound evidence containing every catalogue field. Local unit, pgTAP and Playwright tests support readiness but are not substituted for shared-Staging UAT.
+
+## UAT-FIN-001 — Blocked after successful route and authorization retests
+
+The protected deployment of PR #94 completed on `2026-10-17`. Real hosted API requests and a real authenticated Office browser proved the route and authorization fixes on release `6ac6210d91a9de8052f590d6e06adaae02ea4d76`. Office loaded `?module=financial-eligibility` and retained it across reload; a separately authenticated, identity-verified Driver received HTTP `403 authorization_denied` with no data from the Financial Eligibility list. Before/after hashes of all Route Operations and Route Versions matched; financial decisions, jobs and holds remained zero.
+
+The full financial journey is not marked Passed: the retained fake synchronization has three unmatched customer reconciliations, no accounting snapshots and no financial decisions, so populated authorized and cross-region projections have not been inspected. No reconciliation, reevaluation, hold or release was manufactured to satisfy UAT. The supplementary live Driver Accept/Start replay was also Not Run because the Driver assignment endpoint returned no operation. The separate scheduled monitor still fails because smoke-check names are missing from its alert definitions. Full release identity, workflow artifacts, verified checkpoints, limits and next steps are retained in [the hosted retest record](uat-fin-001-hosted-retest.md).
 
 ## UAT-SKP-001 — Passed
 

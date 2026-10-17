@@ -130,13 +130,17 @@
         "Confirm Published and active work are not silently rewritten"
       ],
       "expectedOutcome": "Authorized projections are visible without leaking financial data or mutating protected operations.",
-      "actualOutcome": null,
-      "evidenceReference": null,
-      "result": "Not Run",
-      "executionTimestamp": null,
-      "environmentReleaseIdentity": null,
-      "testerIdentity": null,
-      "defectReferences": []
+      "actualOutcome": "Hosted route and explicit authorization remediation passed on the deployed release: regional Office received 200 and restored the authenticated Financial Eligibility deep link across reload; the verified Driver received 403 authorization_denied with no financial data. Route Operation and Route Version hashes were unchanged, and decisions/jobs/holds remained zero. Full financial UAT remains Blocked: all three imported fake customers are unmatched, with no populated accounting or eligibility projections to inspect. No financial mutation was performed. The supplemental live Driver transition was Not Run because no operation was assigned; the separate monitor execution failure remains recorded.",
+      "evidenceReference": "docs/production/uat-fin-001-hosted-retest.md",
+      "result": "Blocked",
+      "executionTimestamp": "2026-10-17T18:22:01.536Z",
+      "environmentReleaseIdentity": "6ac6210d91a9de8052f590d6e06adaae02ea4d76",
+      "testerIdentity": "Codex automated hosted verification, authorized by the user",
+      "defectReferences": [
+        "PR-92-financial-hosted-routing-retested",
+        "PR-94-financial-list-authorization-retested",
+        "Unmatched-fake-customers-block-populated-projection-UAT"
+      ]
     },
     {
       "id": "UAT-TRK-001",

@@ -5,11 +5,67 @@ on:
   push:
     branches: [main]
   workflow_dispatch:
+    inputs:
+      verify_hosted_financial:
+        description: Run read-only Financial Eligibility UAT against protected Shared Staging
+        type: boolean
+        default: false
+      deployed_sha:
+        description: Exact deployed main SHA required by the optional hosted UAT
+        type: string
+        required: false
 
 permissions:
   contents: read
 
 jobs:
+  hosted-financial-uat:
+    if: github.event_name == 'workflow_dispatch' && inputs.verify_hosted_financial
+    runs-on: ubuntu-latest
+    environment: staging
+    concurrency:
+      group: megabin-shared-staging
+      cancel-in-progress: false
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Require an existing green main release
+        env:
+          SOURCE_SHA: ${{ inputs.deployed_sha }}
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "${#SOURCE_SHA}" -eq 40
+          git fetch origin main
+          git merge-base --is-ancestor "$SOURCE_SHA" origin/main
+          checks="$(gh api "repos/${{ github.repository }}/commits/$SOURCE_SHA/check-runs" --jq '[.check_runs[] | select(.name == "quality" or .name == "database") | {name, conclusion, started_at}] | sort_by(.name, .started_at) | group_by(.name) | map(last)')"
+          echo "$checks" | jq -e 'length == 2 and all(.conclusion == "success")'
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 11.16.0
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: .node-version
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm exec playwright install --with-deps chromium
+      - name: Verify hosted financial boundary without operational writes
+        env:
+          EXPECTED_BUILD_SHA: ${{ inputs.deployed_sha }}
+          SUPABASE_PUBLISHABLE_KEY: ${{ secrets.SUPABASE_PUBLISHABLE_KEY }}
+          STAGING_OFFICE_PASSWORD: ${{ secrets.STAGING_OFFICE_PASSWORD }}
+          STAGING_DRIVER_PASSWORD: ${{ secrets.STAGING_DRIVER_PASSWORD }}
+        run: node scripts/financial-eligibility-hosted-uat.mjs
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: financial-eligibility-hosted-uat-${{ github.run_id }}
+          path: .cache/financial-hosted-uat/
+          if-no-files-found: error
+          retention-days: 90
+
   quality:
     runs-on: ubuntu-latest
     steps:
