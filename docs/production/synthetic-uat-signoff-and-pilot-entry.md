@@ -1,22 +1,26 @@
 # Synthetic UAT sign-off and pilot-entry decision packet
 
-**Prepared:** 2026-10-17, Africa/Johannesburg.  
-**Decision status:** Awaiting explicit human approval.  
-**Current stage:** Six synthetic journeys have passing execution evidence; aggregate UAT sign-off, pilot and production gates remain unapproved.
+**Prepared:** 2026-10-17, Africa/Johannesburg.
 
-## Decision requested
+**Decision status:** Approved by the project user; recorded `2026-10-17T19:56:09Z` (21:56:09 SAST).
 
-Review and accept completion of the six synthetic Shared-Staging journeys below, including their recorded limitations and historical failure/retest evidence. Approval permits recording the aggregate **Synthetic Internal UAT Passed** gate and merging the reviewed evidence/tooling PRs in dependency order after their final checks pass.
+**Current stage:** Synthetic Internal UAT Passed. Pilot and production gates remain Blocked.
+
+## Approved decision
+
+The project user explicitly accepted completion of the six synthetic Shared-Staging journeys below, including the packet's recorded scope and limitations, and authorized the evidence merges. Approval permits recording the aggregate **Synthetic Internal UAT Passed** gate and merging the reviewed evidence/tooling PRs in dependency order after their final checks pass.
 
 This decision covers the completed synthetic catalogue. Pilot operation, deployment, real customer data, live providers/messages, financial enforcement and continuous/background employee tracking require their separate approvals and evidence. No additional staging business mutation or UAT fixture replay is part of this decision.
 
 | Decision | Current record |
 |---|---|
-| Human approver and approval statement | Pending; do not infer from CI or an instruction to prepare this packet |
-| Approval date/time and source | Pending explicit response in the project conversation |
-| Aggregate UAT gate | `Blocked`, pending that approval |
+| Human approver and approval statement | Project user, explicit response: “Approve synthetic UAT and evidence merges” |
+| Approval record time and source | `2026-10-17T19:56:09Z`, recorded from the explicit user response in the project Codex conversation on 2026-10-17 |
+| Aggregate UAT gate | `Passed`; its human sign-off requirement is fulfilled by that response |
 | Controlled Pilot Ready | `Blocked`; independent entry requirements below remain open |
 | Production Ready | `Blocked` |
+
+The approval question explicitly covered the six completed journeys in this packet and merging PR #97 followed by #99 after final CI. It explicitly retained pilot-operation and deployment approval as separate decisions. PR #97 subsequently merged at `2026-10-17T19:56:41Z` as `136aeff9cf95658d184f2874c56044a3ec534eef`; PR #99 retains its own final integration and CI record on GitHub.
 
 ## Six completed journeys
 
@@ -57,7 +61,7 @@ These are outstanding requirements from the [readiness register](../../config/re
 
 | Order | Required decision or proof | Owner role | Evidence needed to close |
 |---|---|---|---|
-| 1 | Accept the six synthetic results and name the pilot sponsor/operations/technical owners | Business / Operations | Explicit scoped UAT sign-off; named decision owners, support window and escalation contacts (`PRD-UAT-001`, `PRD-SUP-001`, `PRD-OPS-002`) |
+| 1 | Name the pilot sponsor/operations/technical owners; synthetic UAT sign-off is now complete | Business / Operations | Named decision owners, support window and escalation contacts (`PRD-SUP-001`, `PRD-OPS-002`); retain the completed `PRD-UAT-001` approval above |
 | 2 | Freeze a small pilot scope and its source of truth | Business / Operations / Technical | Region, team, vehicle, named users/device, consented service subset, dates and fallback; explicit inclusion/exclusion of optimization, onboarding, accounting, messaging and financial enforcement |
 | 3 | Approve role/device/privacy posture before real people or data enter | Business / Privacy / Technical | Role/region authority matrix; MFA/session revocation and departure/device-loss rehearsal; approved notices, consent/access and retention/tracking posture (`PRD-AUTH-001`, `PRD-SEC-001`, `PRD-PRI-001`) |
 | 4 | Prove managed Driver hardware and connectivity behavior | Operations / Technical | Named Android/browser/device matrix; install/update, offline/session recovery, screen-lock/background, battery/storage/clock and loss tests; supervised tracking choice (`PRD-DRV-001`, `PRD-GPS-001/002`) |

@@ -1,6 +1,6 @@
 # Synthetic UAT Results
 
-**Status:** All six synthetic journeys Passed. Aggregate UAT human review/sign-off remains outstanding; pilot is not authorized.
+**Status:** All six synthetic journeys Passed and the project user explicitly approved aggregate synthetic UAT sign-off on 2026-10-17. Pilot is not authorized; see the [approval record](synthetic-uat-signoff-and-pilot-entry.md).
 
 | Case | Journey | Result | Evidence/blocker |
 |---|---|---|---|
@@ -15,7 +15,7 @@ Results may change only with release-bound evidence containing every catalogue f
 
 ## UAT-TRK-001 — Passed
 
-Protected execution on `2026-10-17` proved deterministic GPS ingestion, exact duplicate receipts, late-point ordering and healthy current position. The real Driver PWA preserved a GPS point across offline reload, uploaded it once on reconnect, reached zero pending and cleared local stores on logout. Regional Office inspected tracking and acknowledged/resolved one retrospective completion-timing fact and its Needs Attention item. Current GPS was not attributed to the historical route; the authoritative cleaned/two-drum outcome, Route Operations, Published versions and financial decisions remained unchanged. Driver fleet/intelligence and Office cross-region reads were denied. See [release-bound completion evidence](uat-trk-001-completion.md). All six cases now have passing execution evidence; business sign-off and pilot requirements remain separate.
+Protected execution on `2026-10-17` proved deterministic GPS ingestion, exact duplicate receipts, late-point ordering and healthy current position. The real Driver PWA preserved a GPS point across offline reload, uploaded it once on reconnect, reached zero pending and cleared local stores on logout. Regional Office inspected tracking and acknowledged/resolved one retrospective completion-timing fact and its Needs Attention item. Current GPS was not attributed to the historical route; the authoritative cleaned/two-drum outcome, Route Operations, Published versions and financial decisions remained unchanged. Driver fleet/intelligence and Office cross-region reads were denied. See [release-bound completion evidence](uat-trk-001-completion.md). All six cases now have passing execution evidence and the project user subsequently approved aggregate synthetic UAT sign-off. Pilot requirements remain separate.
 
 ## UAT-FIN-001 — Passed
 

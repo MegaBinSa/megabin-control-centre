@@ -1,6 +1,6 @@
 # Production Readiness Assessment
 
-**Status:** Authoritative assessment; updated through six passing synthetic UAT journeys; human sign-off outstanding
+**Status:** Authoritative assessment; Synthetic Internal UAT Passed with explicit human sign-off; pilot remains blocked
 
 **Assessment baseline:** Phase 5A repository assessment plus validated shared-Staging and Phase 5E assurance evidence through release `c74bea8b7f09d572c9d1f12182d3082eca063de6`
 
@@ -12,7 +12,7 @@ MegaBin Control Centre is now a deployed shared-staging platform suitable for st
 
 Shared Staging is proven end to end by [deployment run 31738092512](https://github.com/MegaBinSa/megabin-control-centre/actions/runs/31738092512): protected main-only release, migrations, hosted Data API configuration, application-owned persona authorization, Edge Functions, both frontends, release/CORS/auth boundaries, fake/capture providers, synthetic website intake and remote smoke checks all passed. Phase 5E additionally proved alert delivery, isolated logical restore within the four-hour RTO, compatible component rollback/current restoration and isolated immutable database forward repair without writing to shared Staging. Production providers remain intentionally inactive; real client migration, real-device operation, business UAT, privacy, retention, routine user/device management and support procedures remain unresolved. Browser geolocation cannot meet the stated all-hours vehicle-visibility requirement.
 
-The project remains **Synthetic Internal UAT Ready**. Shared Staging is observable, its core logical recovery, component rollback and forward-repair mechanisms have been rehearsed, and `UAT-OFF-001`, `UAT-DRV-001`, `UAT-WEB-001`, `UAT-SKP-001` and `UAT-FIN-001` have Passed with release-bound evidence, including the [populated financial continuation](uat-fin-001-completion.md) on release `7d102000b49e02e7387bdd07210e46563a53c54d`. UAT-TRK-001 also Passed on that release with [protected synthetic tracking/intelligence evidence](uat-trk-001-completion.md). All six cases have passing execution evidence; the aggregate Synthetic Internal UAT Passed gate remains Blocked pending human review/sign-off, and every pilot/production gate remains unmet.
+The project has reached **Synthetic Internal UAT Passed** with explicit project-user sign-off recorded on 2026-10-17. Shared Staging is observable, its core logical recovery, component rollback and forward-repair mechanisms have been rehearsed, and `UAT-OFF-001`, `UAT-DRV-001`, `UAT-WEB-001`, `UAT-SKP-001` and `UAT-FIN-001` have Passed with release-bound evidence, including the [populated financial continuation](uat-fin-001-completion.md) on release `7d102000b49e02e7387bdd07210e46563a53c54d`. UAT-TRK-001 also Passed on that release with [protected synthetic tracking/intelligence evidence](uat-trk-001-completion.md). All six cases have passing execution evidence and the aggregate Synthetic Internal UAT Passed gate is now Passed under the [explicit human approval record](synthetic-uat-signoff-and-pilot-entry.md). Every pilot/production gate remains unmet.
 
 ## Classification and stage definitions
 
@@ -160,7 +160,7 @@ Close every P0/P1 applicable to the agreed launch scope; activate and validate l
 
 ## Current Phase 5E next activity
 
-The approved monitoring/recovery decisions are recorded, and alert delivery, restore, component rollback/current restoration and isolated forward repair have executed successfully. All six synthetic UAT journeys now have passing release-bound evidence. Obtain human review/sign-off of those results, then close or explicitly approve the independent pilot prerequisites. Financial automation remains disabled; real-device, provider, privacy and recovery obligations remain outstanding.
+The approved monitoring/recovery decisions are recorded, and alert delivery, restore, component rollback/current restoration and isolated forward repair have executed successfully. All six synthetic UAT journeys now have passing release-bound evidence. The project user has approved aggregate synthetic UAT sign-off. Name the pilot owners and proposed scope, then close or explicitly approve the independent pilot prerequisites. Financial automation remains disabled; real-device, provider, privacy and recovery obligations remain outstanding.
 
 Phase 5E should remain synthetic and must not connect production providers, import real client data, enable live messaging/holds or launch a pilot. Its exit criterion is actual, release-bound operational/recovery/UAT evidence—not merely configured tooling.
 

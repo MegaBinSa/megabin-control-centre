@@ -24,7 +24,7 @@
     {
       "id": "GATE-UAT-PASSED",
       "name": "Synthetic Internal UAT Passed",
-      "status": "Blocked",
+      "status": "Passed",
       "automatedEvidence": [
         "UAT-OFF-001 Passed",
         "UAT-DRV-001 Passed",
@@ -33,7 +33,7 @@
         "UAT-FIN-001 Passed",
         "UAT-TRK-001 Passed"
       ],
-      "humanApprovals": ["Human review and sign-off of the six completed synthetic UAT journeys"],
+      "humanApprovals": [],
       "externalDependencies": []
     },
     {

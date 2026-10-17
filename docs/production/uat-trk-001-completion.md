@@ -1,6 +1,6 @@
 # UAT-TRK-001 — Passed
 
-**Result:** The bounded synthetic vehicle tracking/intelligence journey Passed on Shared Staging. All six catalogue journeys now have passing execution evidence. The aggregate UAT gate still requires human sign-off; neither pilot nor production is authorized.
+**Result:** The bounded synthetic vehicle tracking/intelligence journey Passed on Shared Staging. All six catalogue journeys now have passing execution evidence. The project user subsequently approved aggregate synthetic UAT sign-off on 2026-10-17; see the [approval record](synthetic-uat-signoff-and-pilot-entry.md). Neither pilot nor production is authorized.
 
 **Execution:** `2026-10-17T19:42:01.186Z`–`2026-10-17T19:42:44.482Z` (21:42 SAST). Codex executed the next synthetic UAT journey at the user's instruction using protected staging credentials and fixed synthetic identities. No application deployment, schema change, role/scope grant, route action or financial action occurred.
 
@@ -78,4 +78,4 @@ Both successful protected runs passed the full repository checks: 250 unit tests
 
 Initial preflight [39063294027](https://github.com/MegaBinSa/megabin-control-centre/actions/runs/39063294027) stopped before mutation because the new runner omitted the bearer on its health request. Commit `88cd4ec` corrected the runner; the next read-only preflight passed. Independent reconciliation confirmed zero tracking devices, observations, facts or Needs Attention items after that initial failure. This was a verifier error, not a deployed application defect.
 
-This bounded synthetic journey does not validate locked-phone/background collection, real hardware, continuous all-hours tracking, production providers, real-world intelligence calibration, privacy/legal approval, or business UAT sign-off. No physical-device movement or new live Driver operation was manufactured. All six synthetic cases have automated passing evidence; the aggregate UAT gate remains Blocked pending human sign-off. Pilot and production gates remain Blocked on their existing independent requirements.
+This bounded synthetic journey does not validate locked-phone/background collection, real hardware, continuous all-hours tracking, production providers, real-world intelligence calibration, privacy/legal approval, or business UAT sign-off. No physical-device movement or new live Driver operation was manufactured. All six synthetic cases have automated passing evidence. The aggregate UAT gate was Blocked pending human sign-off at execution completion; the subsequent explicit project-user approval is retained in the linked decision packet. Pilot and production gates remain Blocked on their existing independent requirements.
