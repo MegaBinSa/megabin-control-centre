@@ -208,7 +208,10 @@ export async function runTrackingUat(values, fetcher = fetch) {
       processorUserId: users.processor[1]
     });
     phase = "verify_deployed_release";
-    const healthResponse = await fetcher(`${runtime}/health/live`);
+    const healthResponse = await fetcher(`${runtime}/health/live`, {
+      headers: { Authorization: `Bearer ${tokens.office}` },
+      redirect: "error"
+    });
     assert.equal(healthResponse.status, 200);
     const health = await healthResponse.json();
     assert.equal(health.runtime.environment, "staging");
