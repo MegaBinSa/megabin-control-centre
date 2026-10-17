@@ -27,6 +27,84 @@ const deps = (provider = new FakeZohoBooksAdapter()) => {
   };
 };
 describe("accounting HTTP boundary", () => {
+  for (const prefix of ["/api/v1", "/functions/v1/platform-runtime/api/v1"]) {
+    it(`accepts existing PostgreSQL client identifiers for reconciliation at ${prefix}`, async () => {
+      for (const clientId of [
+        "57000000-0000-0000-0000-000000000001",
+        "57000000-0000-0000-0000-000000000002",
+        "0c1eb73f-c8f8-42d2-8a8a-faabab7bead7"
+      ]) {
+        const d = deps();
+        const response = await d.handler(
+          new Request(`http://x${prefix}/accounting/reconciliation/zoho-books-fake/ZC-100`, {
+            method: "POST",
+            body: JSON.stringify({
+              action: "link",
+              clientId,
+              reason: "Approved synthetic reconciliation"
+            })
+          })
+        );
+        expect(response?.status).toBe(200);
+        expect(d.rpc.rpc).toHaveBeenCalledExactlyOnceWith("accounting_reconcile", {
+          p_actor: "76000000-0000-4000-8000-000000000001",
+          p_provider: "zoho-books-fake",
+          p_customer: "ZC-100",
+          p_action: "link",
+          p_client: clientId,
+          p_reason: "Approved synthetic reconciliation",
+          p_correlation: "cid"
+        });
+      }
+    });
+  }
+  it("rejects malformed reconciliation identifiers and unexpected fields before RPC", async () => {
+    for (const body of [
+      { action: "link", clientId: "not-a-uuid", reason: "Approved review" },
+      {
+        action: "link",
+        clientId: "57000000-0000-0000-0000-00000000000g",
+        reason: "Approved review"
+      },
+      {
+        action: "link",
+        clientId: "57000000-0000-0000-0000-000000000001",
+        reason: "Approved review",
+        serviceRegionId: "forged"
+      }
+    ]) {
+      const d = deps();
+      expect(
+        (
+          await d.handler(
+            new Request("http://x/api/v1/accounting/reconciliation/zoho-books-fake/ZC-100", {
+              method: "POST",
+              body: JSON.stringify(body)
+            })
+          )
+        )?.status
+      ).toBe(400);
+      expect(d.rpc.rpc).not.toHaveBeenCalled();
+    }
+  });
+  it("preserves reconciliation permission denial for existing client identifiers", async () => {
+    const d = deps();
+    d.rpc.rpc.mockResolvedValueOnce({
+      data: null,
+      error: { code: "42501", message: "permission_denied" }
+    } as never);
+    const response = await d.handler(
+      new Request("http://x/api/v1/accounting/reconciliation/zoho-books-fake/ZC-100", {
+        method: "POST",
+        body: JSON.stringify({
+          action: "link",
+          clientId: "57000000-0000-0000-0000-000000000001",
+          reason: "Approved review"
+        })
+      })
+    );
+    expect(response?.status).toBe(403);
+  });
   it("returns controlled health and status reads", async () => {
     const d = deps();
     expect((await d.handler(new Request("http://x/api/v1/accounting/health")))?.status).toBe(200);

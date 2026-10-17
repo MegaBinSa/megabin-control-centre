@@ -189,7 +189,8 @@ export function createAccountingHandler(deps: Dependencies) {
         const b = z
           .object({
             action: z.enum(["link", "ignore", "follow_up", "resolve_conflict"]),
-            clientId: z.string().uuid().nullable().optional(),
+            // Existing PostgreSQL UUID keys include seeded non-RFC variant values.
+            clientId: z.guid().nullable().optional(),
             reason: z.string().min(3)
           })
           .strict()
