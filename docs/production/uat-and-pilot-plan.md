@@ -38,6 +38,8 @@ The Phase 5C remote smoke suite is infrastructure acceptance evidence, not busin
 
 The next step is human review and sign-off of the six retained synthetic journeys, followed by closure or explicit approval of the independent controlled-pilot prerequisites below. Tracking execution covers a bounded synthetic browser experiment and retrospective classification; real-device/background behavior, all-hours posture and intelligence calibration remain separate requirements. Keep financial automation disabled and providers fake/capture until their specific approvals and validations are complete.
 
+The [synthetic UAT sign-off and pilot-entry decision packet](synthetic-uat-signoff-and-pilot-entry.md) collects the six results, reviewed PR revisions, approval scope, integration order and remaining pilot checklist. Its decision remains pending until a human explicitly approves it.
+
 ## Minimum safe controlled pilot
 
 Recommended scope is one region, one collection team, one vehicle, named Office users, managed Driver device(s), and a limited explicitly consented client/service subset. Operate within a named support window with daily start/end checks and a parallel read-only/manual fallback. Do not include financial enforcement, live communications, or all-hours tracking unless their specific P0/P1 decisions and provider validations are complete.
