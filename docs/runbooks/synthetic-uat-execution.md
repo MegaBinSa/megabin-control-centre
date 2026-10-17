@@ -15,6 +15,18 @@ Before continuing `UAT-OFF-001`, record the deployed release identity and prove 
 
 The six baseline journeys are Office planning, Driver offline execution, website onboarding, Client SKIP, financial/accounting isolation, and vehicle tracking/intelligence. The catalogue is intentionally MegaBin-specific rather than a generic test-management framework. Phase 5D repository verification validates the contracts; no business journey is marked Passed until it actually runs on shared Staging.
 
+## Protected Tracking UAT
+
+The optional `verify_hosted_tracking` input on the manual CI workflow runs `scripts/tracking-hosted-uat.mjs` under the protected staging Environment and shared-Staging concurrency boundary. The default is read-only preflight. Execution additionally requires `execute_tracking_fixture=true` and exact confirmation `EXECUTE-UAT-TRK-001:<deployed-sha>:SYNTHETIC-VEHICLE-ONE`. The requested main release must have green quality/database checks and match the deployed runtime and browser build. This workflow performs no deployment or database administration.
+
+The fixed fixture is Synthetic Collection Vehicle (`56000000-0000-0000-0000-000000000001`), Pretoria Test Region, the existing synthetic Driver, and device reference `uat:tracking:UAT-TRK-001:driver-pwa:01`. Registration, activation and assignment use the authenticated Office application boundary; an existing conflicting owner/vehicle assignment stops execution rather than being replaced. Only fixed synthetic depot coordinates are supplied. The real Driver PWA must retain a queued GPS point across an offline reload, upload after reconnect, and clear all three local stores on logout. Its browser blocks operational writes and never accepts, starts or completes a route.
+
+Deterministic API observations prove exact duplicate receipts and prevent a late point from moving the current projection backwards. Regional Office reads and other-region/Driver denials are checked through hosted APIs. API credentials remain in runner memory; artifacts contain safe identifiers, counts, correlations and screenshots, not credentials, request bodies or raw GPS histories.
+
+One retrospective `completion_timing` classification uses preserved completed synthetic operation `33cb2338-30ab-4d62-adfc-27ded32ee37b`, its immutable planned window and actual Driver-recorded stop/completion. It receives no current GPS points and does not claim a new arrival/departure or route execution. The existing Operations Manager persona processes the bounded snapshot without any role/scope change; regional Office acknowledges and resolves its linked Needs Attention item through the real browser. Evidence must retain that classification separately from the authoritative cleaned/two-drum outcome, and before/after operation/execution hashes must match. Published versions and financial records require independent read-only reconciliation. A failure after any mutation must be inspected before retry; do not blindly replay a resolved fact to create another advisory item.
+
+Browser foreground GPS evidence does not establish real-device, background/locked-phone, all-hours, privacy/legal or production-provider readiness. Those remain separate pilot requirements. Completing the six automated journeys does not remove the human UAT sign-off requirement.
+
 ## Protected Website Intake submission
 
 `UAT-WEB-001` intake creation uses the manual-only **Submit staging Website UAT intake** workflow and the protected GitHub `staging` Environment. The workflow accepts the exact current `main` SHA, the reserved identity `uat:web:UAT-WEB-001:20260825:01`, a controlled `initial_submission` or `idempotency_retry` mode, and this confirmation:

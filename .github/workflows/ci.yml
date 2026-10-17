@@ -22,11 +22,73 @@ on:
         description: PREPARE-UAT-FIN-001:<deployed-sha>:ZC-100-ONE:ZC-200-TWO
         type: string
         required: false
+      verify_hosted_tracking:
+        description: Run fixed-target Tracking UAT preflight or synthetic execution
+        type: boolean
+        default: false
+      execute_tracking_fixture:
+        description: Register the fixed synthetic device, ingest synthetic GPS and review one advisory fact
+        type: boolean
+        default: false
+      confirm_tracking_fixture:
+        description: EXECUTE-UAT-TRK-001:<deployed-sha>:SYNTHETIC-VEHICLE-ONE
+        type: string
+        required: false
 
 permissions:
   contents: read
 
 jobs:
+  hosted-tracking-uat:
+    if: github.event_name == 'workflow_dispatch' && inputs.verify_hosted_tracking
+    runs-on: ubuntu-latest
+    environment: staging
+    concurrency:
+      group: megabin-shared-staging
+      cancel-in-progress: false
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Require an existing green main release
+        env:
+          SOURCE_SHA: ${{ inputs.deployed_sha }}
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "${#SOURCE_SHA}" -eq 40
+          git fetch origin main
+          git merge-base --is-ancestor "$SOURCE_SHA" origin/main
+          checks="$(gh api "repos/${{ github.repository }}/commits/$SOURCE_SHA/check-runs" --jq '[.check_runs[] | select(.name == "quality" or .name == "database") | {name, conclusion, started_at}] | sort_by(.name, .started_at) | group_by(.name) | map(last)')"
+          echo "$checks" | jq -e 'length == 2 and all(.conclusion == "success")'
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 11.16.0
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: .node-version
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm exec playwright install --with-deps chromium
+      - name: Verify fixed synthetic Tracking UAT boundary
+        env:
+          EXPECTED_BUILD_SHA: ${{ inputs.deployed_sha }}
+          EXECUTE_TRACKING_FIXTURE: ${{ inputs.execute_tracking_fixture }}
+          CONFIRM_TRACKING_FIXTURE: ${{ inputs.confirm_tracking_fixture }}
+          SUPABASE_PUBLISHABLE_KEY: ${{ secrets.SUPABASE_PUBLISHABLE_KEY }}
+          STAGING_OFFICE_PASSWORD: ${{ secrets.STAGING_OFFICE_PASSWORD }}
+          STAGING_DRIVER_PASSWORD: ${{ secrets.STAGING_DRIVER_PASSWORD }}
+          STAGING_ACCOUNTING_PASSWORD: ${{ secrets.STAGING_ACCOUNTING_PASSWORD }}
+        run: node scripts/tracking-hosted-uat.mjs
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: tracking-hosted-uat-${{ github.run_id }}
+          path: .cache/tracking-hosted-uat/
+          if-no-files-found: error
+          retention-days: 90
+
   hosted-financial-uat:
     if: github.event_name == 'workflow_dispatch' && inputs.verify_hosted_financial
     runs-on: ubuntu-latest

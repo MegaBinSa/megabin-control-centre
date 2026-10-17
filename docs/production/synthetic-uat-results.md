@@ -1,6 +1,6 @@
 # Synthetic UAT Results
 
-**Status:** Five journeys Passed: UAT-OFF-001, UAT-DRV-001, UAT-WEB-001, UAT-SKP-001 and UAT-FIN-001. UAT-TRK-001 remains Not Run; pilot is not authorized.
+**Status:** All six synthetic journeys Passed and the project user explicitly approved aggregate synthetic UAT sign-off on 2026-10-17. Pilot is not authorized; see the [approval record](synthetic-uat-signoff-and-pilot-entry.md).
 
 | Case | Journey | Result | Evidence/blocker |
 |---|---|---|---|
@@ -9,9 +9,13 @@
 | `UAT-WEB-001` | Website onboarding | Passed | Protected submission, durable processing, identical retry, Office review/approval and atomic regional activation completed by Shaun; final state verified on release `faf4be5d0b676f21bcd8f5d3cea584e860b78107`. |
 | `UAT-SKP-001` | Client SKIP/replan | Passed | Protected authenticated inbound, qualification, regional approval, one-occurrence exclusion, capture-only acknowledgement and immutable-source Draft replanning completed by Shaun; final state verified on release `684dc94df3a6ceea6cdfe3ed5740ec26cf93b3df`. |
 | `UAT-FIN-001` | Accounting/financial boundary | Passed | User-approved fake mappings, two fresh snapshots, three explicit advisory decisions, populated Office deep-link/reload, verified Driver 403 and immutable Published/active-work protection passed on `7d102000b49e02e7387bdd07210e46563a53c54d`. See [completion evidence](uat-fin-001-completion.md). |
-| `UAT-TRK-001` | Tracking/intelligence | Not Run | Protected execution required |
+| `UAT-TRK-001` | Tracking/intelligence | Passed | [Protected hosted completion](uat-trk-001-completion.md) |
 
 Results may change only with release-bound evidence containing every catalogue field. Local unit, pgTAP and Playwright tests support readiness but are not substituted for shared-Staging UAT.
+
+## UAT-TRK-001 — Passed
+
+Protected execution on `2026-10-17` proved deterministic GPS ingestion, exact duplicate receipts, late-point ordering and healthy current position. The real Driver PWA preserved a GPS point across offline reload, uploaded it once on reconnect, reached zero pending and cleared local stores on logout. Regional Office inspected tracking and acknowledged/resolved one retrospective completion-timing fact and its Needs Attention item. Current GPS was not attributed to the historical route; the authoritative cleaned/two-drum outcome, Route Operations, Published versions and financial decisions remained unchanged. Driver fleet/intelligence and Office cross-region reads were denied. See [release-bound completion evidence](uat-trk-001-completion.md). All six cases now have passing execution evidence and the project user subsequently approved aggregate synthetic UAT sign-off. Pilot requirements remain separate.
 
 ## UAT-FIN-001 — Passed
 

@@ -159,12 +159,12 @@
         "Confirm Driver outcomes remain authoritative"
       ],
       "expectedOutcome": "Tracking evidence and inferred intelligence remain distinct from Driver-recorded outcomes.",
-      "actualOutcome": null,
-      "evidenceReference": null,
-      "result": "Not Run",
-      "executionTimestamp": null,
-      "environmentReleaseIdentity": null,
-      "testerIdentity": null,
+      "actualOutcome": "Fixed synthetic device ingestion accepted two observations and returned duplicate receipts on exact retry; the older point did not rewind the healthy current projection. The real Driver PWA retained one GPS point across offline reload, uploaded it once after reconnect, reached zero pending and cleared all local stores on logout. Regional Office inspected tracking, acknowledged and resolved one retrospective completion-timing fact and its Needs Attention item. Current GPS was not attributed to the historical route. Driver fleet/intelligence reads and Office other-region reads returned 403 without data. Complete operation, Driver execution, Published-route and financial-decision hashes were unchanged; financial holds/jobs remained zero. Real-device/background tracking and human UAT sign-off remain separate requirements.",
+      "evidenceReference": "docs/production/uat-trk-001-completion.md",
+      "result": "Passed",
+      "executionTimestamp": "2026-10-17T19:42:44.482Z",
+      "environmentReleaseIdentity": "7d102000b49e02e7387bdd07210e46563a53c54d",
+      "testerIdentity": "Codex protected synthetic hosted API/browser UAT, authorized by the user",
       "defectReferences": []
     }
   ]
