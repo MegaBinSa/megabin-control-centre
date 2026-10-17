@@ -137,6 +137,60 @@
       "id": "MBA-STG-INT-001",
       "severity": "SEV2",
       "response": "Investigate the signed non-mutating onboarding boundary."
+    },
+    {
+      "check": "office_profile_cors_preflight",
+      "id": "MBA-STG-SEC-009",
+      "severity": "SEV2",
+      "response": "Investigate approved Office profile preflight access."
+    },
+    {
+      "check": "office_profile_cors_contract",
+      "id": "MBA-STG-SEC-010",
+      "severity": "SEV2",
+      "response": "Investigate the Office profile browser CORS contract."
+    },
+    {
+      "check": "authenticated_office_cors_header",
+      "id": "MBA-STG-SEC-011",
+      "severity": "SEV2",
+      "response": "Investigate the authenticated Office response origin header."
+    },
+    {
+      "check": "regional_office_master_data_read",
+      "id": "MBA-STG-API-002",
+      "severity": "SEV2",
+      "response": "Investigate authorized regional Office master-data availability and scope."
+    },
+    {
+      "check": "regional_office_master_data_cors_header",
+      "id": "MBA-STG-SEC-012",
+      "severity": "SEV2",
+      "response": "Investigate the regional Office master-data response origin header."
+    },
+    {
+      "check": "regional_office_website_intake_read",
+      "id": "MBA-STG-INT-002",
+      "severity": "SEV2",
+      "response": "Investigate authorized regional Website Intake availability and scope."
+    },
+    {
+      "check": "driver_bootstrap_cors_preflight",
+      "id": "MBA-STG-SEC-013",
+      "severity": "SEV2",
+      "response": "Investigate approved Driver bootstrap preflight access."
+    },
+    {
+      "check": "driver_bootstrap_cors_contract",
+      "id": "MBA-STG-SEC-014",
+      "severity": "SEV2",
+      "response": "Investigate the Driver bootstrap browser CORS contract."
+    },
+    {
+      "check": "authenticated_driver_cors_header",
+      "id": "MBA-STG-SEC-015",
+      "severity": "SEV2",
+      "response": "Investigate the authenticated Driver response origin header."
     }
   ]
 }

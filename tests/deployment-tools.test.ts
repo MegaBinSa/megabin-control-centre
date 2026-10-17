@@ -322,6 +322,27 @@ describe("deployment safety tools", () => {
     });
     const checks = await runSmoke(staging, fetchMock as unknown as typeof fetch);
     expect(checks.every((check) => check.passed)).toBe(true);
+    // Exercise the real emitted check set against the real alert registry.
+    // A partial hand-written list missed the hosted browser/CORS additions.
+    const definition = JSON.parse(readFileSync("config/operational-alerts.json", "utf8"));
+    const evidence = buildMonitoringEvidence(staging, checks, definition);
+    expect(evidence.outcome).toBe("Passed");
+    expect(evidence.alerts).toHaveLength(checks.length + 1);
+    expect(new Set(evidence.alerts.map((alert) => alert.alertId)).size).toBe(
+      evidence.alerts.length
+    );
+    expect(evidence.release.buildSha).toBe("abc123");
+    const failed = buildMonitoringEvidence(
+      staging,
+      checks.map((check) =>
+        check.name === "office_profile_cors_contract" ? { ...check, passed: false } : check
+      ),
+      definition
+    );
+    expect(failed.outcome).toBe("Failed");
+    expect(failed.alerts.filter((alert) => alert.state === "Open")).toEqual([
+      expect.objectContaining({ check: "office_profile_cors_contract", severity: "SEV2" })
+    ]);
     expect(checks.find((check) => check.name === "regional_office_master_data_read")?.passed).toBe(
       true
     );
@@ -495,6 +516,17 @@ describe("deployment safety tools", () => {
       deliveryDestination: "github-actions-email",
       state: "Open"
     });
+  });
+
+  it("still fails closed when an emitted monitor check has no stable definition", () => {
+    const definition = JSON.parse(readFileSync("config/operational-alerts.json", "utf8"));
+    expect(() =>
+      buildMonitoringEvidence(
+        staging,
+        [{ name: "unregistered_check", passed: true, status: 200 }],
+        definition
+      )
+    ).toThrow("No stable alert definition exists for unregistered_check");
   });
 
   it("retains non-mutating monitor evidence and requires human delivery confirmation", () => {
