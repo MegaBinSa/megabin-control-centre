@@ -158,7 +158,7 @@ async function driverSession(
       await expect(page.getByText("Sign in failed.")).toBeVisible();
   }
   await expect(page.getByText("Driver Team A")).toBeVisible();
-  return { submittedActionTypes };
+  return { submittedActionTypes, authoritativeLifecycle: () => lifecycleStatus };
 }
 
 test("Driver works from the cached manifest and retains offline actions", async ({
@@ -282,11 +282,40 @@ test("Driver reconciles a delayed duplicate Accept and can start normally", asyn
     { operationId }
   );
 
+  // Hold the real coordinator's operation after reconciliation rendered 0 pending,
+  // but before its promise settles and activeSync is cleared. No timers/retries.
+  await page.evaluate(async () => {
+    const modulePath = "/src/session-activity.ts";
+    const { DriverSessionActivity } = await import(/* @vite-ignore */ modulePath);
+    const original = DriverSessionActivity.prototype.runSync;
+    let requests = 0,
+      passes = 0;
+    DriverSessionActivity.prototype.runSync = function (operation: () => Promise<void>) {
+      document.documentElement.dataset.syncRequests = String(++requests);
+      return original.call(this, async () => {
+        document.documentElement.dataset.syncPasses = String(++passes);
+        await operation();
+        if (passes === 1) {
+          document.documentElement.dataset.syncCompleting = "true";
+          await new Promise<void>((resolve) =>
+            window.addEventListener("release-sync-completion", () => resolve(), { once: true })
+          );
+        }
+      });
+    };
+  });
   await page.getByRole("button", { name: "Sync now" }).click();
+  await expect(page.locator("html")).toHaveAttribute("data-sync-completing", "true");
   await expect(page.getByText(/0 pending/)).toBeVisible();
   await expect(page.getByText(/require attention/)).toHaveCount(0);
   await expect(page.getByRole("button", { name: "Accept route" })).toHaveCount(0);
   await page.getByRole("button", { name: "Start route" }).click();
+  await expect(page.locator("html")).toHaveAttribute("data-sync-requests", "2");
+  expect(session.submittedActionTypes).toEqual(["accept", "accept"]);
+  expect(session.authoritativeLifecycle()).toBe("accepted");
+  await page.evaluate(() => window.dispatchEvent(new Event("release-sync-completion")));
+  await expect(page.locator("html")).toHaveAttribute("data-sync-passes", "2");
+  await expect.poll(session.authoritativeLifecycle).toBe("in_progress");
   await expect(page.getByText(/Status: in_progress/)).toBeVisible();
   await expect(page.getByText(/0 pending/)).toBeVisible();
 

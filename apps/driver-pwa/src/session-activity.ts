@@ -4,13 +4,11 @@ export class DriverSessionActivity {
 
   runSync(operation: () => Promise<void>) {
     if (this.endingSession) return Promise.resolve();
-    if (this.activeSync) return this.activeSync;
-
-    const active = Promise.resolve()
-      .then(operation)
-      .finally(() => {
-        if (this.activeSync === active) this.activeSync = null;
-      });
+    // Retain requests made during a sync, including its completion window.
+    // A preceding failure must not discard subsequently scheduled work.
+    const active = (this.activeSync ?? Promise.resolve()).then(operation, operation).finally(() => {
+      if (this.activeSync === active) this.activeSync = null;
+    });
     this.activeSync = active;
     return active;
   }
