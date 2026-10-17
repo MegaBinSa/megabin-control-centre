@@ -1,5 +1,5 @@
 begin;
-select plan(35);
+select plan(39);
 select has_table('app_private','financial_eligibility_policy_versions','versioned policy exists');
 select has_table('app_private','financial_eligibility_decisions','immutable decisions exist');
 select has_table('app_private','financial_eligibility_overrides','override history exists');
@@ -11,6 +11,8 @@ insert into auth.users(id,email)values('78000000-0000-4000-8000-000000000001','f
 insert into public.user_profiles(user_id,display_name)values('78000000-0000-4000-8000-000000000001','Financial Manager'),('78000000-0000-4000-8000-000000000002','Financial Driver'),('78000000-0000-4000-8000-000000000003','Other Region');
 insert into app_private.user_roles(user_id,role_id)select'78000000-0000-4000-8000-000000000001'::uuid,role_id from app_private.roles where role_key='director_admin' union all select'78000000-0000-4000-8000-000000000002'::uuid,role_id from app_private.roles where role_key='driver_team' union all select'78000000-0000-4000-8000-000000000003'::uuid,role_id from app_private.roles where role_key='operations_manager';
 insert into app_private.user_access_scopes(user_id,scope_kind,scope_id)values('78000000-0000-4000-8000-000000000001','global',null),('78000000-0000-4000-8000-000000000003','service_region',gen_random_uuid());
+select throws_ok($$select api.financial_eligibility_list('78000000-0000-4000-8000-000000000002','{}')$$,'42501','permission_denied','Driver cannot receive an authorized-looking empty financial eligibility list');
+select is(jsonb_array_length(api.financial_eligibility_list('78000000-0000-4000-8000-000000000001','{}')->'items'),0,'authorized global actor may receive a genuinely empty list');
 insert into app_private.accounting_connections(accounting_connection_id,provider,environment_name,organization_reference,lifecycle_status)values('79000000-0000-4000-8000-000000000001','zoho-books-fake','local','synthetic','active');
 insert into app_private.accounting_sync_runs(accounting_sync_run_id,accounting_connection_id,provider,environment_name,sync_mode,lifecycle_status,correlation_id,initiation_kind)values('79000000-0000-4000-8000-000000000002','79000000-0000-4000-8000-000000000001','zoho-books-fake','local','initial_full','succeeded',gen_random_uuid(),'system');
 insert into app_private.client_accounting_snapshots(client_id,provider,provider_customer_id,service_region_id,currency,total_outstanding_minor,overdue_outstanding_minor,oldest_overdue_date,days_overdue,unpaid_invoice_count,overdue_invoice_count,aging_bucket,derived_status,provider_synced_at,stale_after,reconciliation_status,source_sync_run_id)values('57000000-0000-0000-0000-000000000001','zoho-books-fake','ZC-1','51000000-0000-0000-0000-000000000001','ZAR',0,0,null,0,0,0,'current','current',now(),now()+interval'48 hours','mapped','79000000-0000-4000-8000-000000000002');
@@ -18,6 +20,8 @@ select is(api.financial_eligibility_simulate('78000000-0000-4000-8000-0000000000
 select is((api.financial_eligibility_reevaluate('78000000-0000-4000-8000-000000000001','59000000-0000-0000-0000-000000000001',gen_random_uuid())->>'decision_status'),'eligible','eligible decision committed');
 select is((api.financial_eligibility_route_contract('59000000-0000-0000-0000-000000000001')->>'eligibleForCollection')::boolean,true,'route contract reports eligible');
 select is((select count(*)from app_private.financial_eligibility_decisions),1::bigint,'first decision recorded');
+select is(jsonb_array_length(api.financial_eligibility_list('78000000-0000-4000-8000-000000000001','{}')->'items'),1,'authorized global actor sees the current decision');
+select is(jsonb_array_length(api.financial_eligibility_list('78000000-0000-4000-8000-000000000003','{}')->'items'),0,'authorized actor remains constrained to assigned regions');
 select lives_ok($$select api.financial_eligibility_reevaluate('78000000-0000-4000-8000-000000000001','59000000-0000-0000-0000-000000000001',gen_random_uuid())$$,'repeat reevaluation succeeds');
 select is((select count(*)from app_private.financial_eligibility_decisions),1::bigint,'unchanged reevaluation creates no duplicate');
 update app_private.client_accounting_snapshots set total_outstanding_minor=80000,overdue_outstanding_minor=80000,oldest_overdue_date=current_date-70,days_overdue=70,unpaid_invoice_count=1,overdue_invoice_count=1,aging_bucket='61_90',derived_status='seriously_overdue';
