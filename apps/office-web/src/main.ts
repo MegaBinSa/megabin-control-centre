@@ -492,89 +492,122 @@ async function renderCurrentLocation(): Promise<void> {
   appRoot.replaceChildren(workspaceRoot);
   const permissions = identity.permissions;
   const regions = identity.serviceRegionIds;
-  switch (location.route) {
-    case "geography":
-      await renderGeographyWorkspace(
-        workspaceRoot,
-        api,
-        permissions.includes("geography.write"),
-        regions,
-        signOutFromWorkspace,
-        { mount, location }
-      );
-      break;
-    case "daily-roster":
-      await renderRosterWorkspace(workspaceRoot, api, permissions, regions, signOutFromWorkspace, {
-        mount,
-        location
-      });
-      break;
-    case "route-planning":
-      await renderRoutesWorkspace(workspaceRoot, api, permissions, regions, signOutFromWorkspace, {
-        mount,
-        location
-      });
-      break;
-    case "route-operations":
-      await renderRouteOperationsWorkspace(
-        workspaceRoot,
-        api,
-        permissions,
-        regions,
-        signOutFromWorkspace,
-        { mount, location }
-      );
-      break;
-    case "live-vehicles":
-      await renderTrackingWorkspace(workspaceRoot, api, permissions, regions, signOutFromWorkspace);
-      break;
-    case "live-operations":
-      await renderLiveOperationsWorkspace(
-        workspaceRoot,
-        api,
-        permissions,
-        regions,
-        signOutFromWorkspace
-      );
-      break;
-    case "website-intake":
-      await renderWebsiteIntakeWorkspace(
-        workspaceRoot,
-        api,
-        permissions,
-        regions,
-        signOutFromWorkspace
-      );
-      break;
-    case "client-migration":
-      await renderClientMigrationWorkspace(workspaceRoot, api, permissions, signOutFromWorkspace);
-      break;
-    case "accounting":
-      await renderAccountingWorkspace(
-        workspaceRoot,
-        api,
-        permissions,
-        identity.globalAccess,
-        signOutFromWorkspace
-      );
-      break;
-    case "financial-eligibility":
-      await renderFinancialEligibilityWorkspace(
-        workspaceRoot,
-        api,
-        permissions,
-        identity.globalAccess,
-        signOutFromWorkspace
-      );
-      break;
-    case "communications":
-      await renderCommunicationsWorkspace(workspaceRoot, api, permissions, signOutFromWorkspace);
-      break;
-    case "client-skip":
-      await renderClientSkipWorkspace(workspaceRoot, api, permissions, signOutFromWorkspace);
-      break;
-    default:
-      navigate({ route: "clients" }, "replace");
+  try {
+    switch (location.route) {
+      case "geography":
+        await renderGeographyWorkspace(
+          workspaceRoot,
+          api,
+          permissions.includes("geography.write"),
+          regions,
+          signOutFromWorkspace,
+          { mount, location }
+        );
+        break;
+      case "daily-roster":
+        await renderRosterWorkspace(
+          workspaceRoot,
+          api,
+          permissions,
+          regions,
+          signOutFromWorkspace,
+          {
+            mount,
+            location
+          }
+        );
+        break;
+      case "route-planning":
+        await renderRoutesWorkspace(
+          workspaceRoot,
+          api,
+          permissions,
+          regions,
+          signOutFromWorkspace,
+          {
+            mount,
+            location
+          }
+        );
+        break;
+      case "route-operations":
+        await renderRouteOperationsWorkspace(
+          workspaceRoot,
+          api,
+          permissions,
+          regions,
+          signOutFromWorkspace,
+          { mount, location }
+        );
+        break;
+      case "live-vehicles":
+        await renderTrackingWorkspace(
+          workspaceRoot,
+          api,
+          permissions,
+          regions,
+          signOutFromWorkspace
+        );
+        break;
+      case "live-operations":
+        await renderLiveOperationsWorkspace(
+          workspaceRoot,
+          api,
+          permissions,
+          regions,
+          signOutFromWorkspace
+        );
+        break;
+      case "website-intake":
+        await renderWebsiteIntakeWorkspace(
+          workspaceRoot,
+          api,
+          permissions,
+          regions,
+          signOutFromWorkspace
+        );
+        break;
+      case "client-migration":
+        await renderClientMigrationWorkspace(workspaceRoot, api, permissions, signOutFromWorkspace);
+        break;
+      case "accounting":
+        await renderAccountingWorkspace(
+          workspaceRoot,
+          api,
+          permissions,
+          identity.globalAccess,
+          signOutFromWorkspace
+        );
+        break;
+      case "financial-eligibility":
+        await renderFinancialEligibilityWorkspace(
+          workspaceRoot,
+          api,
+          permissions,
+          identity.globalAccess,
+          signOutFromWorkspace
+        );
+        break;
+      case "communications":
+        await renderCommunicationsWorkspace(workspaceRoot, api, permissions, signOutFromWorkspace);
+        break;
+      case "client-skip":
+        await renderClientSkipWorkspace(workspaceRoot, api, permissions, signOutFromWorkspace);
+        break;
+      default:
+        navigate({ route: "clients" }, "replace");
+    }
+  } catch (cause) {
+    // A missing workspace endpoint does not invalidate the restored identity.
+    if (!(cause instanceof Error) || !("status" in cause) || cause.status !== 404) throw cause;
+    if (!isOfficeMountCurrent(mount)) return;
+    workspaceRoot.innerHTML = `<main><h1>Workspace unavailable</h1><p role="alert">${escapeText(cause.message)}</p><button id="workspace-back">Master Data</button><button id="workspace-logout">Sign out</button></main>`;
+    workspaceRoot.querySelector("#workspace-back")?.addEventListener("click", () => {
+      navigate({ route: "clients" });
+    });
+    workspaceRoot
+      .querySelector("#workspace-logout")
+      ?.addEventListener("click", () => void signOutFromWorkspace());
   }
   // A later navigation invalidates this mount. Renderers with asynchronous
   // initialization must not claim the root after that point.

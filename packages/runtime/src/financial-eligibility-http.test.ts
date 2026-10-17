@@ -23,6 +23,47 @@ const setup = (actorId: string | null = "76000000-0000-4000-8000-000000000001") 
   };
 };
 describe("financial eligibility HTTP boundary", () => {
+  for (const prefix of [
+    "/api/v1",
+    "/functions/v1/platform-runtime/api/v1",
+    "/platform-runtime/api/v1"
+  ]) {
+    it(`resolves authenticated decisions at ${prefix} without writes`, async () => {
+      const d = setup();
+      const response = await d.handler(
+        new Request(`http://x${prefix}/financial-eligibility/decisions?serviceRegionId=region-1`)
+      );
+      expect(response?.status).toBe(200);
+      expect(await response?.json()).toEqual({ ok: true, data: { items: [] } });
+      expect(d.rpc.rpc).toHaveBeenCalledExactlyOnceWith("financial_eligibility_list", {
+        p_actor: "76000000-0000-4000-8000-000000000001",
+        p_query: { serviceRegionId: "region-1" }
+      });
+      expect(d.deferred).toEqual([]);
+    });
+    it(`requires authentication at ${prefix}`, async () => {
+      const d = setup(null);
+      expect(
+        (await d.handler(new Request(`http://x${prefix}/financial-eligibility/decisions`)))?.status
+      ).toBe(401);
+      expect(d.rpc.rpc).not.toHaveBeenCalled();
+    });
+    it(`preserves authorization denial at ${prefix}`, async () => {
+      const rpc = {
+        rpc: vi.fn(async () => ({ data: null, error: { code: "42501", message: "denied" } }))
+      };
+      const handler = createFinancialEligibilityHandler({
+        rpc,
+        actorId: "actor",
+        id: () => "unused"
+      });
+      const response = await handler(
+        new Request(`http://x${prefix}/financial-eligibility/decisions`)
+      );
+      expect(response?.status).toBe(403);
+      expect(await response?.json()).toMatchObject({ error: { code: "authorization_denied" } });
+    });
+  }
   it("serves list, detail and simulation through fixed RPCs", async () => {
     const d = setup();
     expect(
