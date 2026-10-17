@@ -130,16 +130,17 @@
         "Confirm Published and active work are not silently rewritten"
       ],
       "expectedOutcome": "Authorized projections are visible without leaking financial data or mutating protected operations.",
-      "actualOutcome": "Hosted route and explicit authorization remediation passed on the deployed release: regional Office received 200 and restored the authenticated Financial Eligibility deep link across reload; the verified Driver received 403 authorization_denied with no financial data. Route Operation and Route Version hashes were unchanged, and decisions/jobs/holds remained zero. Full financial UAT remains Blocked: all three imported fake customers are unmatched, with no populated accounting or eligibility projections to inspect. No financial mutation was performed. The supplemental live Driver transition was Not Run because no operation was assigned; the separate monitor execution failure remains recorded.",
-      "evidenceReference": "docs/production/uat-fin-001-hosted-retest.md",
-      "result": "Blocked",
-      "executionTimestamp": "2026-10-17T18:22:01.536Z",
-      "environmentReleaseIdentity": "6ac6210d91a9de8052f590d6e06adaae02ea4d76",
-      "testerIdentity": "Codex automated hosted verification, authorized by the user",
+      "actualOutcome": "User-approved ZC-100/Client One and ZC-200/Client Two pairings produced two fresh fake-accounting snapshots and three explicit version-1 synthetic eligibility decisions (two hold_recommended, one warning). ZC-300 remains unmatched. Regional Office loaded all three decisions across authenticated deep-link reload; the other-region filter returned zero. The verified Driver received 403 with no financial data. Published-route and Route Operation hashes and the original sync record were unchanged. Affected Draft/Ready versions were marked stale for review. Holds/jobs remained zero and financial automation remained off. The separate staging monitor passed with all 28 alerts Resolved. Supplemental live Driver transition remains Not Run because no operation is assigned.",
+      "evidenceReference": "docs/production/uat-fin-001-completion.md",
+      "result": "Passed",
+      "executionTimestamp": "2026-10-17T18:55:21.817Z",
+      "environmentReleaseIdentity": "7d102000b49e02e7387bdd07210e46563a53c54d",
+      "testerIdentity": "Codex automated hosted UAT, with user-approved synthetic pairings and decisions",
       "defectReferences": [
-        "PR-92-financial-hosted-routing-retested",
-        "PR-94-financial-list-authorization-retested",
-        "Unmatched-fake-customers-block-populated-projection-UAT"
+        "PR-92-hosted-routing-retested",
+        "PR-94-list-authorization-retested",
+        "PR-96-monitor-registry-repaired",
+        "PR-98-existing-client-identifier-reconciliation-retested"
       ]
     },
     {
