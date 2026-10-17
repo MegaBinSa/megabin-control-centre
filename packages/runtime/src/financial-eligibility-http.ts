@@ -45,7 +45,9 @@ export function createFinancialEligibilityHandler(deps: FinancialEligibilityHttp
   };
   return async (request: Request): Promise<Response | null> => {
     const url = new URL(request.url);
-    if (!url.pathname.startsWith("/api/v1/financial-eligibility")) return null;
+    // Hosted requests retain the Edge Function prefix; match the other runtime handlers.
+    const apiPath = url.pathname.replace(/^.*\/api\/v1/, "");
+    if (!apiPath.startsWith("/financial-eligibility")) return null;
     if (!deps.actorId)
       return json(
         {
@@ -54,7 +56,7 @@ export function createFinancialEligibilityHandler(deps: FinancialEligibilityHttp
         },
         401
       );
-    const path = url.pathname.replace("/api/v1/financial-eligibility", "") || "/";
+    const path = apiPath.replace("/financial-eligibility", "") || "/";
     try {
       if (path === "/decisions" && request.method === "GET")
         return run("financial_eligibility_list", {

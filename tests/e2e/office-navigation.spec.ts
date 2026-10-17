@@ -35,7 +35,8 @@ async function fulfillApi(route: Route): Promise<void> {
             "geography.write",
             "roster.read",
             "routes.read",
-            "route_operations.read"
+            "route_operations.read",
+            "financial_eligibility.read"
           ],
           serviceRegionIds: [regionId]
         }
@@ -351,6 +352,46 @@ test("an in-flight Route Operations request cannot repaint a newly selected modu
   releaseOperations?.();
   await expect(page.getByRole("heading", { name: "Clients" })).toBeVisible();
   await expect(page.getByRole("heading", { name: "Route Operations" })).toHaveCount(0);
+});
+
+test("authenticated Financial Eligibility direct deep link loads and survives reload", async ({
+  page
+}) => {
+  await login(page);
+  const requests: string[] = [];
+  await page.route("**/api/v1/financial-eligibility/**", async (route) => {
+    requests.push(route.request().method());
+    expect(route.request().headers().authorization).toBe(`Bearer ${token}`);
+    await route.fulfill({ json: { ok: true, data: { items: [] } } });
+  });
+  await page.goto("/?module=financial-eligibility");
+  await expect(page.getByRole("heading", { name: "Financial Eligibility" })).toBeVisible();
+  await expect(page.getByText("No evaluated services yet.")).toBeVisible();
+  await page.reload();
+  await expect(page.getByRole("heading", { name: "Financial Eligibility" })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Office sign in" })).toHaveCount(0);
+  expect(requests).toEqual(["GET", "GET"]);
+});
+
+test("workspace endpoint 404 preserves the authenticated Office session", async ({ page }) => {
+  await login(page);
+  await page.route("**/api/v1/financial-eligibility/decisions", (route) =>
+    route.fulfill({
+      status: 404,
+      json: {
+        ok: false,
+        error: { code: "endpoint_not_found", message: "The requested endpoint does not exist." }
+      }
+    })
+  );
+  await page.goto("/?module=financial-eligibility");
+  await expect(page.getByRole("heading", { name: "Workspace unavailable" })).toBeVisible();
+  await expect(page.getByRole("alert")).toHaveText("The requested endpoint does not exist.");
+  await expect(page.getByRole("heading", { name: "Office sign in" })).toHaveCount(0);
+  await page.getByRole("button", { name: "Master Data" }).click();
+  await expect(page.getByRole("heading", { name: "Clients" })).toBeVisible();
+  await page.getByRole("button", { name: "Sign out" }).click();
+  await expect(page.getByRole("heading", { name: "Office sign in" })).toBeVisible();
 });
 
 test("failed session restoration clears privileged Office content", async ({ page }) => {
