@@ -29,7 +29,8 @@
         "UAT-OFF-001 Passed",
         "UAT-DRV-001 Passed",
         "UAT-WEB-001 Passed",
-        "UAT-SKP-001 Passed"
+        "UAT-SKP-001 Passed",
+        "UAT-FIN-001 Passed"
       ],
       "humanApprovals": ["UAT execution and sign-off"],
       "externalDependencies": []

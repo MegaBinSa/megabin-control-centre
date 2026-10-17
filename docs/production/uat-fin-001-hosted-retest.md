@@ -1,5 +1,7 @@
 # UAT-FIN-001 hosted remediation retest
 
+**Historical checkpoint:** The blocked result below is preserved. The user-approved populated continuation subsequently Passed on release `7d102000b49e02e7387bdd07210e46563a53c54d`; see [completion evidence](uat-fin-001-completion.md).
+
 **Full journey result:** Blocked on populated projection preconditions.
 
 **Route and authorization checkpoint:** Passed against Shared Staging.
