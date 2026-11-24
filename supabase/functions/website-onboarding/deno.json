@@ -36,7 +36,7 @@
     "../../../packages/runtime/src/supabase.js": "../../../packages/runtime/src/supabase.ts",
     "../../../packages/runtime/src/vehicle-tracking-http.js": "../../../packages/runtime/src/vehicle-tracking-http.ts",
     "../../../packages/runtime/src/website-intake-http.js": "../../../packages/runtime/src/website-intake-http.ts",
-    "zod": "npm:zod@4.1.11",
+    "zod": "npm:zod@4.6.7",
     "@supabase/server": "npm:@supabase/server@1.4.1",
     "@supabase/functions-js": "jsr:@supabase/functions-js@2.112.2"
   },

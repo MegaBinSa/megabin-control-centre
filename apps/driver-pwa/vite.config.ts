@@ -13,5 +13,18 @@ export default defineConfig(({ mode }) => {
     ])
       if (!env[key]) throw new Error(`${key} is required for a deployable Driver build.`);
   }
-  return { build: { sourcemap: false } };
+  return {
+    build: { sourcemap: false },
+    plugins: [
+      {
+        name: "defer-vite-client-until-service-worker",
+        transformIndexHtml: {
+          order: "post",
+          handler(html: string) {
+            return html.replace(/<script type="module" src="\/@vite\/client"><\/script>\s*/g, "");
+          }
+        }
+      }
+    ]
+  };
 });

@@ -4,7 +4,7 @@
     "jsr:@supabase/functions-js@2.112.2": "2.112.2",
     "npm:@supabase/server@1.4.1": "1.4.1_@supabase+supabase-js@2.112.3",
     "npm:openai@^4.52.5": "4.104.0_zod@4.1.11",
-    "npm:zod@4.1.11": "4.1.11"
+    "npm:zod@4.6.7": "4.6.7"
   },
   "jsr": {
     "@supabase/functions-js@2.112.2": {
@@ -253,10 +253,10 @@
         "form-data-encoder",
         "formdata-node",
         "node-fetch",
-        "zod"
+        "zod@4.1.11"
       ],
       "optionalPeers": [
-        "zod"
+        "zod@4.1.11"
       ],
       "bin": true
     },
@@ -284,13 +284,16 @@
     },
     "zod@4.1.11": {
       "integrity": "sha512-WPsqwxITS2tzx1bzhIKsEs19ABD5vmCVa4xBo2tq/SrV4RNZtfws1EnCWQXM6yh8bD08a1idvkB5MZSBiZsjwg=="
+    },
+    "zod@4.6.7": {
+      "integrity": "sha512-g8W2D2kU6a8untc053fX1uVBKzM7yqAxW/3zwk83+6RyF2+SKOuV+c0wBDhUwzV1PaGapmZH+rmcUzPf+3CGwg=="
     }
   },
   "workspace": {
     "dependencies": [
       "jsr:@supabase/functions-js@2.112.2",
       "npm:@supabase/server@1.4.1",
-      "npm:zod@4.1.11"
+      "npm:zod@4.6.7"
     ]
   }
 }

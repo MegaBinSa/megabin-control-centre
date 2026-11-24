@@ -38,7 +38,7 @@
     "../../../packages/runtime/src/supabase.js": "../../../packages/runtime/src/supabase.ts",
     "../../../packages/runtime/src/vehicle-tracking-http.js": "../../../packages/runtime/src/vehicle-tracking-http.ts",
     "../../../packages/runtime/src/website-intake-http.js": "../../../packages/runtime/src/website-intake-http.ts",
-    "zod": "npm:zod@4.1.11"
+    "zod": "npm:zod@4.6.7"
   },
   "scopes": {
     "../../../packages/domain-types/src/": {
