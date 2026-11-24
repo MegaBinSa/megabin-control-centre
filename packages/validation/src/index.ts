@@ -107,23 +107,23 @@ export const serviceRegionInput = common.extend({
   defaultTimezone: z.string().default("Africa/Johannesburg"),
   isActive: z.boolean().default(true)
 });
-export const depotInput = common
-  .extend({
-    serviceRegionId: uuid,
-    name: z.string().trim().min(1).max(120),
-    addressLine1: z.string().trim().min(1).max(200),
-    addressLine2: z.string().max(200).optional(),
-    suburb: z.string().trim().min(1).max(120),
-    city: z.string().trim().min(1).max(120),
-    postalCode: z.string().max(20).optional(),
-    latitude: z.number().min(-90).max(90).optional(),
-    longitude: z.number().min(-180).max(180).optional(),
-    geofenceRadiusMetres: z.number().int().min(10).max(5000).default(100),
-    isActive: z.boolean().default(true)
-  })
-  .refine((value) => (value.latitude === undefined) === (value.longitude === undefined), {
-    message: "Latitude and longitude must be supplied together."
-  });
+const depotObject = common.extend({
+  serviceRegionId: uuid,
+  name: z.string().trim().min(1).max(120),
+  addressLine1: z.string().trim().min(1).max(200),
+  addressLine2: z.string().max(200).optional(),
+  suburb: z.string().trim().min(1).max(120),
+  city: z.string().trim().min(1).max(120),
+  postalCode: z.string().max(20).optional(),
+  latitude: z.number().min(-90).max(90).optional(),
+  longitude: z.number().min(-180).max(180).optional(),
+  geofenceRadiusMetres: z.number().int().min(10).max(5000).default(100),
+  isActive: z.boolean().default(true)
+});
+export const depotInput = depotObject.refine(
+  (value) => (value.latitude === undefined) === (value.longitude === undefined),
+  { message: "Latitude and longitude must be supplied together." }
+);
 export const territoryInput = common.extend({
   serviceRegionId: uuid,
   name: z.string().trim().min(1).max(120),
@@ -229,7 +229,12 @@ export const serviceUpdateInput = z.object({
 const genericUpdateSchemas = {
   "service-configurations": configurationInput.partial().extend(updateCommon),
   "service-regions": serviceRegionInput.partial().extend(updateCommon),
-  depots: depotInput.partial().extend(updateCommon),
+  depots: depotObject
+    .partial()
+    .extend(updateCommon)
+    .refine((value) => (value.latitude === undefined) === (value.longitude === undefined), {
+      message: "Latitude and longitude must be supplied together."
+    }),
   territories: territoryInput.partial().extend(updateCommon),
   teams: teamInput.partial().extend(updateCommon),
   staff: z.object({

@@ -43,6 +43,15 @@ describe("master-data validation", () => {
       })
     ).toMatchObject({ lifecycleStatus: "active" });
   });
+  it("keeps depot coordinates paired when only some fields are updated", () => {
+    const expectedUpdatedAt = "2026-08-20T06:15:12Z";
+    expect(
+      updateSchemaForResource("depots").parse({ name: "Central", expectedUpdatedAt })
+    ).toMatchObject({ name: "Central" });
+    expect(() =>
+      updateSchemaForResource("depots").parse({ latitude: -25.7, expectedUpdatedAt })
+    ).toThrow(/together/);
+  });
   it("preserves explicit nullable update semantics", () => {
     expect(
       updateSchemaForResource("clients").parse({

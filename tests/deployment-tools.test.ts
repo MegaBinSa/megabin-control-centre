@@ -16,7 +16,7 @@ import { validateEnvironment } from "../scripts/environment-contract.mjs";
 import { ensureSupabaseDataApiSchema } from "../scripts/ensure-supabase-data-api-schema.mjs";
 import { inspectSql } from "../scripts/migration-safety.mjs";
 import { buildMonitoringEvidence } from "../scripts/operational-monitor.mjs";
-import { validateReadinessGates } from "../scripts/readiness-gates.mjs";
+import { validateReadinessGates, validateReadinessNarrative } from "../scripts/readiness-gates.mjs";
 import { assertRestoreRehearsal } from "../scripts/recovery-contract.mjs";
 import { buildRecoveryEvidence } from "../scripts/recovery-evidence.mjs";
 import { createRollbackPlan } from "../scripts/rollback-rehearsal.mjs";
@@ -798,5 +798,17 @@ describe("deployment safety tools", () => {
     const invalid = structuredClone(register);
     invalid.gates[3].status = "Passed";
     expect(() => validateReadinessGates(invalid)).toThrow("unresolved approvals");
+  });
+
+  it("keeps the readiness narrative aligned with the register", () => {
+    const register = JSON.parse(readFileSync("config/readiness-gates.json", "utf8"));
+    const narrative = readFileSync("docs/production/readiness-gates.md", "utf8");
+    expect(validateReadinessNarrative(register, narrative)).toEqual({ ok: true, gates: 5 });
+    const drifted = narrative.replace(
+      "| Synthetic Internal UAT Passed | Passed |",
+      "| Synthetic Internal UAT Passed | Not Run |"
+    );
+    expect(drifted).not.toBe(narrative);
+    expect(() => validateReadinessNarrative(register, drifted)).toThrow("GATE-UAT-PASSED");
   });
 });

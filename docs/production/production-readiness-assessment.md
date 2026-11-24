@@ -158,7 +158,7 @@ During pilot, existing spreadsheets and operational processes should remain a co
 
 Close every P0/P1 applicable to the agreed launch scope; activate and validate live providers; migrate/reconcile authoritative data; complete training and user/device provisioning; approve financial, communications, SKIP, tracking and retention policies; test backup restore and deployment rollback; establish support/on-call ownership; freeze legacy writes; execute signed cutover/smoke/reconciliation steps; and retain a time-bounded read-only legacy fallback.
 
-## Current Phase 5E next activity
+## Next activity after Synthetic Internal UAT
 
 The approved monitoring/recovery decisions are recorded, and alert delivery, restore, component rollback/current restoration and isolated forward repair have executed successfully. All six synthetic UAT journeys now have passing release-bound evidence. The project user has approved aggregate synthetic UAT sign-off. Name the pilot owners and proposed scope, then close or explicitly approve the independent pilot prerequisites. Financial automation remains disabled; real-device, provider, privacy and recovery obligations remain outstanding.
 

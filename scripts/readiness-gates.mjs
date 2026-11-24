@@ -20,9 +20,36 @@ export function validateReadinessGates(register) {
   return { ok: true, gates: ids.size };
 }
 
+export function validateReadinessNarrative(register, markdown) {
+  const rows = new Map();
+  for (const line of markdown.split("\n")) {
+    if (!line.startsWith("|")) continue;
+    const cells = line
+      .split("|")
+      .slice(1, -1)
+      .map((cell) => cell.trim());
+    const name = cells[0];
+    if (!name || name === "Gate" || /^:?-+:?$/u.test(name)) continue;
+    rows.set(name, cells[1] ?? "");
+  }
+
+  for (const gate of register.gates ?? []) {
+    if (!rows.has(gate.name)) {
+      throw new Error(`${gate.id} is missing from the readiness narrative.`);
+    }
+    if (rows.get(gate.name) !== gate.status) {
+      throw new Error(
+        `${gate.id} narrative status ${rows.get(gate.name)} does not match register status ${gate.status}.`
+      );
+    }
+  }
+  return { ok: true, gates: register.gates?.length ?? 0 };
+}
+
 if (process.argv[1]?.endsWith("readiness-gates.mjs")) {
   const register = JSON.parse(readFileSync("config/readiness-gates.json", "utf8"));
-  console.log(
-    `Validated ${validateReadinessGates(register).gates} evidence-based readiness gates.`
-  );
+  const narrative = readFileSync("docs/production/readiness-gates.md", "utf8");
+  const gates = validateReadinessGates(register);
+  validateReadinessNarrative(register, narrative);
+  console.log(`Validated ${gates.gates} evidence-based readiness gates and their narrative.`);
 }

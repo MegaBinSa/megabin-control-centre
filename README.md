@@ -1,33 +1,26 @@
 # MegaBin Control Centre
 
-MegaBin Control Centre is the greenfield operational platform for MegaBin. It is intentionally separate from the public WordPress website.
+MegaBin Control Centre is the internal operations platform for MegaBin, a weekly garden-refuse collection business in Pretoria. It is separate from the public WordPress website.
 
-The repository contains the approved architecture and Phase 0 tooling foundation. Application shells, hosted Supabase resources, business database tables, APIs, authentication flows, and operational features have not yet been created.
+The repository contains the Office web app, Driver PWA, Supabase schema and Edge Functions, synthetic tests, and the architecture and operations records. Shared Staging is deployed. Production is not.
 
-## Source of truth
+## Current stage
 
-Start with the [architecture index](docs/architecture/architecture-index.md) and the [authoritative system blueprint](docs/architecture/megabin-control-centre-system-blueprint.md).
+Synthetic Internal UAT Passed on 2026-10-17, with explicit project-user sign-off of all six synthetic journeys. Controlled pilot and production remain blocked. Do not replay Staging UAT fixtures or deploy because this status changed.
 
-Documents under `docs/megabin-shared/` are legacy website/source context. They help with future migration and integration work but do not override Control Centre architecture decisions.
+Start with:
+
+- [Readiness gates](docs/production/readiness-gates.md) and [config/readiness-gates.json](config/readiness-gates.json)
+- [Synthetic UAT sign-off and pilot-entry packet](docs/production/synthetic-uat-signoff-and-pilot-entry.md)
+- [Production gap register](docs/production/production-gap-register.md)
+- [Architecture index](docs/architecture/architecture-index.md)
 
 ## Repository boundary
 
-- This repository owns the Control Centre platform and its architecture.
+- This repository owns the Control Centre platform.
 - The MegaBin WordPress website remains a separate system and repository.
 - No secrets, production credentials, WordPress runtime files, generated builds, or local environment files belong in this repository.
 
-## Adding a GitHub remote later
-
-No remote is configured by this foundation task. When the repository URL is approved, add and verify it explicitly:
-
-```powershell
-git remote add origin <approved-github-repository-url>
-git remote -v
-git push -u origin main
-```
-
-Confirm the destination organisation and repository before pushing.
-
 ## Local development
 
-See the [local development runbook](docs/runbooks/local-development.md) for pinned toolchain, verification, and local Supabase commands.
+See the [local development runbook](docs/runbooks/local-development.md). That workflow is local only and does not deploy Staging or production.

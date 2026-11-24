@@ -620,8 +620,6 @@ addEventListener("offline", () => {
   online = false;
   void render();
 });
-if ("serviceWorker" in navigator)
-  void navigator.serviceWorker.register(`/sw.js?build=${encodeURIComponent(deploymentBuild)}`);
 if (!auth || !api)
   root.innerHTML =
     '<main class="login"><div class="notice">Driver environment is not configured.</div></main>';

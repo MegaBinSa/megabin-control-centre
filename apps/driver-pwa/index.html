@@ -9,6 +9,25 @@
   </head>
   <body>
     <div id="app"></div>
-    <script type="module" src="/src/main.ts"></script>
+    <script type="module">
+      const build = import.meta.env.VITE_BUILD_SHA || "local";
+      if ("serviceWorker" in navigator) {
+        try {
+          await navigator.serviceWorker.register(
+            `/sw.js?build=${encodeURIComponent(build || "local")}`
+          );
+          if (!navigator.serviceWorker.controller)
+            await new Promise((resolve) => {
+              navigator.serviceWorker.addEventListener("controllerchange", () => resolve(), {
+                once: true
+              });
+            });
+        } catch {
+          // The app remains usable online when worker installation fails.
+        }
+      }
+      if (import.meta.env.DEV) await import("/@vite/client");
+      await import("/src/main.ts");
+    </script>
   </body>
 </html>
