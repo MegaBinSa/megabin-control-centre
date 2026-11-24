@@ -1,6 +1,6 @@
 # Local Development
 
-**Status:** Phase 0 tooling baseline
+**Status:** Local toolchain and Supabase workflow. This runbook does not link or deploy a hosted project.
 
 ## Prerequisites
 
@@ -34,14 +34,14 @@ Create migrations through the CLI so filenames are correctly generated:
 pnpm supabase migration new <descriptive-name>
 ```
 
-Review the SQL and reset the local database from scratch. Generated database types will be introduced with the first application schema; they must be generated from the verified local database rather than written by hand.
+Review the SQL and reset the local database from scratch. The application schema is already in `supabase/migrations`. Do not hand-write database types; if a generated type artifact is introduced, generate it from the verified local database.
 
 ## Environment safety
 
 - Local secrets belong in ignored environment files.
 - `supabase/config.toml` may reference secrets with `env(...)`; never hard-code them.
 - The local SMTP capture service does not deliver real email.
-- No hosted project is linked by this foundation.
+- No hosted project is linked by this runbook.
 
 ## Phase 0B-6 runtime proof
 

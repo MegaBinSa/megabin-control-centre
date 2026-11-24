@@ -26,6 +26,8 @@
 | BDR-ALT-001 | Alerts/support | Assign alert severities, business/operations/technical owners, support hours and after-hours escalation. | Pilot only in named support window. | Business/Operations | Pilot |
 | BDR-CUT-001 | Source-of-truth cutover | Approve legacy freeze, parallel period, rollback and retirement acceptance. | Control Centre pilot scope only; legacy read-only fallback. | Business/Operations | Production Cutover |
 
+BDR-DR-001 remains open. Phase 5E records an approved one-hour RPO and four-hour RTO, and Staging restore, rollback and forward repair have been rehearsed. The Free-plan Staging project does not achieve the one-hour RPO, and Sidney's independent confirmations are still pending. Closing the row requires that gap to be met or an accountable pilot exception to be accepted.
+
 ## Proposed retention decision matrix
 
 These are decision prompts, not approved legal periods.

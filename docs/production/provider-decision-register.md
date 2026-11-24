@@ -14,7 +14,9 @@ No production vendor is selected by this document.
 | PVR-SMS-001 | SMS | South African delivery, sender/number rules, callbacks, throughput, opt-out support, retry-after, sandbox and cost | Provider-neutral channel/fallback contract and fake complete | Live SMS fallback | Candidate trial and approved sender identity |
 | PVR-EML-001 | Email | Domain authentication, templates, delivery/bounce callbacks, suppression, throughput, data handling and cost | Provider-neutral email/fallback contract and fake complete | Live email fallback | Provider choice, sending domain, SPF/DKIM/DMARC and sandbox test |
 | PVR-ZOH-001 | Zoho Books | Correct data center, organization, OAuth read scopes, refresh/token storage, pagination/rate limits, customers/invoices/payments/credits and webhooks/polling choice | Real-adapter shell plus comprehensive fake; live mode inactive | Financial integration | Finance semantics, OAuth app and synthetic/staging translation tests |
-| PVR-HST-001 | Frontend hosting | Office/PWA HTTPS, environment isolation, SPA routing, immutable artifacts, cache/service-worker controls, custom domains, access controls, logs, rollback, regions and cost | Build artifacts exist; no host deployment | Staging onward | Architecture-compatible host comparison and deployment proof |
+| PVR-HST-001 | Frontend hosting | Office/PWA HTTPS, environment isolation, SPA routing, immutable artifacts, cache/service-worker controls, custom domains, access controls, logs, rollback, regions and cost | Office and Driver artifacts deploy to separate Cloudflare Pages Staging projects. Deployment run 31738092512 and rollback/restoration run 31881010706 passed. Production host, domain and cost are undecided | Production cutover | Production host/domain decision and equivalent production deployment proof |
+
+PVR-HST-001 was corrected on 2026-11-24 against the Staging deployment and rollback evidence. No production vendor was selected, and the other rows were not re-decided.
 
 ## Selection principles
 
